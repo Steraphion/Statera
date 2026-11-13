@@ -40,7 +40,22 @@
   --color-income: #1f7a4a;
   --color-expense: #b3261e;
   --color-on-brand: #f5f3ee;
+  --color-primary: #1e2a30;        /* pulsanti principali */
+  --color-on-primary: #f5f3ee;
+  --color-segment-active: #ffffff;
   --shadow-1: 0 1px 2px rgb(30 42 48 / 0.08), 0 2px 8px rgb(30 42 48 / 0.06);
+  --shadow-2: 0 8px 32px rgb(30 42 48 / 0.18);
+  --color-backdrop: rgb(18 23 26 / 0.45);
+
+  /* Tinte per conti e categorie (i dati salvano solo il nome: s1…s8) */
+  --swatch-s1: #3f7d6e;
+  --swatch-s2: #b5653a;
+  --swatch-s3: #4a6fa5;
+  --swatch-s4: #7a6a58;
+  --swatch-s5: #7b5ea7;
+  --swatch-s6: #2f8f9d;
+  --swatch-s7: #a24f7a;
+  --swatch-s8: #6b7a3a;
 
   color-scheme: light;
 }
@@ -60,7 +75,21 @@
     --color-income: #5cc48b;
     --color-expense: #f2837a;
     --color-on-brand: #f5f3ee;
+    --color-primary: #d4a24c;
+    --color-on-primary: #1b1408;
+    --color-segment-active: #3a454b;
     --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-2: 0 8px 32px rgb(0 0 0 / 0.5);
+    --color-backdrop: rgb(0 0 0 / 0.6);
+
+    --swatch-s1: #6fb3a2;
+    --swatch-s2: #e0956a;
+    --swatch-s3: #7fa3d6;
+    --swatch-s4: #b3a28e;
+    --swatch-s5: #ad93d6;
+    --swatch-s6: #5ec0cd;
+    --swatch-s7: #d684ae;
+    --swatch-s8: #a3b46a;
 
     color-scheme: dark;
   }

@@ -7,12 +7,20 @@
 <ScreenHeader title="Altro" />
 
 <Card>
+  <h2>Gestione</h2>
+  <a class="link-row" href="#/categorie">
+    <span>Categorie</span>
+    <span aria-hidden="true">›</span>
+  </a>
+</Card>
+
+<Card>
   <h2>Installazione</h2>
   {#if device.installed}
     <p class="muted">Statera è installata come app su questo dispositivo.</p>
   {:else if device.canInstall}
     <p class="muted">Installa Statera per aprirla come un'app, anche offline.</p>
-    <button class="primary" onclick={() => device.install()}>Installa Statera</button>
+    <button class="btn btn-primary install" onclick={() => device.install()}>Installa Statera</button>
   {:else}
     <p class="muted">
       Per installarla usa il menu del browser: su Android "Aggiungi a schermata Home" o
@@ -58,20 +66,23 @@
     margin-bottom: var(--space-2);
   }
 
+  .link-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 44px;
+    color: var(--color-text);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
   .muted {
     color: var(--color-text-muted);
     font-size: var(--text-sm);
   }
 
-  .primary {
+  .install {
     margin-top: var(--space-3);
-    background: var(--color-brand);
-    color: var(--color-on-brand);
-    border: none;
-    border-radius: var(--radius-sm);
-    padding: var(--space-3) var(--space-4);
-    font-weight: 600;
-    cursor: pointer;
   }
 
   dl {

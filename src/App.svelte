@@ -4,6 +4,8 @@
   import Movimenti from './screens/Movimenti.svelte'
   import Altro from './screens/Altro.svelte'
   import Placeholder from './screens/Placeholder.svelte'
+  import Conti from './screens/Conti.svelte'
+  import Categorie from './screens/Categorie.svelte'
 </script>
 
 <div class="shell">
@@ -17,8 +19,8 @@
         <li>
           <a
             href="#/{r.id}"
-            class:active={router.current === r.id}
-            aria-current={router.current === r.id ? 'page' : undefined}
+            class:active={router.section === r.id}
+            aria-current={router.section === r.id ? 'page' : undefined}
           >
             <Icon name={r.icon} />
             <span>{r.label}</span>
@@ -32,7 +34,9 @@
     {#if router.current === 'movimenti'}
       <Movimenti />
     {:else if router.current === 'conti'}
-      <Placeholder title="Conti" text="Conti, carte e buoni pasto arrivano nella Fase 1.2." />
+      <Conti />
+    {:else if router.current === 'categorie'}
+      <Categorie />
     {:else if router.current === 'analisi'}
       <Placeholder title="Analisi" text="Grafici e budget arrivano nella Fase 3." />
     {:else}
