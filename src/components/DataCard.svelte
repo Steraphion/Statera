@@ -1,11 +1,13 @@
 <script lang="ts">
   import Card from './Card.svelte'
   import DeleteButton from './DeleteButton.svelte'
+  import { db } from '../lib/data/db'
   import { live } from '../lib/data/live.svelte'
   import * as bk from '../lib/data/backup'
   import { formatDateTime } from '../lib/format'
 
   const last = live(() => bk.lastBackupAt(), null as number | null)
+  const hasData = live(async () => (await db.transactions.count()) > 0, false)
 
   let fileInput: HTMLInputElement
   // $state.raw: il backup letto resta un oggetto semplice, che il database sa salvare
@@ -14,7 +16,9 @@
   let error = $state('')
 
   const DAY = 24 * 60 * 60 * 1000
-  const stale = $derived(last.ready && (last.value === null || Date.now() - last.value > 30 * DAY))
+  const stale = $derived(
+    last.ready && hasData.value && (last.value === null || Date.now() - last.value > 30 * DAY),
+  )
 
   async function exportBackup() {
     error = ''

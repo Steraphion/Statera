@@ -36,7 +36,24 @@
 
   let sheet = $state<{ movement?: Transaction } | null>(null)
 
+  // Scorciatoie da tastiera (PC): N = nuovo movimento, / = cerca, frecce = mese
+  function onKey(e: KeyboardEvent) {
+    if (sheet || e.ctrlKey || e.metaKey || e.altKey) return
+    const el = e.target as HTMLElement
+    if (el.closest('input, textarea, select, [contenteditable]')) return
+    if (e.key === 'n' || e.key === 'N') {
+      e.preventDefault()
+      if (!noAccounts) sheet = {}
+    } else if (e.key === '/') {
+      e.preventDefault()
+      location.hash = '/cerca'
+    } else if (e.key === 'ArrowLeft') ui.month = shiftMonth(ui.month, -1)
+    else if (e.key === 'ArrowRight') ui.month = shiftMonth(ui.month, 1)
+  }
+
 </script>
+
+<svelte:window onkeydown={onKey} />
 
 <header class="month">
   <button class="btn btn-ghost nav" aria-label="Mese precedente" onclick={() => (ui.month = shiftMonth(ui.month, -1))}>
@@ -53,7 +70,7 @@
   <a class="btn btn-ghost nav" href="#/cerca" aria-label="Cerca">
     <Icon name="search" />
   </a>
-  <button class="btn btn-primary btn-small desktop-add" onclick={() => (sheet = {})}>
+  <button class="btn btn-primary btn-small desktop-add" title="Scorciatoia: N" onclick={() => (sheet = {})}>
     <Icon name="plus" size={18} /> Movimento
   </button>
 </header>

@@ -73,3 +73,19 @@ describe('categorie', () => {
     expect((await d.categories.get(figlia.id))!.archived).toBe(true)
   })
 })
+
+describe('ordine dei conti', () => {
+  it('sposta su e giù', async () => {
+    const mk = (name: string) =>
+      repo.createAccount({ name, type: 'contanti', initialBalance: 0, initialDate: '2026-11-01', voucherValue: null, initialVouchers: null, color: 's1' }, d)
+    const a = await mk('A')
+    await mk('B')
+    const c = await mk('C')
+    await repo.moveAccount(c.id, -1, d)
+    await repo.moveAccount(a.id, 1, d)
+    const names = (await d.accounts.toArray()).sort((x, y) => x.order - y.order).map((x) => x.name)
+    expect(names).toEqual(['C', 'A', 'B'])
+    await repo.moveAccount(c.id, -1, d) // già primo: nessun cambiamento
+    expect((await d.accounts.get(c.id))!.order).toBe(1)
+  })
+})

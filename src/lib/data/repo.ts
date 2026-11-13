@@ -242,3 +242,23 @@ export async function ensureSeeded(d: StateraDB = db) {
     await d.meta.put({ key: 'seeded', value: { at: now, date: today() } })
   })
 }
+
+// ---------- Ordine ----------
+
+/** Sposta un conto di una posizione (su = -1, giù = +1) tra i conti attivi. */
+export async function moveAccount(id: string, dir: -1 | 1, d: StateraDB = db) {
+  await d.transaction('rw', d.accounts, async () => {
+    const list = (await d.accounts.toArray())
+      .filter((a) => a.deletedAt === null && !a.archived)
+      .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, 'it'))
+    const i = list.findIndex((a) => a.id === id)
+    const j = i + dir
+    if (i < 0 || j < 0 || j >= list.length) return
+    ;[list[i], list[j]] = [list[j], list[i]]
+    const now = Date.now()
+    // Rinumera tutti: ordine sempre compatto e senza pari merito
+    for (let k = 0; k < list.length; k++) {
+      if (list[k].order !== k + 1) await d.accounts.update(list[k].id, { order: k + 1, updatedAt: now })
+    }
+  })
+}

@@ -48,7 +48,10 @@
     {:else if router.current === 'categorie'}
       <Categorie />
     {:else if router.current === 'analisi'}
-      <Placeholder title="Analisi" text="Grafici e budget arrivano nella Fase 3." />
+      <Placeholder
+        title="Analisi"
+        text="Grafici per categoria e per mese, budget e movimenti ricorrenti arrivano nella Fase 3, dopo la sincronizzazione."
+      />
     {:else}
       <Altro />
     {/if}

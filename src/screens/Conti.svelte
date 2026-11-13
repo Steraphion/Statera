@@ -5,6 +5,7 @@
   import CardForm from '../components/CardForm.svelte'
   import Icon from '../components/Icon.svelte'
   import { db } from '../lib/data/db'
+  import { moveAccount } from '../lib/data/repo'
   import { live } from '../lib/data/live.svelte'
   import { accountBalance, cardEligible, netWorth } from '../lib/data/balances'
   import { ACCOUNT_TYPE_LABELS, SWATCHES, type Account, type Card as CardT } from '../lib/data/types'
@@ -30,6 +31,7 @@
   const eligible = $derived(active.filter(cardEligible))
 
   let showArchived = $state(false)
+  let sorting = $state(false)
   let accountSheet = $state<{ account?: Account } | null>(null)
   let cardSheet = $state<{ card?: CardT } | null>(null)
 </script>
@@ -66,7 +68,12 @@
   </li>
 {/snippet}
 
-<h2 class="section-title">I tuoi conti</h2>
+<h2 class="section-title">
+  I tuoi conti
+  {#if active.length > 1}
+    <button class="btn btn-ghost btn-small" onclick={() => (sorting = !sorting)}>{sorting ? 'Fatto' : 'Ordina'}</button>
+  {/if}
+</h2>
 <Card>
   {#if !data.ready}
     <p class="empty-note">Caricamento…</p>
@@ -74,8 +81,17 @@
     <p class="empty-note">Nessun conto. Inizia aggiungendo il tuo conto corrente, i contanti e i buoni pasto.</p>
   {:else}
     <ul class="list">
-      {#each active as a (a.id)}
-        {@render accountRow(a)}
+      {#each active as a, i (a.id)}
+        {#if sorting}
+          <li class="sort-row">
+            <span class="dot" style:background="var(--swatch-{a.color})"></span>
+            <span class="name">{a.name}</span>
+            <button class="btn btn-ghost btn-small" aria-label="Sposta su {a.name}" disabled={i === 0} onclick={() => moveAccount(a.id, -1)}>↑</button>
+            <button class="btn btn-ghost btn-small" aria-label="Sposta giù {a.name}" disabled={i === active.length - 1} onclick={() => moveAccount(a.id, 1)}>↓</button>
+          </li>
+        {:else}
+          {@render accountRow(a)}
+        {/if}
       {/each}
     </ul>
   {/if}
@@ -162,6 +178,24 @@
   .value {
     font-size: var(--text-xl);
     font-weight: 650;
+  }
+
+  .sort-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 52px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .sort-row:last-child {
+    border-bottom: none;
+  }
+
+  .sort-row .name {
+    flex: 1;
+    margin-left: var(--space-1);
+    font-weight: 600;
   }
 
   .end {
