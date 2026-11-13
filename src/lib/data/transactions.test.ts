@@ -147,3 +147,29 @@ describe('riepiloghi', () => {
     expect(opts.map((o) => o.label)).toEqual(['Conto', 'Bancomat (Conto)', 'Buoni'])
   })
 })
+
+describe('ricerca', () => {
+  it('testo senza accenti, periodo, fonte, categoria con sottocategorie', async () => {
+    const casa = await repo.createCategory({ name: 'Casa', kind: 'uscita', parentId: null, color: 's1' }, d)
+    const bollette = await repo.createCategory({ name: 'Bollette', kind: 'uscita', parentId: casa.id, color: 's1' }, d)
+    await mv.createMovement(input({ date: '2026-11-02', description: 'Caffè al bar' }), d)
+    await mv.createMovement(input({ date: '2026-11-05', categoryId: bollette.id, description: 'Luce', source: `c:${bancomat.id}` }), d)
+    await mv.createMovement(input({ date: '2026-11-09', type: 'trasferimento', categoryId: null, toAccountId: contanti.id, description: 'Prelievo' }), d)
+    const rows = await d.transactions.toArray()
+    const refs = {
+      accountMap: new Map((await d.accounts.toArray()).map((a) => [a.id, a])),
+      cardMap: new Map((await d.cards.toArray()).map((c) => [c.id, c])),
+      categoryMap: new Map((await d.categories.toArray()).map((c) => [c.id, c])),
+    }
+    const f = (over: Partial<mv.Filters>) => mv.filterMovements(rows, { ...mv.EMPTY_FILTERS, ...over }, refs).map((t) => t.description)
+    expect(f({ text: 'caffe' })).toEqual(['Caffè al bar'])
+    expect(f({ text: 'bancomat' })).toEqual(['Luce'])
+    expect(f({ text: 'casa' })).toEqual(['Luce'])
+    expect(f({ categoryId: casa.id })).toEqual(['Luce'])
+    expect(f({ source: `a:${contanti.id}` })).toEqual(['Prelievo'])
+    expect(f({ source: `c:${bancomat.id}` })).toEqual(['Luce'])
+    expect(f({ from: '2026-11-03', to: '2026-11-08' })).toEqual(['Luce'])
+    expect(f({ type: 'trasferimento' })).toEqual(['Prelievo'])
+    expect(f({})).toEqual(['Prelievo', 'Luce', 'Caffè al bar'])
+  })
+})

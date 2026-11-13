@@ -50,6 +50,9 @@
   {#if !isCurrentMonth}
     <button class="btn btn-small" onclick={() => (ui.month = monthOf(today()))}>Oggi</button>
   {/if}
+  <a class="btn btn-ghost nav" href="#/cerca" aria-label="Cerca">
+    <Icon name="search" />
+  </a>
   <button class="btn btn-primary btn-small desktop-add" onclick={() => (sheet = {})}>
     <Icon name="plus" size={18} /> Movimento
   </button>

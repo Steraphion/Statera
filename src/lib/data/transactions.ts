@@ -236,3 +236,62 @@ export function categoryLabel(id: string | null, categories: Map<string, Categor
   const parent = c.parentId ? categories.get(c.parentId) : null
   return parent ? `${parent.name} › ${c.name}` : c.name
 }
+
+// ---------- Ricerca ----------
+
+export interface Filters {
+  text: string
+  /** 'AAAA-MM-GG' o '' */
+  from: string
+  to: string
+  type: TransactionType | ''
+  /** Fonte: 'a:<conto>' (tutti i movimenti del conto, carte comprese) o 'c:<carta>', o '' */
+  source: SourceKey | ''
+  /** Categoria (comprende le sue sottocategorie) o '' */
+  categoryId: string
+}
+
+export const EMPTY_FILTERS: Filters = { text: '', from: '', to: '', type: '', source: '', categoryId: '' }
+
+/** Minuscolo e senza accenti: "Caffè" trova "caffe". */
+export function normalize(s: string): string {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+}
+
+export function filterMovements(
+  rows: Transaction[],
+  f: Filters,
+  refs: { accountMap: Map<string, Account>; cardMap: Map<string, Card>; categoryMap: Map<string, Category> },
+): Transaction[] {
+  const words = normalize(f.text).split(/\s+/).filter(Boolean)
+  const [srcKind, srcId] = f.source ? f.source.split(':') : ['', '']
+  const catIds = new Set<string>()
+  if (f.categoryId) {
+    catIds.add(f.categoryId)
+    for (const c of refs.categoryMap.values()) if (c.parentId === f.categoryId) catIds.add(c.id)
+  }
+
+  const out = rows.filter((t) => {
+    if (t.deletedAt !== null) return false
+    if (f.from && t.date < f.from) return false
+    if (f.to && t.date > f.to) return false
+    if (f.type && t.type !== f.type) return false
+    if (srcKind === 'a' && !t.accountIds.includes(srcId)) return false
+    if (srcKind === 'c' && !t.parts.some((p) => p.cardId === srcId)) return false
+    if (catIds.size && !(t.categoryId && catIds.has(t.categoryId))) return false
+    if (words.length) {
+      const hay = normalize(
+        [
+          t.description,
+          t.notes,
+          categoryLabel(t.categoryId, refs.categoryMap),
+          ...t.parts.map((p) => partLabel(p, refs.accountMap, refs.cardMap)),
+          t.toAccountId ? (refs.accountMap.get(t.toAccountId)?.name ?? '') : '',
+        ].join(' '),
+      )
+      if (!words.every((w) => hay.includes(w))) return false
+    }
+    return true
+  })
+  return sortMovements(out)
+}

@@ -8,6 +8,7 @@
   import Conti from './screens/Conti.svelte'
   import Categorie from './screens/Categorie.svelte'
   import ContoDettaglio from './screens/ContoDettaglio.svelte'
+  import Cerca from './screens/Cerca.svelte'
 </script>
 
 <div class="shell">
@@ -42,6 +43,8 @@
       {#key router.param}
         <ContoDettaglio id={router.param} />
       {/key}
+    {:else if router.current === 'cerca'}
+      <Cerca />
     {:else if router.current === 'categorie'}
       <Categorie />
     {:else if router.current === 'analisi'}
