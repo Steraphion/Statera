@@ -109,16 +109,38 @@ async function validate(input: MovementInput, d: StateraDB, prev?: Transaction) 
   }
 }
 
-export async function createMovement(input: MovementInput, d: StateraDB = db): Promise<Transaction> {
+/** Controlla che un movimento sia valido senza salvarlo (es. per un modello ricorrente). */
+export async function checkMovement(input: MovementInput, d: StateraDB = db): Promise<void> {
+  await validate(input, d)
+}
+
+/**
+ * Crea un movimento. Con `id` (movimenti generati da una ripetizione) l'identificativo è fisso:
+ * se esiste già (anche eliminato, anche creato da un altro dispositivo) non viene ricreato.
+ */
+export async function createMovement(
+  input: MovementInput,
+  d: StateraDB = db,
+  opts: { id?: string; remember?: boolean } = {},
+): Promise<Transaction> {
   const data = await validate(input, d)
-  const t: Transaction = { ...baseFields(), ...data }
+  const t: Transaction = { ...baseFields(), ...(opts.id ? { id: opts.id } : {}), ...data }
+  let result = t
   await d.transaction('rw', d.transactions, d.meta, async () => {
+    if (opts.id) {
+      const existing = await d.transactions.get(opts.id)
+      if (existing) {
+        result = existing
+        return
+      }
+    }
     await d.transactions.add(t)
+    if (opts.remember === false) return
     // Nei pagamenti misti si ricorda la fonte "normale" (carta/conto), non i buoni
     const i = data.parts.length > 1 ? Math.max(0, data.parts.findIndex((p) => p.vouchers === null)) : 0
     await rememberSource(input.type, input.parts[i].source, d)
   })
-  return t
+  return result
 }
 
 export async function updateMovement(id: string, input: MovementInput, d: StateraDB = db) {

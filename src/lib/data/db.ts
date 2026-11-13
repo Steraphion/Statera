@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie'
-import type { Account, Card, Category, Meta, Transaction } from './types'
+import type { Account, Card, Category, Meta, Recurring, Transaction } from './types'
 import { activeDbName } from '../profiles'
 
 /**
@@ -11,6 +11,7 @@ export class StateraDB extends Dexie {
   cards!: Table<Card, string>
   categories!: Table<Category, string>
   transactions!: Table<Transaction, string>
+  recurring!: Table<Recurring, string>
   meta!: Table<Meta, string>
 
   constructor(name = 'statera-locale') {
@@ -21,6 +22,10 @@ export class StateraDB extends Dexie {
       categories: 'id, kind, parentId, updatedAt',
       transactions: 'id, date, type, categoryId, *accountIds, updatedAt',
       meta: 'key',
+    })
+    // v2 (Fase 3): movimenti ricorrenti
+    this.version(2).stores({
+      recurring: 'id, updatedAt',
     })
   }
 }

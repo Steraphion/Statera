@@ -4,7 +4,7 @@
  */
 
 export type NavId = 'movimenti' | 'conti' | 'analisi' | 'altro'
-export type RouteId = NavId | 'categorie' | 'conto' | 'cerca'
+export type RouteId = NavId | 'categorie' | 'conto' | 'cerca' | 'ricorrenti'
 
 export const ROUTES: { id: NavId; label: string; icon: string }[] = [
   { id: 'movimenti', label: 'Movimenti', icon: 'list' },
@@ -14,7 +14,7 @@ export const ROUTES: { id: NavId; label: string; icon: string }[] = [
 ]
 
 /** Schermate secondarie e la voce di menu a cui appartengono. */
-const SUBROUTES: Record<string, NavId> = { categorie: 'altro', conto: 'conti', cerca: 'movimenti' }
+const SUBROUTES: Record<string, NavId> = { categorie: 'altro', conto: 'conti', cerca: 'movimenti', ricorrenti: 'altro' }
 
 const DEFAULT_ROUTE: RouteId = 'movimenti'
 

@@ -4,6 +4,7 @@
   import Icon from '../components/Icon.svelte'
   import MovementForm from '../components/MovementForm.svelte'
   import MovementRow from '../components/MovementRow.svelte'
+  import PendingCard from '../components/PendingCard.svelte'
   import { useRefs } from '../lib/data/refs.svelte'
   import * as mv from '../lib/data/transactions'
   import type { Transaction } from '../lib/data/types'
@@ -74,6 +75,8 @@
     <Icon name="plus" size={18} /> Movimento
   </button>
 </header>
+
+<PendingCard refs={refs.value} />
 
 <Card>
   <div class="totals">

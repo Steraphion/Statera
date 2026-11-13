@@ -6,12 +6,16 @@
   import CategoryPicker from './CategoryPicker.svelte'
   import DateField from './DateField.svelte'
   import * as mv from '../lib/data/transactions'
-  import type { Account, Card, Category, Transaction, TransactionType } from '../lib/data/types'
+  import * as rec from '../lib/data/recurring'
+  import type { Account, Card, Category, Frequency, Recurring, Transaction, TransactionType } from '../lib/data/types'
   import { errorMessage, today, withTimeout } from '../lib/data/util'
   import { centsToInput, formatEuro, parseEuro } from '../lib/format'
 
   let {
     movement,
+    recurring,
+    confirm,
+    defaultRepeat,
     accounts,
     cards,
     categories,
@@ -19,6 +23,12 @@
     onclose,
   }: {
     movement?: Transaction
+    /** Modifica di una ripetizione (modello). */
+    recurring?: Recurring
+    /** Conferma di un'occorrenza "da confermare". */
+    confirm?: { r: Recurring; date: string }
+    /** Nuovo movimento con ripetizione già impostata. */
+    defaultRepeat?: Frequency
     accounts: Account[]
     cards: Card[]
     categories: Category[]
@@ -35,10 +45,15 @@
 
   // Valori di partenza del modulo (letti una volta all'apertura)
   const orig = untrack(() => movement)
+  const rec0 = untrack(() => recurring)
+  const conf0 = untrack(() => confirm)
+  /** Modello da cui partire (ripetizione in modifica o da confermare). */
+  const tpl = rec0 ?? conf0?.r ?? null
+  const initType = orig?.type ?? tpl?.type ?? null
   const last = untrack(() => lastSources)
-  const origKeys = orig ? orig.parts.map(mv.sourceKey) : []
+  const origKeys = orig ? orig.parts.map(mv.sourceKey) : tpl ? tpl.parts.map((p) => p.source) : []
 
-  let type = $state<TransactionType>(orig?.type ?? 'uscita')
+  let type = $state<TransactionType>(initType ?? 'uscita')
   let parts = $state<PartRow[]>(
     orig
       ? orig.parts.map((p) => ({
@@ -46,14 +61,27 @@
           amountText: p.vouchers === null ? centsToInput(p.amount) : '',
           vouchersText: p.vouchers ? String(p.vouchers) : '',
         }))
-      : [{ source: '', amountText: '', vouchersText: '' }],
+      : tpl
+        ? tpl.parts.map((p) => ({
+            source: p.source,
+            amountText: p.vouchers === null ? centsToInput(p.amount) : '',
+            vouchersText: p.vouchers ? String(p.vouchers) : '',
+          }))
+        : [{ source: '', amountText: '', vouchersText: '' }],
   )
-  let date = $state(orig?.date ?? today())
-  let toAccountId = $state<string>(orig?.toAccountId ?? '')
-  let categoryId = $state<string | null>(orig?.categoryId ?? null)
-  let description = $state(orig?.description ?? '')
-  let notes = $state(orig?.notes ?? '')
-  let showNotes = $state(!!orig?.notes)
+  let date = $state(orig?.date ?? (rec0 ? (rec.nextDate(rec0) ?? today()) : (conf0?.date ?? today())))
+  let toAccountId = $state<string>(orig?.toAccountId ?? tpl?.toAccountId ?? '')
+  let categoryId = $state<string | null>(orig?.categoryId ?? tpl?.categoryId ?? null)
+  let description = $state(orig?.description ?? tpl?.description ?? '')
+  let notes = $state(orig?.notes ?? tpl?.notes ?? '')
+  let showNotes = $state(!!(orig?.notes || tpl?.notes))
+
+  // Ripetizione
+  const canRepeat = !orig && !conf0
+  let repeat = $state<Frequency | ''>(rec0?.frequency ?? untrack(() => defaultRepeat) ?? '')
+  let mode = $state<'auto' | 'conferma'>(rec0 && !rec0.auto ? 'conferma' : 'auto')
+  let endDate = $state(rec0?.endDate ?? '')
+  const dateLabel = rec0 ? 'Prossima data' : 'Data'
   let error = $state('')
   let busy = $state(false)
   let savedCount = $state(0)
@@ -82,7 +110,7 @@
         a.deletedAt === null &&
         a.type !== 'buoni_pasto' &&
         a.id !== first?.account.id &&
-        (!a.archived || a.id === orig?.toAccountId),
+        (!a.archived || a.id === (orig?.toAccountId ?? tpl?.toAccountId)),
     ),
   )
 
@@ -98,13 +126,13 @@
     )
   }
 
-  let sourceForType: TransactionType | null = orig ? orig.type : null
+  let sourceForType: TransactionType | null = initType
   $effect(() => {
     const t = type
     if (sourceForType !== t) {
       sourceForType = t
       if (t !== 'uscita' && parts.length > 1) parts = [parts[0]]
-      if (!(orig && t === orig.type)) {
+      if (!(initType && t === initType)) {
         parts[0].source = proposedSource(t)
         return
       }
@@ -199,7 +227,11 @@
     }
     busy = true
     try {
-      if (orig) await withTimeout(mv.updateMovement(orig.id, input))
+      const schedule = { frequency: (repeat || 'mensile') as Frequency, date, endDate: endDate || null, auto: mode === 'auto' }
+      if (rec0) await withTimeout(rec.updateRecurring(rec0.id, input, schedule))
+      else if (conf0) await withTimeout(rec.confirmOccurrence(conf0.r, input, conf0.date))
+      else if (orig) await withTimeout(mv.updateMovement(orig.id, input))
+      else if (repeat) await withTimeout(rec.createRecurring(input, schedule, today()))
       else await withTimeout(mv.createMovement(input))
       if (addAnother) {
         parts = [{ source: parts[0].source, amountText: '', vouchersText: '' }]
@@ -207,6 +239,8 @@
         notes = ''
         showNotes = false
         categoryId = null
+        repeat = ''
+        endDate = ''
         savedCount++
         amountInput?.focus()
       } else {
@@ -229,7 +263,23 @@
     }
   }
 
-  const title = orig ? 'Modifica movimento' : 'Nuovo movimento'
+  async function act(fn: () => Promise<unknown>) {
+    error = ''
+    try {
+      await withTimeout(fn())
+      onclose()
+    } catch (e) {
+      error = errorMessage(e)
+    }
+  }
+
+  const title = rec0
+    ? 'Modifica ripetizione'
+    : conf0
+      ? 'Conferma movimento'
+      : orig
+        ? 'Modifica movimento'
+        : 'Nuovo movimento'
   const sourceLabel = $derived(type === 'trasferimento' ? 'Da' : type === 'entrata' ? 'Su' : 'Con')
 </script>
 
@@ -307,7 +357,7 @@
               </select>
             </label>
           {:else}
-            <DateField bind:value={date} />
+            <DateField bind:value={date} label={dateLabel} />
           {/if}
         </div>
 
@@ -366,13 +416,13 @@
             <span class="num total">Totale {formatEuro(mixedTotal)}</span>
           </div>
         </fieldset>
-        <DateField bind:value={date} />
+        <DateField bind:value={date} label={dateLabel} />
       {/if}
 
       {#if type === 'trasferimento'}
-        <DateField bind:value={date} />
+        <DateField bind:value={date} label={dateLabel} />
       {:else}
-        <CategoryPicker {categories} kind={type} bind:value={categoryId} keepId={orig?.categoryId ?? null} />
+        <CategoryPicker {categories} kind={type} bind:value={categoryId} keepId={orig?.categoryId ?? tpl?.categoryId ?? null} />
       {/if}
 
       <label class="field">
@@ -394,6 +444,48 @@
         <button type="button" class="btn btn-ghost link" onclick={() => (showNotes = true)}>+ Aggiungi nota</button>
       {/if}
 
+      {#if canRepeat || rec0}
+        <div class="repeat">
+          <label class="field">
+            <span>Ripeti</span>
+            <select class="input" bind:value={repeat}>
+              {#if !rec0}<option value="">Non si ripete</option>{/if}
+              <option value="settimanale">Ogni settimana</option>
+              <option value="mensile">Ogni mese</option>
+              <option value="annuale">Ogni anno</option>
+            </select>
+            {#if repeat}
+              <span class="hint">
+                {rec.describeFrequency({ frequency: repeat, startDate: date })}.
+                {rec0 ? 'Le modifiche valgono dalla prossima data; i movimenti già registrati non cambiano.' : ''}
+              </span>
+            {/if}
+          </label>
+          {#if repeat}
+            <div class="field">
+              <span>Registrazione</span>
+              <Segmented
+                label="Registrazione"
+                bind:value={mode}
+                options={[
+                  { value: 'auto', label: 'Automatica' },
+                  { value: 'conferma', label: 'Da confermare' },
+                ]}
+              />
+              <span class="hint">
+                {mode === 'auto'
+                  ? 'Il movimento viene registrato da solo alla data prevista.'
+                  : "Alla data prevista te lo chiede, così puoi correggere l'importo (utile per le bollette)."}
+              </span>
+            </div>
+            <label class="field">
+              <span>Fino al (facoltativo)</span>
+              <input class="input" type="date" bind:value={endDate} />
+            </label>
+          {/if}
+        </div>
+      {/if}
+
       {#if beforeStart.length > 0}
         <p class="warn">
           La data è precedente al saldo iniziale di {beforeStart.join(' e ')}: il movimento verrà registrato e
@@ -409,13 +501,25 @@
   {/if}
 
   {#snippet footer()}
-    {#if orig}
+    {#if rec0}
+      <DeleteButton
+        label="Elimina ripetizione"
+        onconfirm={() => act(() => rec.deleteRecurring(rec0.id))}
+      />
+      <button type="button" class="btn" onclick={() => act(() => rec.setRecurringPaused(rec0.id, !rec0.paused))}>
+        {rec0.paused ? 'Riprendi' : 'Sospendi'}
+      </button>
+    {:else if conf0}
+      <button type="button" class="btn" onclick={() => act(() => rec.skipOccurrence(conf0.r, conf0.date))}>Salta</button>
+    {:else if orig}
       <DeleteButton onconfirm={remove} />
     {:else if options.length > 0}
       <button type="button" class="btn" disabled={busy} onclick={() => save(true)}>Salva e nuovo</button>
     {/if}
     {#if options.length > 0}
-      <button type="submit" form="movement-form" class="btn btn-primary" disabled={busy}>Salva</button>
+      <button type="submit" form="movement-form" class="btn btn-primary" disabled={busy}>
+        {conf0 ? 'Registra' : 'Salva'}
+      </button>
     {/if}
   {/snippet}
 </Sheet>
@@ -475,6 +579,14 @@
 
   textarea.input {
     resize: vertical;
+  }
+
+  .repeat {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border);
   }
 
   .warn {

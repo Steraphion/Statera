@@ -1,6 +1,7 @@
 import { liveQuery } from 'dexie'
 import { db } from '../data/db'
 import { today } from '../data/util'
+import { processRecurring } from '../data/recurring'
 import { upsertProfile } from '../profiles'
 import * as core from './core'
 import * as cr from './crypto'
@@ -280,8 +281,11 @@ class SyncEngine {
         await this.#updateMeta({ lastBackupDay: day })
       }
       await this.#updateMeta({ lastSyncAt: Date.now() })
+      // Ora che i dati sono allineati, si registrano i movimenti ricorrenti scaduti
+      // (se ne nascono, verranno caricati alla prossima sincronizzazione, tra pochi secondi)
       this.#lastStamp = await this.#localStamp()
       this.status = 'idle'
+      if ((await processRecurring(today())) > 0) this.syncSoon(1000)
     } catch (e) {
       if (e instanceof AuthExpiredError) {
         this.#saveToken(null)
@@ -311,7 +315,7 @@ class SyncEngine {
   /** "Impronta" dei dati locali: l'orario della modifica più recente. */
   async #localStamp(): Promise<number> {
     const last = await Promise.all(
-      (['accounts', 'cards', 'categories', 'transactions'] as const).map((t) =>
+      (['accounts', 'cards', 'categories', 'transactions', 'recurring'] as const).map((t) =>
         db.table(t).orderBy('updatedAt').last(),
       ),
     )

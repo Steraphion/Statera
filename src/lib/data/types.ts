@@ -84,6 +84,35 @@ export interface Transaction extends Base {
   accountIds: string[]
 }
 
+export type Frequency = 'settimanale' | 'mensile' | 'annuale'
+
+/** Parte di un modello ricorrente: come nel modulo (fonte = 'a:<conto>' o 'c:<carta>'). */
+export interface RecurringPart {
+  source: string
+  amount: number
+  vouchers: number | null
+}
+
+/** Movimento che si ripete (stipendio, affitto, abbonamenti…). */
+export interface Recurring extends Base {
+  type: TransactionType
+  parts: RecurringPart[]
+  categoryId: string | null
+  toAccountId: string | null
+  description: string
+  notes: string
+  frequency: Frequency
+  /** Data della prima occorrenza: fissa il giorno (della settimana, del mese, dell'anno). */
+  startDate: string
+  /** Ultima data possibile (compresa), o null. */
+  endDate: string | null
+  /** Occorrenze già gestite (registrate o saltate) a partire da startDate. */
+  done: number
+  /** true = registra da solo; false = chiede conferma. */
+  auto: boolean
+  paused: boolean
+}
+
 export interface Meta {
   key: string
   value: unknown

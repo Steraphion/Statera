@@ -103,7 +103,7 @@
   async function restore() {
     if (!pending) return
     try {
-      if (sync.meta) await sync.restoreSnapshot(pending.file.data)
+      if (sync.meta) await sync.restoreSnapshot({ ...pending.file.data, recurring: pending.file.data.recurring ?? [] })
       else await bk.restoreBackup(pending.file)
       message = 'Dati ripristinati dal backup.'
       pending = null

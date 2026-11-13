@@ -35,6 +35,7 @@
   const subtitle = $derived.by(() => {
     const from = t.parts.map((p) => mv.partLabel(p, refs.accountMap, refs.cardMap)).join(' + ')
     const pieces: string[] = []
+    if (t.id.startsWith('rec-')) pieces.push('↻ ricorrente')
     if (showDate) pieces.push(formatShortDay(t.date))
     if (t.type === 'trasferimento') pieces.push(`${from} → ${refs.accountMap.get(t.toAccountId ?? '')?.name ?? '—'}`)
     else {

@@ -136,7 +136,7 @@ describe('sincronizzazione tra due dispositivi', () => {
     // Drive ha una versione più vecchia dello stesso record rispetto a quella che l'utente sta salvando adesso
     const stale = { ...t, description: 'Da Drive', updatedAt: t.updatedAt + 1 }
     await tel.transactions.update(t.id, { description: 'Appena salvata', updatedAt: t.updatedAt + 2 })
-    const written = await core.applyToLocal(tel, { accounts: [], cards: [], categories: [], transactions: [stale] })
+    const written = await core.applyToLocal(tel, { accounts: [], cards: [], categories: [], transactions: [stale], recurring: [] })
     expect(written).toBe(0)
     expect((await tel.transactions.get(t.id))!.description).toBe('Appena salvata')
   })

@@ -10,6 +10,7 @@
   import Categorie from './screens/Categorie.svelte'
   import ContoDettaglio from './screens/ContoDettaglio.svelte'
   import Cerca from './screens/Cerca.svelte'
+  import Ricorrenti from './screens/Ricorrenti.svelte'
   import Recovery from './components/Recovery.svelte'
   import ErrorToast from './components/ErrorToast.svelte'
   import { startup } from './lib/startup.svelte'
@@ -57,6 +58,8 @@
       {#key router.param}
         <ContoDettaglio id={router.param} />
       {/key}
+    {:else if router.current === 'ricorrenti'}
+      <Ricorrenti />
     {:else if router.current === 'cerca'}
       <Cerca />
     {:else if router.current === 'categorie'}

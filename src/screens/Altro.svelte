@@ -18,6 +18,10 @@
     <span>Categorie</span>
     <span aria-hidden="true">›</span>
   </a>
+  <a class="link-row" href="#/ricorrenti">
+    <span>Movimenti ricorrenti</span>
+    <span aria-hidden="true">›</span>
+  </a>
 </Card>
 
 <Card>

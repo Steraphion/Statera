@@ -31,13 +31,14 @@ interface Payload {
 // ---------- dati locali ----------
 
 export async function readLocal(d: StateraDB): Promise<Snapshot> {
-  const [accounts, cards, categories, transactions] = await Promise.all([
+  const [accounts, cards, categories, transactions, recurring] = await Promise.all([
     d.accounts.toArray(),
     d.cards.toArray(),
     d.categories.toArray(),
     d.transactions.toArray(),
+    d.recurring.toArray(),
   ])
-  return { accounts, cards, categories, transactions }
+  return { accounts, cards, categories, transactions, recurring }
 }
 
 /**
@@ -46,9 +47,9 @@ export async function readLocal(d: StateraDB): Promise<Snapshot> {
  */
 export async function applyToLocal(d: StateraDB, incoming: Snapshot): Promise<number> {
   let written = 0
-  await d.transaction('rw', [d.accounts, d.cards, d.categories, d.transactions], async () => {
+  await d.transaction('rw', [d.accounts, d.cards, d.categories, d.transactions, d.recurring], async () => {
     for (const t of TABLES) {
-      const rows = incoming[t] as Base[]
+      const rows = (incoming[t] ?? []) as Base[]
       if (!rows.length) continue
       const table = d.table<Base, string>(t)
       const current = await table.bulkGet(rows.map((r) => r.id))
@@ -62,8 +63,8 @@ export async function applyToLocal(d: StateraDB, incoming: Snapshot): Promise<nu
 
 /** Sostituisce tutti i dati del dispositivo (conti, carte, categorie, movimenti). */
 export async function replaceLocal(d: StateraDB, snap: Snapshot) {
-  const clean: Snapshot = JSON.parse(JSON.stringify(snap))
-  await d.transaction('rw', [d.accounts, d.cards, d.categories, d.transactions], async () => {
+  const clean: Snapshot = { ...emptySnapshot(), ...JSON.parse(JSON.stringify(snap)) }
+  await d.transaction('rw', [d.accounts, d.cards, d.categories, d.transactions, d.recurring], async () => {
     await Promise.all(TABLES.map((t) => d.table(t).clear()))
     for (const t of TABLES) await d.table(t).bulkAdd(clean[t] as Base[])
   })
@@ -190,12 +191,12 @@ export async function restoreSnapshot(d: StateraDB, drive: DriveLike, key: Crypt
   const remote = (await readRemote(drive, key, findFile(files, DATA_FILE))) ?? emptySnapshot()
   const restored = emptySnapshot()
   for (const t of TABLES) {
-    const keep = new Set((snap[t] as Base[]).map((r) => r.id))
+    const keep = new Set(((snap[t] ?? []) as Base[]).map((r) => r.id))
     const gone = new Map<string, Base>()
-    for (const r of [...(current[t] as Base[]), ...(remote[t] as Base[])]) {
+    for (const r of [...((current[t] ?? []) as Base[]), ...((remote[t] ?? []) as Base[])]) {
       if (!keep.has(r.id)) gone.set(r.id, { ...r, deletedAt: r.deletedAt ?? now, updatedAt: now })
     }
-    ;(restored[t] as Base[]) = [...(snap[t] as Base[]).map((r) => ({ ...r, updatedAt: now })), ...gone.values()]
+    ;(restored[t] as Base[]) = [...((snap[t] ?? []) as Base[]).map((r) => ({ ...r, updatedAt: now })), ...gone.values()]
   }
   await replaceLocal(d, restored)
   await writeRemote(drive, key, restored, findFile(files, DATA_FILE))

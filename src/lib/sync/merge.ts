@@ -1,4 +1,4 @@
-import type { Account, Base, Card, Category, Transaction } from '../data/types'
+import type { Account, Base, Card, Category, Recurring, Transaction } from '../data/types'
 import { normalize } from '../data/transactions'
 
 /** Tutti i dati sincronizzati. */
@@ -7,13 +7,15 @@ export interface Snapshot {
   cards: Card[]
   categories: Category[]
   transactions: Transaction[]
+  /** Dalla Fase 3; può mancare nei file creati da versioni precedenti. */
+  recurring: Recurring[]
 }
 
-export const TABLES = ['accounts', 'cards', 'categories', 'transactions'] as const
+export const TABLES = ['accounts', 'cards', 'categories', 'transactions', 'recurring'] as const
 export type TableName = (typeof TABLES)[number]
 
 export function emptySnapshot(): Snapshot {
-  return { accounts: [], cards: [], categories: [], transactions: [] }
+  return { accounts: [], cards: [], categories: [], transactions: [], recurring: [] }
 }
 
 export interface MergeResult {
@@ -35,8 +37,8 @@ export function merge(local: Snapshot, remote: Snapshot): MergeResult {
   let remoteChanged = false
 
   for (const t of TABLES) {
-    const L = new Map<string, Base>(local[t].map((r) => [r.id, r]))
-    const R = new Map<string, Base>(remote[t].map((r) => [r.id, r]))
+    const L = new Map<string, Base>((local[t] ?? []).map((r) => [r.id, r]))
+    const R = new Map<string, Base>((remote[t] ?? []).map((r) => [r.id, r]))
     const out: Base[] = []
     for (const [id, l] of L) {
       const r = R.get(id)
@@ -111,6 +113,19 @@ export function unifyForFirstLink(local: Snapshot, remote: Snapshot): Snapshot {
       .filter((c) => !cardMap.has(c.id))
       .map((c) => (accMap.has(c.accountId) ? { ...c, accountId: accMap.get(c.accountId)!, updatedAt: now } : c)),
     categories: local.categories.filter((c) => !catMap.has(c.id)).map(remapCategory),
+    recurring: (local.recurring ?? []).map((r) => {
+      const remapSource = (src: string) => {
+        const [k, id] = src.split(':')
+        const to = k === 'c' ? cardMap.get(id) : accMap.get(id)
+        return to ? `${k}:${to}` : src
+      }
+      const parts = r.parts.map((p) => ({ ...p, source: remapSource(p.source) }))
+      const categoryId = r.categoryId ? (catMap.get(r.categoryId) ?? r.categoryId) : null
+      const toAccountId = r.toAccountId ? (accMap.get(r.toAccountId) ?? r.toAccountId) : null
+      const changed =
+        categoryId !== r.categoryId || toAccountId !== r.toAccountId || parts.some((p, i) => p.source !== r.parts[i].source)
+      return changed ? { ...r, parts, categoryId, toAccountId, updatedAt: now } : r
+    }),
     transactions: local.transactions.map((t) => {
       const changed =
         (t.categoryId && catMap.has(t.categoryId)) ||

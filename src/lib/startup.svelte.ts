@@ -25,10 +25,32 @@ class Startup {
       )
       this.state = 'ready'
       // La sincronizzazione parte dopo: un suo problema non deve bloccare l'app
-      void import('./sync/sync.svelte').then(({ sync }) => sync.init()).catch((e) => this.report(e))
+      void import('./sync/sync.svelte')
+        .then(async ({ sync }) => {
+          await sync.init()
+          await this.recurringTick()
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') void this.recurringTick()
+          })
+        })
+        .catch((e) => this.report(e))
     } catch (e) {
       this.failure = errorMessage(e)
       this.state = 'failed'
+    }
+  }
+
+  /** Registra i movimenti ricorrenti scaduti, se è il momento giusto (vedi shouldProcessLocally). */
+  async recurringTick() {
+    try {
+      const [{ sync }, rec, { today }] = await Promise.all([
+        import('./sync/sync.svelte'),
+        import('./data/recurring'),
+        import('./data/util'),
+      ])
+      if (rec.shouldProcessLocally(!!sync.meta, sync.meta?.lastSyncAt ?? null)) await rec.processRecurring(today())
+    } catch (e) {
+      this.report(e)
     }
   }
 
