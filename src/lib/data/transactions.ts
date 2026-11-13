@@ -12,22 +12,28 @@ export function sourceKey(part: Pick<TransactionPart, 'accountId' | 'cardId'>): 
   return part.cardId ? `c:${part.cardId}` : `a:${part.accountId}`
 }
 
-export interface MovementInput {
-  type: TransactionType
-  date: string
-  /** Fonte: conto o carta (per i trasferimenti: conto di origine). */
+/** Una parte del pagamento come la inserisce l'utente. */
+export interface PartInput {
+  /** Fonte: conto o carta. */
   source: SourceKey
   /** Importo in centesimi (ignorato se la fonte è un conto buoni pasto). */
   amount: number
   /** Solo buoni pasto: numero di buoni. */
   vouchers: number | null
+}
+
+export interface MovementInput {
+  type: TransactionType
+  date: string
+  /** Una parte = pagamento normale; più parti = pagamento misto (solo uscite). Trasferimenti: il conto di origine. */
+  parts: PartInput[]
   categoryId: string | null
   toAccountId: string | null
   description: string
   notes: string
 }
 
-async function buildParts(input: MovementInput, d: StateraDB, prev?: Transaction): Promise<TransactionPart[]> {
+async function buildPart(input: PartInput, d: StateraDB, prev?: Transaction): Promise<TransactionPart> {
   const [kind, id] = input.source.split(':')
   let account: Account | undefined
   let cardId: string | null = null
@@ -44,15 +50,25 @@ async function buildParts(input: MovementInput, d: StateraDB, prev?: Transaction
 
   if (account.type === 'buoni_pasto') {
     const n = input.vouchers ?? 0
-    if (!Number.isInteger(n) || n <= 0) throw new Error('Indica quanti buoni')
+    if (!Number.isInteger(n) || n <= 0) throw new Error(`Indica quanti buoni (${account.name})`)
     // In modifica si conserva il valore del buono di allora
     const value =
       prev?.parts.find((p) => p.accountId === account.id && p.voucherValue)?.voucherValue ?? account.voucherValue ?? 0
-    return [{ accountId: account.id, cardId: null, amount: n * value, vouchers: n, voucherValue: value }]
+    return { accountId: account.id, cardId: null, amount: n * value, vouchers: n, voucherValue: value }
   }
 
-  if (!Number.isInteger(input.amount) || input.amount <= 0) throw new Error("Inserisci un importo maggiore di zero")
-  return [{ accountId: account.id, cardId, amount: input.amount, vouchers: null, voucherValue: null }]
+  if (!Number.isInteger(input.amount) || input.amount <= 0) throw new Error('Inserisci un importo maggiore di zero')
+  return { accountId: account.id, cardId, amount: input.amount, vouchers: null, voucherValue: null }
+}
+
+async function buildParts(input: MovementInput, d: StateraDB, prev?: Transaction): Promise<TransactionPart[]> {
+  if (input.parts.length === 0) throw new Error('Indica con cosa hai pagato')
+  if (input.parts.length > 1 && input.type !== 'uscita') throw new Error('Il pagamento misto vale solo per le uscite')
+  const parts: TransactionPart[] = []
+  for (const p of input.parts) parts.push(await buildPart(p, d, prev))
+  const keys = parts.map((p) => p.cardId ?? p.accountId)
+  if (new Set(keys).size !== keys.length) throw new Error('La stessa fonte compare due volte nel pagamento')
+  return parts
 }
 
 async function validate(input: MovementInput, d: StateraDB, prev?: Transaction) {
@@ -98,7 +114,7 @@ export async function createMovement(input: MovementInput, d: StateraDB = db): P
   const t: Transaction = { ...baseFields(), ...data }
   await d.transaction('rw', d.transactions, d.meta, async () => {
     await d.transactions.add(t)
-    await rememberSource(input.type, input.source, d)
+    await rememberSource(input.type, input.parts[0].source, d)
   })
   return t
 }

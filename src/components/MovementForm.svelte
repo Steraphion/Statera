@@ -4,6 +4,7 @@
   import Segmented from './Segmented.svelte'
   import DeleteButton from './DeleteButton.svelte'
   import CategoryPicker from './CategoryPicker.svelte'
+  import DateField from './DateField.svelte'
   import * as mv from '../lib/data/transactions'
   import type { Account, Card, Category, Transaction, TransactionType } from '../lib/data/types'
   import { today } from '../lib/data/util'
@@ -25,16 +26,29 @@
     onclose: () => void
   } = $props()
 
+  /** Una riga del pagamento come appare nel modulo. */
+  interface PartRow {
+    source: string
+    amountText: string
+    vouchersText: string
+  }
+
   // Valori di partenza del modulo (letti una volta all'apertura)
   const orig = untrack(() => movement)
-  const origSource = orig ? mv.sourceKey(orig.parts[0]) : null
   const last = untrack(() => lastSources)
+  const origKeys = orig ? orig.parts.map(mv.sourceKey) : []
 
   let type = $state<TransactionType>(orig?.type ?? 'uscita')
-  let amountText = $state(orig && orig.parts[0].vouchers === null ? centsToInput(mv.total(orig)) : '')
-  let vouchersText = $state(orig?.parts[0].vouchers ? String(orig.parts[0].vouchers) : '')
+  let parts = $state<PartRow[]>(
+    orig
+      ? orig.parts.map((p) => ({
+          source: mv.sourceKey(p),
+          amountText: p.vouchers === null ? centsToInput(p.amount) : '',
+          vouchersText: p.vouchers ? String(p.vouchers) : '',
+        }))
+      : [{ source: '', amountText: '', vouchersText: '' }],
+  )
   let date = $state(orig?.date ?? today())
-  let source = $state<string>(origSource ?? '')
   let toAccountId = $state<string>(orig?.toAccountId ?? '')
   let categoryId = $state<string | null>(orig?.categoryId ?? null)
   let description = $state(orig?.description ?? '')
@@ -45,22 +59,29 @@
   let savedCount = $state(0)
   let amountInput: HTMLInputElement | undefined = $state()
 
-  const keep = origSource ? [origSource] : []
-  const allOptions = $derived(mv.sourceOptions(accounts, cards, keep))
+  const allOptions = $derived(mv.sourceOptions(accounts, cards, origKeys))
   // Nei trasferimenti si sceglie un conto (non una carta) e niente buoni pasto
   const options = $derived(
     type === 'trasferimento'
       ? allOptions.filter((o) => !o.isCard && o.account.type !== 'buoni_pasto')
       : allOptions,
   )
-  const selected = $derived(options.find((o) => o.key === source))
-  const isVoucher = $derived(selected?.account.type === 'buoni_pasto')
+  const mixed = $derived(parts.length > 1)
+  const first = $derived(options.find((o) => o.key === parts[0].source))
+
+  function optionOf(key: string) {
+    return allOptions.find((o) => o.key === key)
+  }
+  function isVoucher(key: string): boolean {
+    return optionOf(key)?.account.type === 'buoni_pasto'
+  }
+
   const destinations = $derived(
     accounts.filter(
       (a) =>
         a.deletedAt === null &&
         a.type !== 'buoni_pasto' &&
-        a.id !== selected?.account.id &&
+        a.id !== first?.account.id &&
         (!a.archived || a.id === orig?.toAccountId),
     ),
   )
@@ -82,12 +103,13 @@
     const t = type
     if (sourceForType !== t) {
       sourceForType = t
+      if (t !== 'uscita' && parts.length > 1) parts = [parts[0]]
       if (!(orig && t === orig.type)) {
-        source = proposedSource(t)
+        parts[0].source = proposedSource(t)
         return
       }
     }
-    if (!options.some((o) => o.key === source)) source = proposedSource(t)
+    if (!options.some((o) => o.key === parts[0].source)) parts[0].source = proposedSource(t)
   })
 
   $effect(() => {
@@ -101,32 +123,52 @@
     if (cat && cat.kind !== type) categoryId = null
   })
 
+  /** Importo di una riga in centesimi, o null se non valido. */
+  function rowAmount(r: PartRow): number | null {
+    if (isVoucher(r.source)) {
+      const n = Number(r.vouchersText)
+      return Number.isInteger(n) && n > 0 ? n * (optionOf(r.source)?.account.voucherValue ?? 0) : null
+    }
+    const c = parseEuro(r.amountText)
+    return c !== null && c > 0 ? c : null
+  }
+
+  const mixedTotal = $derived(parts.reduce((s, r) => s + (rowAmount(r) ?? 0), 0))
+
+  function addPart() {
+    const used = new Set(parts.map((p) => p.source))
+    const next = options.find((o) => !used.has(o.key))?.key ?? ''
+    parts.push({ source: next, amountText: '', vouchersText: '' })
+  }
+
   // Movimento precedente alla data del saldo iniziale: non cambierebbe il saldo
   const beforeStart = $derived.by(() => {
-    const involved = [selected?.account, accounts.find((a) => a.id === toAccountId && type === 'trasferimento')]
-    return involved.filter((a): a is Account => !!a && date < a.initialDate)
-  })
-
-  const voucherPreview = $derived.by(() => {
-    const n = Number(vouchersText)
-    const v = selected?.account.voucherValue ?? 0
-    return Number.isInteger(n) && n > 0 ? formatEuro(n * v) : null
+    const involved = [
+      ...parts.map((p) => optionOf(p.source)?.account),
+      type === 'trasferimento' ? accounts.find((a) => a.id === toAccountId) : undefined,
+    ]
+    const names = new Set<string>()
+    for (const a of involved) if (a && date < a.initialDate) names.add(a.name)
+    return [...names]
   })
 
   async function save(addAnother: boolean) {
     error = ''
-    const amount = isVoucher ? 0 : parseEuro(amountText)
-    if (!isVoucher && (amount === null || amount <= 0)) {
-      error = 'Inserisci un importo valido (es. 12,50)'
-      amountInput?.focus()
-      return
+    for (const r of parts) {
+      if (rowAmount(r) === null) {
+        error = isVoucher(r.source) ? 'Indica quanti buoni' : 'Inserisci un importo valido (es. 12,50)'
+        if (!mixed) amountInput?.focus()
+        return
+      }
     }
     const input: mv.MovementInput = {
       type,
       date,
-      source,
-      amount: amount ?? 0,
-      vouchers: isVoucher ? Number(vouchersText) : null,
+      parts: parts.map((r) => ({
+        source: r.source,
+        amount: isVoucher(r.source) ? 0 : (parseEuro(r.amountText) ?? 0),
+        vouchers: isVoucher(r.source) ? Number(r.vouchersText) : null,
+      })),
       categoryId: type === 'trasferimento' ? null : categoryId,
       toAccountId: type === 'trasferimento' ? toAccountId : null,
       description,
@@ -137,8 +179,7 @@
       if (orig) await mv.updateMovement(orig.id, input)
       else await mv.createMovement(input)
       if (addAnother) {
-        amountText = ''
-        vouchersText = ''
+        parts = [{ source: parts[0].source, amountText: '', vouchersText: '' }]
         description = ''
         notes = ''
         showNotes = false
@@ -162,6 +203,7 @@
   }
 
   const title = orig ? 'Modifica movimento' : 'Nuovo movimento'
+  const sourceLabel = $derived(type === 'trasferimento' ? 'Da' : type === 'entrata' ? 'Su' : 'Con')
 </script>
 
 <Sheet {title} {onclose}>
@@ -186,70 +228,124 @@
         ]}
       />
 
-      {#if isVoucher}
-        <label class="field">
-          <span>Numero di buoni</span>
-          <input
-            class="input amount num"
-            bind:value={vouchersText}
-            type="number"
-            min="1"
-            step="1"
-            inputmode="numeric"
-            placeholder="0"
-          />
-          {#if voucherPreview}<span class="hint">Pari a {voucherPreview}</span>{/if}
-        </label>
-      {:else}
-        <label class="field">
-          <span>Importo (€)</span>
-          <!-- svelte-ignore a11y_autofocus -->
-          <input
-            bind:this={amountInput}
-            class="input amount num"
-            class:income={type === 'entrata'}
-            class:expense={type === 'uscita'}
-            bind:value={amountText}
-            inputmode="decimal"
-            placeholder="0,00"
-            autocomplete="off"
-            autofocus={!orig}
-          />
-        </label>
-      {/if}
-
-      <div class="row-2">
-        <label class="field">
-          <span>{type === 'trasferimento' ? 'Da' : type === 'entrata' ? 'Su' : 'Con'}</span>
-          <select class="input" bind:value={source}>
-            {#each options as o (o.key)}
-              <option value={o.key}>{o.label}</option>
-            {/each}
-          </select>
-        </label>
-
-        {#if type === 'trasferimento'}
+      {#if !mixed}
+        {#if isVoucher(parts[0].source)}
+          {@const preview = rowAmount(parts[0])}
           <label class="field">
-            <span>A</span>
-            <select class="input" bind:value={toAccountId}>
-              {#each destinations as a (a.id)}
-                <option value={a.id}>{a.name}</option>
-              {/each}
-            </select>
+            <span>Numero di buoni</span>
+            <input
+              class="input amount num"
+              bind:value={parts[0].vouchersText}
+              type="number"
+              min="1"
+              step="1"
+              inputmode="numeric"
+              placeholder="0"
+            />
+            {#if preview}<span class="hint">Pari a {formatEuro(preview)}</span>{/if}
           </label>
         {:else}
           <label class="field">
-            <span>Data</span>
-            <input class="input" type="date" bind:value={date} required />
+            <span>Importo (€)</span>
+            <!-- svelte-ignore a11y_autofocus -->
+            <input
+              bind:this={amountInput}
+              class="input amount num"
+              class:income={type === 'entrata'}
+              class:expense={type === 'uscita'}
+              bind:value={parts[0].amountText}
+              inputmode="decimal"
+              placeholder="0,00"
+              autocomplete="off"
+              autofocus={!orig}
+            />
           </label>
         {/if}
-      </div>
+
+        <div class="row-2">
+          <label class="field">
+            <span>{sourceLabel}</span>
+            <select class="input" bind:value={parts[0].source}>
+              {#each options as o (o.key)}
+                <option value={o.key}>{o.label}</option>
+              {/each}
+            </select>
+          </label>
+
+          {#if type === 'trasferimento'}
+            <label class="field">
+              <span>A</span>
+              <select class="input" bind:value={toAccountId}>
+                {#each destinations as a (a.id)}
+                  <option value={a.id}>{a.name}</option>
+                {/each}
+              </select>
+            </label>
+          {:else}
+            <DateField bind:value={date} />
+          {/if}
+        </div>
+
+        {#if type === 'uscita' && options.length > 1}
+          <button type="button" class="btn btn-ghost link" onclick={addPart}>+ Pagamento misto (es. buoni + carta)</button>
+        {/if}
+      {:else}
+        <fieldset class="field">
+          <legend>Pagamento misto</legend>
+          <div class="parts">
+            {#each parts as r, i (i)}
+              <div class="part">
+                <select class="input" aria-label="Fonte {i + 1}" bind:value={r.source}>
+                  {#each options as o (o.key)}
+                    <option value={o.key} disabled={o.key !== r.source && parts.some((p) => p.source === o.key)}>
+                      {o.label}
+                    </option>
+                  {/each}
+                </select>
+                {#if isVoucher(r.source)}
+                  <input
+                    class="input num small-input"
+                    aria-label="Buoni {i + 1}"
+                    bind:value={r.vouchersText}
+                    type="number"
+                    min="1"
+                    step="1"
+                    inputmode="numeric"
+                    placeholder="n. buoni"
+                  />
+                {:else}
+                  <input
+                    class="input num small-input"
+                    aria-label="Importo {i + 1}"
+                    bind:value={r.amountText}
+                    inputmode="decimal"
+                    placeholder="0,00"
+                    autocomplete="off"
+                  />
+                {/if}
+                <button
+                  type="button"
+                  class="btn btn-ghost remove"
+                  aria-label="Togli fonte {i + 1}"
+                  onclick={() => parts.splice(i, 1)}>×</button
+                >
+              </div>
+            {/each}
+          </div>
+          <div class="parts-foot">
+            {#if parts.length < options.length}
+              <button type="button" class="btn btn-ghost link" onclick={addPart}>+ Aggiungi fonte</button>
+            {:else}
+              <span></span>
+            {/if}
+            <span class="num total">Totale {formatEuro(mixedTotal)}</span>
+          </div>
+        </fieldset>
+        <DateField bind:value={date} />
+      {/if}
 
       {#if type === 'trasferimento'}
-        <label class="field">
-          <span>Data</span>
-          <input class="input" type="date" bind:value={date} required />
-        </label>
+        <DateField bind:value={date} />
       {:else}
         <CategoryPicker {categories} kind={type} bind:value={categoryId} keepId={orig?.categoryId ?? null} />
       {/if}
@@ -270,13 +366,13 @@
           <textarea class="input" bind:value={notes} rows="3" maxlength="500"></textarea>
         </label>
       {:else}
-        <button type="button" class="btn btn-ghost add-note" onclick={() => (showNotes = true)}>+ Aggiungi nota</button>
+        <button type="button" class="btn btn-ghost link" onclick={() => (showNotes = true)}>+ Aggiungi nota</button>
       {/if}
 
       {#if beforeStart.length > 0}
         <p class="warn">
-          La data è precedente al saldo iniziale di {beforeStart.map((a) => a.name).join(' e ')}: il movimento
-          verrà registrato ma non cambierà il saldo del conto.
+          La data è precedente al saldo iniziale di {beforeStart.join(' e ')}: il movimento verrà registrato e
+          comparirà nei totali del mese, ma non cambierà il saldo del conto (lo considera già compreso).
         </p>
       {/if}
 
@@ -318,10 +414,42 @@
     color: var(--color-expense);
   }
 
-  .add-note {
+  .link {
     align-self: flex-start;
     padding: 0;
     min-height: 32px;
+  }
+
+  .parts {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .part {
+    display: grid;
+    grid-template-columns: 1fr 110px 36px;
+    gap: var(--space-2);
+    align-items: center;
+  }
+
+  .remove {
+    min-height: 36px;
+    padding: 0;
+    font-size: var(--text-lg);
+    color: var(--color-text-muted);
+  }
+
+  .parts-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: var(--space-1);
+  }
+
+  .total {
+    font-weight: 650;
+    color: var(--color-expense);
   }
 
   textarea.input {

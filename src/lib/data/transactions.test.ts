@@ -24,10 +24,13 @@ beforeEach(async () => {
   stipendio = await repo.createCategory({ name: 'Stipendio', kind: 'entrata', parentId: null, color: 's2' }, d)
 })
 
-function input(over: Partial<mv.MovementInput>): mv.MovementInput {
+type Over = Partial<mv.MovementInput> & { source?: string; amount?: number; vouchers?: number | null }
+
+function input(over: Over): mv.MovementInput {
+  const { source = `a:${conto.id}`, amount = 1000, vouchers = null, ...rest } = over
   return {
-    type: 'uscita', date: '2026-11-10', source: `a:${conto.id}`, amount: 1000, vouchers: null,
-    categoryId: spesa.id, toAccountId: null, description: 'Esempio', notes: '', ...over,
+    type: 'uscita', date: '2026-11-10', parts: [{ source, amount, vouchers }],
+    categoryId: spesa.id, toAccountId: null, description: 'Esempio', notes: '', ...rest,
   }
 }
 
@@ -90,6 +93,25 @@ describe('movimenti', () => {
     await mv.deleteMovement(t.id, d)
     expect((await balance(conto)).amount).toBe(100000)
     expect(await mv.movementsOfMonth('2026-11', d)).toHaveLength(0)
+  })
+
+  it('pagamento misto: buoni + carta, un\'unica spesa', async () => {
+    const t = await mv.createMovement(
+      input({ parts: [{ source: `a:${buoni.id}`, amount: 0, vouchers: 3 }, { source: `c:${bancomat.id}`, amount: 740, vouchers: null }] }),
+      d,
+    )
+    expect(mv.total(t)).toBe(3140)
+    expect(t.accountIds.sort()).toEqual([buoni.id, conto.id].sort())
+    expect(await balance(buoni)).toEqual({ amount: 4000 - 2400, vouchers: 2 })
+    expect((await balance(conto)).amount).toBe(100000 - 740)
+    expect(mv.totals([t]).expense).toBe(3140)
+  })
+
+  it('pagamento misto: niente fonti doppie, solo per le uscite', async () => {
+    const two = [{ source: `a:${conto.id}`, amount: 100, vouchers: null }, { source: `a:${conto.id}`, amount: 200, vouchers: null }]
+    await expect(mv.createMovement(input({ parts: two }), d)).rejects.toThrow(/due volte/)
+    const mixed = [{ source: `a:${conto.id}`, amount: 100, vouchers: null }, { source: `a:${contanti.id}`, amount: 200, vouchers: null }]
+    await expect(mv.createMovement(input({ type: 'entrata', categoryId: stipendio.id, parts: mixed }), d)).rejects.toThrow(/solo per le uscite/)
   })
 
   it('un conto con movimenti non si elimina, una carta usata nemmeno', async () => {
