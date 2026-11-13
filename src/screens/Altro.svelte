@@ -60,6 +60,10 @@
     <dt>Connessioni esterne</dt>
     <dd>Nessuna</dd>
   </dl>
+  <a class="link-row privacy" href="./privacy.html" target="_blank" rel="noopener">
+    <span>Informativa sulla privacy</span>
+    <span aria-hidden="true">›</span>
+  </a>
 </Card>
 
 <style>
@@ -77,6 +81,11 @@
     color: var(--color-text);
     text-decoration: none;
     font-weight: 500;
+  }
+
+  .privacy {
+    margin-top: var(--space-2);
+    font-size: var(--text-sm);
   }
 
   .muted {

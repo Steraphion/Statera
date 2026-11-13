@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="no-referrer" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'"
+    />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <title>Statera — Informativa sulla privacy</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f5f3ee;
+        --surface: #ffffff;
+        --text: #1e2a30;
+        --muted: #5c676c;
+        --accent: #8a5f1a;
+        --border: #ddd8cc;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #12171a;
+          --surface: #1b2226;
+          --text: #e9e6df;
+          --muted: #9aa3a7;
+          --accent: #d4a24c;
+          --border: #313b41;
+        }
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 16px/1.6 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 32px 20px 64px;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+      }
+      h1 {
+        font-size: 1.6rem;
+        margin: 0;
+      }
+      h2 {
+        font-size: 1.1rem;
+        margin: 28px 0 8px;
+      }
+      p,
+      li {
+        margin: 0 0 10px;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      a {
+        color: var(--accent);
+      }
+      .box {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 16px 20px;
+        margin: 20px 0;
+      }
+      code {
+        font-size: 0.9em;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <img src="./favicon.svg" alt="" width="36" height="36" />
+        <h1>Informativa sulla privacy di Statera</h1>
+      </header>
+      <p class="muted">Ultimo aggiornamento: 13 novembre 2026</p>
+
+      <div class="box">
+        <strong>In breve:</strong> Statera è un'app personale per registrare entrate e spese. I tuoi dati restano sul
+        tuo dispositivo e, solo se attivi la sincronizzazione, nella cartella nascosta dell'app sul <em>tuo</em> Google
+        Drive, cifrati con una password che conosci solo tu. Non esiste un server di Statera, non ci sono pubblicità,
+        statistiche d'uso o servizi di terze parti.
+      </div>
+
+      <h2>1. Chi gestisce l'app</h2>
+      <p>
+        Statera è un progetto personale e non commerciale, pubblicato su GitHub Pages. Il codice sorgente è pubblico e
+        consultabile su
+        <a href="https://github.com/Steraphion/statera" rel="noreferrer">github.com/Steraphion/statera</a>, dove è
+        possibile anche inviare segnalazioni o domande.
+      </p>
+
+      <h2>2. Quali dati tratta l'app</h2>
+      <ul>
+        <li>
+          <strong>Dati che inserisci tu:</strong> conti, carte (solo un nome scelto da te: il numero della carta non
+          viene mai richiesto né salvato), categorie, movimenti con importi, date, descrizioni e note.
+        </li>
+        <li>
+          <strong>Dati del tuo account Google</strong>, solo se attivi la sincronizzazione: un'autorizzazione
+          temporanea (token di accesso) che permette all'app di leggere e scrivere i propri file su Google Drive.
+        </li>
+      </ul>
+      <p>L'app non raccoglie posizione, contatti, identificativi pubblicitari, né dati di utilizzo.</p>
+
+      <h2>3. Dove sono conservati</h2>
+      <ul>
+        <li><strong>Sul tuo dispositivo</strong>, nella memoria del browser (IndexedDB). È la copia principale.</li>
+        <li>
+          <strong>Sul tuo Google Drive</strong>, solo se attivi la sincronizzazione: in una cartella nascosta riservata
+          a Statera (non visibile tra i tuoi file e non accessibile ad altre app). Il contenuto è cifrato sul
+          dispositivo con AES-256-GCM, con una chiave derivata dalla tua password, prima di essere inviato: Google
+          conserva il file ma non può leggerne il contenuto.
+        </li>
+        <li>
+          <strong>Nei file di backup</strong> che scegli di esportare tu: restano dove decidi di salvarli. Questi
+          file non sono cifrati.
+        </li>
+      </ul>
+
+      <h2>4. Accesso a Google Drive</h2>
+      <p>
+        Statera chiede un solo permesso: <code>https://www.googleapis.com/auth/drive.appdata</code>, cioè l'accesso
+        alla propria cartella dati nascosta. L'app <strong>non può vedere, leggere o modificare</strong> nessun altro
+        file del tuo Drive. Il token di accesso resta nel tuo browser e non viene inviato a nessun server diverso da
+        quelli di Google.
+      </p>
+      <p>
+        L'uso e il trasferimento delle informazioni ricevute dalle API di Google rispettano le
+        <a href="https://developers.google.com/terms/api-services-user-data-policy" rel="noreferrer"
+          >Norme relative ai dati utente dei servizi API di Google</a
+        >, inclusi i requisiti di utilizzo limitato (Limited Use). I dati non vengono mai venduti, condivisi, usati per
+        pubblicità o per addestrare modelli di intelligenza artificiale.
+      </p>
+
+      <h2>5. Con chi sono condivisi</h2>
+      <p>
+        Con nessuno. L'unico servizio esterno coinvolto è Google, e solo per conservare il file cifrato della
+        sincronizzazione sul tuo account. GitHub ospita esclusivamente il programma dell'app, non i tuoi dati.
+      </p>
+
+      <h2>6. Per quanto tempo</h2>
+      <p>
+        I dati restano finché li conservi tu. Puoi eliminarli in qualsiasi momento: dall'app (Altro → Elimina tutti i
+        dati), cancellando i dati del sito nel browser, e per la copia su Drive da Google Drive → Impostazioni →
+        Gestisci app → Statera → Elimina dati app nascosti.
+      </p>
+
+      <h2>7. Revocare l'accesso</h2>
+      <p>
+        Puoi revocare in qualsiasi momento l'accesso di Statera al tuo account Google dalla pagina
+        <a href="https://myaccount.google.com/connections" rel="noreferrer">myaccount.google.com/connections</a>.
+      </p>
+
+      <h2>8. Modifiche</h2>
+      <p>
+        Eventuali modifiche a questa informativa saranno pubblicate su questa pagina, con la data di aggiornamento
+        indicata in alto.
+      </p>
+
+      <p class="muted" style="margin-top: 32px">
+        <a href="./">← Torna a Statera</a>
+      </p>
+    </main>
+  </body>
+</html>

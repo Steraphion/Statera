@@ -73,6 +73,8 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
         navigateFallback: 'index.html',
+        // Le pagine statiche (es. informativa privacy) non vanno sostituite dall'app
+        navigateFallbackDenylist: [/privacy\.html$/],
         cleanupOutdatedCaches: true,
         // La nuova versione, una volta attivata, prende subito il controllo della pagina
         clientsClaim: true,
