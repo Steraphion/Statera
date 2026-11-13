@@ -7,7 +7,8 @@
   import PendingCard from '../components/PendingCard.svelte'
   import { useRefs } from '../lib/data/refs.svelte'
   import * as mv from '../lib/data/transactions'
-  import type { Transaction } from '../lib/data/types'
+  import type { Transaction, TransactionType } from '../lib/data/types'
+  import { router } from '../lib/router.svelte'
   import { today } from '../lib/data/util'
   import { formatDay, formatEuro, formatMonth, monthOf, parseDay, shiftMonth } from '../lib/format'
   import { ui } from '../lib/ui.svelte'
@@ -35,7 +36,17 @@
   const isCurrentMonth = $derived(ui.month === monthOf(today()))
   const noAccounts = $derived(refs.ready && refs.value.accounts.length === 0)
 
-  let sheet = $state<{ movement?: Transaction } | null>(null)
+  let sheet = $state<{ movement?: Transaction; type?: TransactionType } | null>(null)
+
+  // Scorciatoie dall'icona dell'app: #/movimenti/nuova-uscita, #/movimenti/nuova-entrata
+  $effect(() => {
+    const p = router.param
+    if (!p.startsWith('nuova-') || !refs.ready) return
+    const t = p === 'nuova-entrata' ? 'entrata' : p === 'nuova-trasferimento' ? 'trasferimento' : 'uscita'
+    if (!noAccounts) sheet = { type: t }
+    // Si torna a #/movimenti senza lasciare la scorciatoia nella cronologia
+    location.replace('#/movimenti')
+  })
 
   // Scorciatoie da tastiera (PC): N = nuovo movimento, / = cerca, frecce = mese
   function onKey(e: KeyboardEvent) {
@@ -136,6 +147,7 @@
 {#if sheet}
   <MovementForm
     movement={sheet.movement}
+    defaultType={sheet.type}
     accounts={refs.value.accounts}
     cards={refs.value.cards}
     categories={refs.value.categories}

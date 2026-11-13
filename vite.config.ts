@@ -71,6 +71,27 @@ export default defineConfig({
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
           { src: 'icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
+        // Tenendo premuta l'icona dell'app (Android) o con il tasto destro (Windows)
+        shortcuts: [
+          {
+            name: 'Nuova uscita',
+            short_name: 'Uscita',
+            url: './#/movimenti/nuova-uscita',
+            icons: [{ src: 'icons/shortcut-uscita.png', sizes: '96x96', type: 'image/png' }],
+          },
+          {
+            name: 'Nuova entrata',
+            short_name: 'Entrata',
+            url: './#/movimenti/nuova-entrata',
+            icons: [{ src: 'icons/shortcut-entrata.png', sizes: '96x96', type: 'image/png' }],
+          },
+          {
+            name: 'Cerca',
+            short_name: 'Cerca',
+            url: './#/cerca',
+            icons: [{ src: 'icons/shortcut-cerca.png', sizes: '96x96', type: 'image/png' }],
+          },
+        ],
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],

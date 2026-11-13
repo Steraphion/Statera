@@ -43,6 +43,58 @@ export function parseEuro(text: string): number | null {
   return sign * (Number(int) * 100 + Number(dec.padEnd(2, '0')))
 }
 
+/** Il testo contiene un calcolo (es. "12,50+3,20")? */
+export function isExpression(text: string): boolean {
+  return /\d\s*[+\-*/×x÷:]\s*[\d(]/i.test(text.replace(/[€\s]/g, ''))
+}
+
+/**
+ * Importo che può essere un calcolo: "12,50+3,20", "3x1,20", "100/4", "20-2,5".
+ * Moltiplicazioni e divisioni prima di somme e sottrazioni; risultato arrotondato al centesimo.
+ * Senza operatori equivale a parseEuro. Restituisce null se il testo non è valido.
+ */
+export function evalAmount(text: string): number | null {
+  const s = text.replace(/[€\s]/g, '').replace(/[×xX]/g, '*').replace(/[÷:]/g, '/')
+  if (!s) return null
+  if (!/[+*/]|\d-/.test(s)) return parseEuro(s)
+  const tokens = s.match(/[+\-*/]|[^+\-*/]+/g)
+  if (!tokens) return null
+  // Segno iniziale: "-5+2"
+  if (tokens[0] === '-' || tokens[0] === '+') tokens.splice(0, 2, tokens[0] + (tokens[1] ?? ''))
+  const nums: number[] = []
+  const ops: string[] = []
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i]
+    if (i % 2 === 0) {
+      const c = parseEuro(t)
+      if (c === null) return null
+      nums.push(c / 100)
+    } else {
+      if (!/^[+\-*/]$/.test(t)) return null
+      ops.push(t)
+    }
+  }
+  if (nums.length !== ops.length + 1) return null
+  // Prima * e /
+  const n2 = [nums[0]]
+  const o2: string[] = []
+  for (let i = 0; i < ops.length; i++) {
+    const b = nums[i + 1]
+    if (ops[i] === '*') n2[n2.length - 1] *= b
+    else if (ops[i] === '/') {
+      if (b === 0) return null
+      n2[n2.length - 1] /= b
+    } else {
+      o2.push(ops[i])
+      n2.push(b)
+    }
+  }
+  let r = n2[0]
+  for (let i = 0; i < o2.length; i++) r = o2[i] === '+' ? r + n2[i + 1] : r - n2[i + 1]
+  if (!Number.isFinite(r)) return null
+  return Math.round(r * 100 + (r >= 0 ? 1e-9 : -1e-9))
+}
+
 const monthFmt = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeric' })
 
 export function formatMonth(date: Date): string {

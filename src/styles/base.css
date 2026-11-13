@@ -150,6 +150,7 @@ a {
 }
 
 .field > span,
+.field > label,
 .field > legend {
   font-size: var(--text-sm);
   font-weight: 600;

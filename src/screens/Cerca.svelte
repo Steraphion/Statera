@@ -9,7 +9,7 @@
   import { useRefs } from '../lib/data/refs.svelte'
   import * as mv from '../lib/data/transactions'
   import type { Transaction, TransactionType } from '../lib/data/types'
-  import { formatEuro } from '../lib/format'
+  import { formatEuro, parseEuro } from '../lib/format'
   import { ui } from '../lib/ui.svelte'
   import { csvFileName, downloadText, movementsToCsv } from '../lib/data/csv'
 
@@ -18,7 +18,7 @@
 
   // I filtri restano impostati se si cambia schermata e poi si torna qui
   const f = ui.filters
-  let showFilters = $state(!!(f.from || f.to || f.type || f.source || f.categoryId))
+  let showFilters = $state(!!(f.from || f.to || f.type || f.source || f.categoryId || f.min || f.max))
   let limit = $state(100)
   let sheet = $state<{ movement: Transaction } | null>(null)
 
@@ -33,7 +33,10 @@
     ),
   )
   const tops = $derived(refs.value.categories.filter((c) => c.parentId === null))
-  const activeCount = $derived([f.from || f.to, f.type, f.source, f.categoryId].filter(Boolean).length)
+  const activeCount = $derived([f.from || f.to, f.type, f.source, f.categoryId, f.min || f.max].filter(Boolean).length)
+  const badAmount = $derived(
+    (!!f.min.trim() && parseEuro(f.min) === null) || (!!f.max.trim() && parseEuro(f.max) === null),
+  )
 
   function exportCsv() {
     downloadText(movementsToCsv(results, refs.value), csvFileName(f.from, f.to))
@@ -45,7 +48,7 @@
 
   $effect(() => {
     // Nuova ricerca: si riparte dai primi risultati
-    void [f.text, f.from, f.to, f.type, f.source, f.categoryId]
+    void [f.text, f.from, f.to, f.type, f.source, f.categoryId, f.min, f.max]
     limit = 100
   })
 </script>
@@ -91,6 +94,17 @@
           <input class="input" type="date" bind:value={f.to} />
         </label>
       </div>
+      <div class="row-2">
+        <label class="field">
+          <span>Importo da (€)</span>
+          <input class="input num" bind:value={f.min} inputmode="decimal" placeholder="0,00" autocomplete="off" />
+        </label>
+        <label class="field">
+          <span>Importo a (€)</span>
+          <input class="input num" bind:value={f.max} inputmode="decimal" placeholder="0,00" autocomplete="off" />
+        </label>
+      </div>
+      {#if badAmount}<p class="bad" role="alert">Importo non valido: scrivi ad esempio 50 o 12,50.</p>{/if}
       <label class="field">
         <span>Conto o carta</span>
         <select class="input" bind:value={f.source}>
@@ -185,6 +199,11 @@
 
   .search .btn.active {
     border-color: var(--color-accent);
+  }
+
+  .bad {
+    font-size: var(--text-sm);
+    color: var(--color-expense);
   }
 
   .reset {

@@ -1,3 +1,4 @@
+import { parseEuro } from '../format'
 import { db, type StateraDB } from './db'
 import type { Account, Card, Category, Transaction, TransactionPart, TransactionType } from './types'
 import { baseFields } from './util'
@@ -273,9 +274,12 @@ export interface Filters {
   source: SourceKey | ''
   /** Categoria (comprende le sue sottocategorie) o '' */
   categoryId: string
+  /** Importo minimo e massimo (testo in euro, es. "50" o "12,50"), o '' */
+  min: string
+  max: string
 }
 
-export const EMPTY_FILTERS: Filters = { text: '', from: '', to: '', type: '', source: '', categoryId: '' }
+export const EMPTY_FILTERS: Filters = { text: '', from: '', to: '', type: '', source: '', categoryId: '', min: '', max: '' }
 
 /** Minuscolo e senza accenti: "Caffè" trova "caffe". */
 export function normalize(s: string): string {
@@ -295,8 +299,16 @@ export function filterMovements(
     for (const c of refs.categoryMap.values()) if (c.parentId === f.categoryId) catIds.add(c.id)
   }
 
+  const min = f.min ? parseEuro(f.min) : null
+  const max = f.max ? parseEuro(f.max) : null
+
   const out = rows.filter((t) => {
     if (t.deletedAt !== null) return false
+    if (min !== null || max !== null) {
+      const amount = total(t)
+      if (min !== null && amount < min) return false
+      if (max !== null && amount > max) return false
+    }
     if (f.from && t.date < f.from) return false
     if (f.to && t.date > f.to) return false
     if (f.type && t.type !== f.type) return false
@@ -318,4 +330,60 @@ export function filterMovements(
     return true
   })
   return sortMovements(out)
+}
+
+// ---------- Suggerimenti mentre si scrive la descrizione ----------
+
+export interface Suggestion {
+  /** Descrizione come scritta l'ultima volta. */
+  description: string
+  /** Quante volte è stata usata. */
+  count: number
+  /** Movimento più recente con questa descrizione: da qui si prendono categoria, fonte e importo. */
+  last: Transaction
+}
+
+function descKey(s: string): string {
+  return normalize(s).trim().replace(/\s+/g, ' ')
+}
+
+/**
+ * Descrizioni già usate per questo tipo di movimento che corrispondono a quanto scritto:
+ * prima quelle che iniziano con il testo, poi quelle con una parola che inizia così;
+ * a parità, le più usate e le più recenti.
+ */
+export function descriptionSuggestions(
+  rows: Transaction[],
+  type: TransactionType,
+  query: string,
+  limit = 5,
+): Suggestion[] {
+  const q = descKey(query)
+  if (!q) return []
+  const groups = new Map<string, Suggestion>()
+  for (const t of rows) {
+    if (t.deletedAt !== null || t.type !== type || !t.description.trim()) continue
+    const k = descKey(t.description)
+    const g = groups.get(k)
+    if (!g) groups.set(k, { description: t.description.trim(), count: 1, last: t })
+    else {
+      g.count++
+      if (t.date > g.last.date || (t.date === g.last.date && t.createdAt > g.last.createdAt)) {
+        g.last = t
+        g.description = t.description.trim()
+      }
+    }
+  }
+  const scored: { s: Suggestion; score: number }[] = []
+  for (const [k, s] of groups) {
+    const score = k.startsWith(q) ? 2 : k.includes(' ' + q) ? 1 : 0
+    if (score) scored.push({ s, score })
+  }
+  scored.sort(
+    (a, b) =>
+      b.score - a.score ||
+      b.s.count - a.s.count ||
+      (a.s.last.date < b.s.last.date ? 1 : a.s.last.date > b.s.last.date ? -1 : 0),
+  )
+  return scored.slice(0, limit).map((x) => x.s)
 }

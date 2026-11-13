@@ -19,3 +19,6 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
   "Da registrare" con conferma e salto, modifica, sospensione, eliminazione. Uso come `collaudo.py`.
 - `esportazione.py` — CSV per Excel da Cerca e da Analisi: BOM UTF-8, separatore `;`, importi con la virgola,
   date gg/mm/aaaa, testo con `;` e virgolette, formule neutralizzate, periodo vuoto. Uso come `collaudo.py`.
+- `inserimento.py` — Fase 4.1: calcoli nel campo importo e pulsante +, suggerimenti dalla descrizione (categoria,
+  fonte e importo dell'ultima volta, frecce e Invio su PC), scorciatoie dell'icona (`#/movimenti/nuova-uscita`),
+  ricerca per importo, icone delle scorciatoie nel manifest. Uso come `collaudo.py`.

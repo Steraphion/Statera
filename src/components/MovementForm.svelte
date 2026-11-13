@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { untrack } from 'svelte'
+  import { onMount, untrack } from 'svelte'
   import Sheet from './Sheet.svelte'
   import Segmented from './Segmented.svelte'
   import DeleteButton from './DeleteButton.svelte'
@@ -8,14 +8,16 @@
   import * as mv from '../lib/data/transactions'
   import * as rec from '../lib/data/recurring'
   import type { Account, Card, Category, Frequency, Recurring, Transaction, TransactionType } from '../lib/data/types'
+  import { db } from '../lib/data/db'
   import { errorMessage, today, withTimeout } from '../lib/data/util'
-  import { centsToInput, formatEuro, parseEuro } from '../lib/format'
+  import { centsToInput, evalAmount, formatEuro, isExpression } from '../lib/format'
 
   let {
     movement,
     recurring,
     confirm,
     defaultRepeat,
+    defaultType,
     accounts,
     cards,
     categories,
@@ -29,6 +31,8 @@
     confirm?: { r: Recurring; date: string }
     /** Nuovo movimento con ripetizione già impostata. */
     defaultRepeat?: Frequency
+    /** Nuovo movimento di questo tipo (es. dalla scorciatoia "Nuova entrata"). */
+    defaultType?: TransactionType
     accounts: Account[]
     cards: Card[]
     categories: Category[]
@@ -53,7 +57,7 @@
   const last = untrack(() => lastSources)
   const origKeys = orig ? orig.parts.map(mv.sourceKey) : tpl ? tpl.parts.map((p) => p.source) : []
 
-  let type = $state<TransactionType>(initType ?? 'uscita')
+  let type = $state<TransactionType>(initType ?? untrack(() => defaultType) ?? 'uscita')
   let parts = $state<PartRow[]>(
     orig
       ? orig.parts.map((p) => ({
@@ -163,8 +167,98 @@
       const n = intOf(r.vouchersText)
       return Number.isInteger(n) && n > 0 ? n * (optionOf(r.source)?.account.voucherValue ?? 0) : null
     }
-    const c = parseEuro(r.amountText)
+    const c = evalAmount(r.amountText)
     return c !== null && c > 0 ? c : null
+  }
+
+  /** Un calcolo nel campo importo (es. "12,50+3,20") diventa il risultato quando si esce dal campo. */
+  function settleAmount(r: PartRow) {
+    if (!isExpression(r.amountText)) return
+    const c = evalAmount(r.amountText)
+    if (c !== null && c > 0) r.amountText = centsToInput(c)
+  }
+
+  /** Aggiunge "+" all'importo (le tastiere numeriche dei telefoni spesso non lo hanno). */
+  function appendPlus() {
+    const t = parts[0].amountText.trim()
+    if (t && !/[+\-*/x×÷:]$/i.test(t)) parts[0].amountText = t + '+'
+    amountInput?.focus()
+  }
+
+  // ---------- Suggerimenti dalla descrizione ----------
+  let history = $state.raw<Transaction[]>([])
+  let descFocused = $state(false)
+  let pickedDesc = $state<string | null>(null)
+  let activeSuggestion = $state(-1)
+  onMount(() => {
+    // Ultimi 18 mesi: bastano per i movimenti abituali
+    const d = new Date()
+    d.setMonth(d.getMonth() - 18)
+    const from = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
+    db.transactions
+      .where('date')
+      .aboveOrEqual(from)
+      .toArray()
+      .then((rows) => (history = rows))
+      .catch(() => {})
+  })
+  const suggestions = $derived(
+    descFocused && description !== pickedDesc && !orig && !tpl
+      ? mv.descriptionSuggestions(history, type, description)
+      : [],
+  )
+
+  function applySuggestion(sg: mv.Suggestion) {
+    const t = sg.last
+    description = sg.description
+    pickedDesc = sg.description
+    activeSuggestion = -1
+    // Categoria, se non ne è già stata scelta una e se esiste ancora
+    const cat = categories.find((c) => c.id === t.categoryId)
+    if (categoryId === null && cat && cat.kind === type && !cat.archived) categoryId = cat.id
+    const keys = t.parts.map(mv.sourceKey)
+    const valid = keys.every((k) => options.some((o) => o.key === k))
+    const emptyAmounts = parts.every((r) => !r.amountText.trim() && !r.vouchersText.trim())
+    if (valid && emptyAmounts) {
+      // Nessun importo scritto: si riprende tutto il pagamento dell'ultima volta
+      parts = t.parts.map((p) => ({
+        source: mv.sourceKey(p),
+        amountText: p.vouchers === null ? centsToInput(p.amount) : '',
+        vouchersText: p.vouchers ? String(p.vouchers) : '',
+      }))
+    } else if (valid && keys.length === 1 && parts.length === 1) {
+      parts[0].source = keys[0]
+    }
+    if (type === 'trasferimento' && t.toAccountId && destinations.some((a) => a.id === t.toAccountId)) {
+      toAccountId = t.toAccountId
+    }
+  }
+
+  function onDescKey(e: KeyboardEvent) {
+    if (!suggestions.length) return
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      activeSuggestion = (activeSuggestion + 1) % suggestions.length
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      activeSuggestion = (activeSuggestion - 1 + suggestions.length) % suggestions.length
+    } else if (e.key === 'Enter' && activeSuggestion >= 0) {
+      e.preventDefault()
+      applySuggestion(suggestions[activeSuggestion])
+    } else if (e.key === 'Escape') {
+      e.stopPropagation()
+      pickedDesc = description
+    }
+  }
+
+  function suggestionDetail(sg: mv.Suggestion): string {
+    const t = sg.last
+    const cat = t.categoryId ? mv.categoryLabel(t.categoryId, new Map(categories.map((c) => [c.id, c]))) : ''
+    const src = t.parts
+      .map((p) => optionOf(mv.sourceKey(p))?.label ?? '')
+      .filter(Boolean)
+      .join(' + ')
+    return [cat, src, formatEuro(mv.total(t))].filter(Boolean).join(' · ')
   }
 
   const mixedTotal = $derived(parts.reduce((s, r) => s + (rowAmount(r) ?? 0), 0))
@@ -217,7 +311,7 @@
       date,
       parts: parts.map((r) => ({
         source: r.source,
-        amount: isVoucher(r.source) ? 0 : (parseEuro(r.amountText) ?? 0),
+        amount: isVoucher(r.source) ? 0 : (evalAmount(r.amountText) ?? 0),
         vouchers: isVoucher(r.source) ? intOf(r.vouchersText) : null,
       })),
       categoryId: type === 'trasferimento' ? null : categoryId,
@@ -236,6 +330,7 @@
       if (addAnother) {
         parts = [{ source: parts[0].source, amountText: '', vouchersText: '' }]
         description = ''
+        pickedDesc = null
         notes = ''
         showNotes = false
         categoryId = null
@@ -320,21 +415,36 @@
             {#if preview}<span class="hint">Pari a {formatEuro(preview)}</span>{/if}
           </label>
         {:else}
-          <label class="field">
-            <span>Importo (€)</span>
-            <!-- svelte-ignore a11y_autofocus -->
-            <input
-              bind:this={amountInput}
-              class="input amount num"
-              class:income={type === 'entrata'}
-              class:expense={type === 'uscita'}
-              bind:value={parts[0].amountText}
-              inputmode="decimal"
-              placeholder="0,00"
-              autocomplete="off"
-              autofocus={!orig}
-            />
-          </label>
+          {@const calc = isExpression(parts[0].amountText) ? evalAmount(parts[0].amountText) : null}
+          <div class="field">
+            <label for="amount-input">Importo (€)</label>
+            <div class="amount-row">
+              <!-- svelte-ignore a11y_autofocus -->
+              <input
+                id="amount-input"
+                bind:this={amountInput}
+                class="input amount num"
+                class:income={type === 'entrata'}
+                class:expense={type === 'uscita'}
+                bind:value={parts[0].amountText}
+                inputmode="decimal"
+                placeholder="0,00"
+                autocomplete="off"
+                autofocus={!orig}
+              />
+              <button
+                type="button"
+                class="btn plus"
+                aria-label="Aggiungi un importo (somma)"
+                title="Somma più importi, es. 12,50+3,20"
+                onmousedown={(e) => e.preventDefault()}
+                onclick={appendPlus}>+</button
+              >
+            </div>
+            {#if isExpression(parts[0].amountText)}
+              <span class="hint num" role="status">{calc !== null ? `= ${formatEuro(calc)}` : 'Calcolo non valido'}</span>
+            {/if}
+          </div>
         {/if}
 
         <div class="row-2">
@@ -393,6 +503,7 @@
                     class="input num small-input"
                     aria-label="Importo {i + 1}"
                     bind:value={r.amountText}
+                    onblur={() => settleAmount(r)}
                     inputmode="decimal"
                     placeholder="0,00"
                     autocomplete="off"
@@ -419,21 +530,49 @@
         <DateField bind:value={date} label={dateLabel} />
       {/if}
 
+      <div class="field desc">
+        <label for="desc-input">Descrizione</label>
+        <input
+          id="desc-input"
+          class="input"
+          bind:value={description}
+          onfocus={() => (descFocused = true)}
+          onblur={() => (descFocused = false)}
+          oninput={() => (activeSuggestion = -1)}
+          onkeydown={onDescKey}
+          maxlength="80"
+          autocomplete="off"
+          role="combobox"
+          aria-expanded={suggestions.length > 0}
+          aria-controls="desc-suggestions"
+          aria-autocomplete="list"
+          placeholder={type === 'trasferimento' ? 'Es. Prelievo' : 'Es. Supermercato'}
+        />
+        {#if suggestions.length}
+          <ul class="suggestions" id="desc-suggestions" role="listbox" aria-label="Suggerimenti">
+            {#each suggestions as sg, i (sg.description)}
+              <li role="option" aria-selected={i === activeSuggestion}>
+                <button
+                  type="button"
+                  class="suggestion"
+                  class:active={i === activeSuggestion}
+                  onmousedown={(e) => e.preventDefault()}
+                  onclick={() => applySuggestion(sg)}
+                >
+                  <span class="s-name">{sg.description}</span>
+                  <span class="s-detail">{suggestionDetail(sg)}</span>
+                </button>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+      </div>
+
       {#if type === 'trasferimento'}
         <DateField bind:value={date} label={dateLabel} />
       {:else}
         <CategoryPicker {categories} kind={type} bind:value={categoryId} keepId={orig?.categoryId ?? tpl?.categoryId ?? null} />
       {/if}
-
-      <label class="field">
-        <span>Descrizione</span>
-        <input
-          class="input"
-          bind:value={description}
-          maxlength="80"
-          placeholder={type === 'trasferimento' ? 'Es. Prelievo' : 'Es. Supermercato'}
-        />
-      </label>
 
       {#if showNotes}
         <label class="field">
@@ -537,6 +676,69 @@
 
   .amount.expense {
     color: var(--color-expense);
+  }
+
+  .amount-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-2);
+  }
+
+  .plus {
+    min-width: 56px;
+    min-height: 56px;
+    font-size: var(--text-xl);
+    padding: 0;
+  }
+
+  .desc {
+    position: relative;
+  }
+
+  /* Sovrapposto al modulo: comparendo e scomparendo non sposta le voci sotto */
+  .suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 5;
+    list-style: none;
+    margin: var(--space-1) 0 0;
+    padding: var(--space-1);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-1);
+  }
+
+  .suggestion {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    min-height: 44px;
+    padding: var(--space-2) var(--space-3);
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .suggestion:hover,
+  .suggestion.active {
+    background: var(--color-accent-soft);
+  }
+
+  .s-name {
+    font-weight: 600;
+  }
+
+  .s-detail {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
   }
 
   .link {
