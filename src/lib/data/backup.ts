@@ -34,7 +34,7 @@ export interface BackupSummary {
 }
 
 /** Chiavi tecniche del dispositivo che non viaggiano con il backup. */
-const LOCAL_META = new Set(['ultimoBackup'])
+const LOCAL_META = new Set(['ultimoBackup', 'sync', 'syncKey'])
 
 export async function buildBackup(appVersion: string, d: StateraDB = db): Promise<BackupFile> {
   const [accounts, cards, categories, transactions, meta] = await Promise.all([
@@ -120,7 +120,10 @@ export async function restoreBackup(backup: BackupFile, d: StateraDB = db) {
   })
 }
 
-/** Cancella tutto e riporta l'app allo stato iniziale (con le categorie di base). */
+/**
+ * Cancella tutto e riporta l'app allo stato iniziale (con le categorie di base).
+ * Scollega anche questo dispositivo dalla sincronizzazione: i dati su Drive restano.
+ */
 export async function wipeAll(d: StateraDB = db) {
   await d.transaction('rw', [d.accounts, d.cards, d.categories, d.transactions, d.meta], async () => {
     await Promise.all([d.accounts.clear(), d.cards.clear(), d.categories.clear(), d.transactions.clear(), d.meta.clear()])

@@ -4,6 +4,7 @@
   import { db } from '../lib/data/db'
   import { live } from '../lib/data/live.svelte'
   import * as bk from '../lib/data/backup'
+  import { sync } from '../lib/sync/sync.svelte'
   import { formatDateTime } from '../lib/format'
 
   const last = live(() => bk.lastBackupAt(), null as number | null)
@@ -58,7 +59,8 @@
   async function restore() {
     if (!pending) return
     try {
-      await bk.restoreBackup(pending.file)
+      if (sync.meta) await sync.restoreSnapshot(pending.file.data)
+      else await bk.restoreBackup(pending.file)
       message = 'Dati ripristinati dal backup.'
       pending = null
     } catch (e) {
@@ -68,6 +70,7 @@
 
   async function wipe() {
     await bk.wipeAll()
+    sync.forget()
     message = 'Tutti i dati sono stati eliminati. Le categorie di base sono state ricaricate.'
   }
 </script>
@@ -106,7 +109,11 @@
         Creato il {formatDateTime(pending.summary.exportedAt)} · {pending.summary.accounts} conti ·
         {pending.summary.transactions} movimenti · {pending.summary.categories} categorie
       </p>
-      <p class="warn">Il ripristino sostituisce tutti i dati attuali di questo dispositivo.</p>
+      <p class="warn">
+        {sync.meta
+          ? 'Il ripristino sostituisce i dati attuali su questo dispositivo e su tutti quelli sincronizzati.'
+          : 'Il ripristino sostituisce tutti i dati attuali di questo dispositivo.'}
+      </p>
       <div class="actions">
         <DeleteButton label="Sostituisci i dati" confirmLabel="Conferma sostituzione" onconfirm={restore} />
         <button class="btn" onclick={() => (pending = null)}>Annulla</button>
@@ -123,6 +130,9 @@
   <p class="muted">
     Cancella conti, carte, movimenti e categorie da questo dispositivo e riparte da zero con le categorie di base. Utile
     dopo aver fatto delle prove. Non si può annullare: se vuoi, prima esporta un backup.
+    {#if sync.meta}
+      Il dispositivo verrà anche scollegato dalla sincronizzazione; i dati su Google Drive non vengono toccati.
+    {/if}
   </p>
   <div class="actions">
     <DeleteButton label="Elimina tutti i dati" onconfirm={wipe} />

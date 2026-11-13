@@ -211,6 +211,18 @@ const DEFAULT_CATEGORIES: { kind: CategoryKind; name: string; color: SwatchKey; 
   { kind: 'entrata', name: 'Altro', color: 's1' },
 ]
 
+/** Id fisso delle categorie iniziali: uguale su tutti i dispositivi, così la sincronizzazione non crea doppioni. */
+export function seedId(kind: CategoryKind, ...names: string[]): string {
+  const slug = (n: string) =>
+    n
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+  return ['seed', kind, ...names.map(slug)].join('-')
+}
+
 /** Al primo avvio carica le categorie iniziali. Non si ripete mai, anche se le cancelli. */
 export async function ensureSeeded(d: StateraDB = db) {
   await d.transaction('rw', d.meta, d.categories, async () => {
@@ -218,22 +230,28 @@ export async function ensureSeeded(d: StateraDB = db) {
     const now = Date.now()
     let order = 0
     for (const def of DEFAULT_CATEGORIES) {
-      const parent: Category = {
-        ...baseFields(now),
+      const parentId = seedId(def.kind, def.name)
+      await d.categories.put({
+        id: parentId,
+        createdAt: now,
+        updatedAt: now,
+        deletedAt: null,
         name: def.name,
         kind: def.kind,
         parentId: null,
         color: def.color,
         order: ++order,
         archived: false,
-      }
-      await d.categories.add(parent)
+      })
       for (const child of def.children ?? []) {
-        await d.categories.add({
-          ...baseFields(now),
+        await d.categories.put({
+          id: seedId(def.kind, def.name, child),
+          createdAt: now,
+          updatedAt: now,
+          deletedAt: null,
           name: child,
           kind: def.kind,
-          parentId: parent.id,
+          parentId,
           color: def.color,
           order: ++order,
           archived: false,

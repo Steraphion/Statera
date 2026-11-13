@@ -2,10 +2,15 @@
   import Card from '../components/Card.svelte'
   import ScreenHeader from '../components/ScreenHeader.svelte'
   import DataCard from '../components/DataCard.svelte'
+  import SyncCard from '../components/sync/SyncCard.svelte'
   import { device } from '../lib/device.svelte'
+  import { sync } from '../lib/sync/sync.svelte'
+  import { statusLabel } from '../lib/sync/labels'
 </script>
 
 <ScreenHeader title="Altro" />
+
+<SyncCard />
 
 <Card>
   <h2>Gestione</h2>
@@ -34,7 +39,7 @@
   <h2>I tuoi dati</h2>
   <dl>
     <dt>Dove sono salvati</dt>
-    <dd>Solo su questo dispositivo</dd>
+    <dd>{sync.meta ? 'Su questo dispositivo e, cifrati, sul tuo Google Drive' : 'Solo su questo dispositivo'}</dd>
     <dt>Protezione dalla pulizia automatica</dt>
     <dd>
       {#if device.persistent === null}
@@ -46,7 +51,7 @@
       {/if}
     </dd>
     <dt>Sincronizzazione</dt>
-    <dd>Non ancora attiva (Fase 2)</dd>
+    <dd>{statusLabel(sync.status)}</dd>
   </dl>
 </Card>
 
@@ -58,7 +63,7 @@
     <dt>Versione</dt>
     <dd class="num">{__APP_VERSION__}</dd>
     <dt>Connessioni esterne</dt>
-    <dd>Nessuna</dd>
+    <dd>{sync.meta ? 'Solo Google (accesso e Drive)' : 'Nessuna'}</dd>
   </dl>
   <a class="link-row privacy" href="./privacy.html" target="_blank" rel="noopener">
     <span>Informativa sulla privacy</span>

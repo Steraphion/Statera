@@ -24,6 +24,8 @@ class Startup {
         'Il database dell\'app non risponde',
       )
       this.state = 'ready'
+      // La sincronizzazione parte dopo: un suo problema non deve bloccare l'app
+      void import('./sync/sync.svelte').then(({ sync }) => sync.init()).catch((e) => this.report(e))
     } catch (e) {
       this.failure = errorMessage(e)
       this.state = 'failed'

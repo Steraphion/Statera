@@ -1,6 +1,7 @@
 <script lang="ts">
   import Icon from './components/Icon.svelte'
   import UpdateBanner from './components/UpdateBanner.svelte'
+  import SyncBanner from './components/sync/SyncBanner.svelte'
   import { router, ROUTES } from './lib/router.svelte'
   import Movimenti from './screens/Movimenti.svelte'
   import Altro from './screens/Altro.svelte'
@@ -42,6 +43,7 @@
 
   <main class="content">
     <UpdateBanner />
+    <SyncBanner />
     {#if startup.state === 'loading'}
       <p class="loading">Caricamento…</p>
     {:else}

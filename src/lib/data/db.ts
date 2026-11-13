@@ -1,9 +1,10 @@
 import Dexie, { type Table } from 'dexie'
 import type { Account, Card, Category, Meta, Transaction } from './types'
+import { activeDbName } from '../profiles'
 
 /**
- * Database locale (IndexedDB). Un database per profilo: oggi c'è un solo
- * profilo locale; con la Fase 2 ogni account Google avrà il proprio.
+ * Database locale (IndexedDB). Un database per profilo: ogni account Google
+ * ha il proprio (vedi profiles.ts).
  */
 export class StateraDB extends Dexie {
   accounts!: Table<Account, string>
@@ -24,4 +25,4 @@ export class StateraDB extends Dexie {
   }
 }
 
-export const db = new StateraDB()
+export const db = new StateraDB(typeof localStorage === 'undefined' ? 'statera-locale' : activeDbName())

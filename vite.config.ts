@@ -6,18 +6,20 @@ import { readFileSync } from 'node:fs'
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
 
 /**
- * Content Security Policy: l'app può caricare risorse SOLO da se stessa.
- * Nella Fase 2 qui verranno aggiunti esplicitamente i domini Google
- * (login e Drive) e nient'altro.
+ * Content Security Policy: l'app può caricare risorse SOLO da se stessa,
+ * più i soli indirizzi Google necessari alla sincronizzazione (Fase 2):
+ * - accounts.google.com/gsi: libreria e finestra di accesso di Google
+ * - www.googleapis.com: Google Drive (cartella nascosta dell'app)
  * Applicata solo alla build pubblicata: in sviluppo Vite usa script inline.
  */
 const CSP = [
   "default-src 'self'",
-  "script-src 'self'",
-  "style-src 'self' 'unsafe-inline'",
+  "script-src 'self' https://accounts.google.com/gsi/client",
+  "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style",
   "img-src 'self' data: blob:",
   "font-src 'self'",
-  "connect-src 'self'",
+  "connect-src 'self' https://www.googleapis.com https://accounts.google.com/gsi/",
+  "frame-src https://accounts.google.com/gsi/",
   "worker-src 'self'",
   "manifest-src 'self'",
   "object-src 'none'",
