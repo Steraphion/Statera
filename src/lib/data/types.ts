@@ -53,6 +53,8 @@ export interface Category extends Base {
   color: SwatchKey
   order: number
   archived: boolean
+  /** Solo categorie principali di spesa: budget mensile in centesimi (assente/null = nessun budget). */
+  monthlyBudget?: number | null
 }
 
 export type TransactionType = 'entrata' | 'uscita' | 'trasferimento'

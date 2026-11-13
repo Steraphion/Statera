@@ -163,6 +163,15 @@ export async function updateCategory(id: string, input: CategoryInput, d: Stater
   })
 }
 
+/** Budget mensile di una categoria principale di spesa (null = nessun budget). */
+export async function setCategoryBudget(id: string, cents: number | null, d: StateraDB = db) {
+  const c = await d.categories.get(id)
+  if (!c || c.deletedAt !== null) throw new Error('Categoria non trovata')
+  if (c.parentId !== null || c.kind !== 'uscita') throw new Error('Il budget si imposta sulle categorie principali di spesa')
+  if (cents !== null && (!Number.isInteger(cents) || cents <= 0)) throw new Error('Il budget deve essere un importo maggiore di zero')
+  await d.categories.update(id, { monthlyBudget: cents, updatedAt: Date.now() })
+}
+
 export async function setCategoryArchived(id: string, archived: boolean, d: StateraDB = db) {
   const now = Date.now()
   await d.transaction('rw', d.categories, async () => {

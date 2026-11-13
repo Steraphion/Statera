@@ -89,3 +89,18 @@ describe('ordine dei conti', () => {
     expect((await d.accounts.get(c.id))!.order).toBe(1)
   })
 })
+
+describe('budget', () => {
+  it('solo su categorie principali di spesa, importo positivo', async () => {
+    const casa = await repo.createCategory({ name: 'Casa', kind: 'uscita', parentId: null, color: 's1' }, d)
+    const sub = await repo.createCategory({ name: 'Luce', kind: 'uscita', parentId: casa.id, color: 's1' }, d)
+    const stip = await repo.createCategory({ name: 'Stipendio', kind: 'entrata', parentId: null, color: 's1' }, d)
+    await repo.setCategoryBudget(casa.id, 50000, d)
+    expect((await d.categories.get(casa.id))!.monthlyBudget).toBe(50000)
+    await repo.setCategoryBudget(casa.id, null, d)
+    expect((await d.categories.get(casa.id))!.monthlyBudget).toBeNull()
+    await expect(repo.setCategoryBudget(sub.id, 100, d)).rejects.toThrow()
+    await expect(repo.setCategoryBudget(stip.id, 100, d)).rejects.toThrow()
+    await expect(repo.setCategoryBudget(casa.id, 0, d)).rejects.toThrow()
+  })
+})

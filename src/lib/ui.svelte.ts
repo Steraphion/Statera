@@ -6,6 +6,8 @@ import { monthOf } from './format'
 class UiState {
   /** Mese mostrato in Movimenti, 'AAAA-MM'. */
   month = $state(monthOf(today()))
+  /** Periodo mostrato in Analisi. */
+  analysis = $state<{ kind: 'mese' | 'anno'; month: string }>({ kind: 'mese', month: monthOf(today()) })
   /** Ricerca in corso. */
   filters = $state<Filters>({ ...EMPTY_FILTERS })
 }

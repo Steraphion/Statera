@@ -47,6 +47,15 @@
   --shadow-2: 0 8px 32px rgb(30 42 48 / 0.18);
   --color-backdrop: rgb(18 23 26 / 0.45);
 
+  /* Grafici: coppia verificata anche per daltonismo (non il verde/rosso dei testi) */
+  --chart-income: #2a78d6;
+  --chart-expense: #eb6834;
+  --chart-track: #ece9e1;
+  --chart-grid: #e6e2d8;
+  /* Stati (budget): sempre accompagnati da un'etichetta, mai solo colore */
+  --status-warning: #c98500;
+  --status-critical: #d03b3b;
+
   /* Tinte per conti e categorie (i dati salvano solo il nome: s1…s8) */
   --swatch-s1: #3f7d6e;
   --swatch-s2: #b5653a;
@@ -81,6 +90,13 @@
     --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
     --shadow-2: 0 8px 32px rgb(0 0 0 / 0.5);
     --color-backdrop: rgb(0 0 0 / 0.6);
+
+    --chart-income: #3987e5;
+    --chart-expense: #d95926;
+    --chart-track: #2a3338;
+    --chart-grid: #2c353a;
+    --status-warning: #fab219;
+    --status-critical: #e5615f;
 
     --swatch-s1: #6fb3a2;
     --swatch-s2: #e0956a;

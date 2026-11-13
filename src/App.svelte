@@ -5,7 +5,7 @@
   import { router, ROUTES } from './lib/router.svelte'
   import Movimenti from './screens/Movimenti.svelte'
   import Altro from './screens/Altro.svelte'
-  import Placeholder from './screens/Placeholder.svelte'
+  import Analisi from './screens/Analisi.svelte'
   import Conti from './screens/Conti.svelte'
   import Categorie from './screens/Categorie.svelte'
   import ContoDettaglio from './screens/ContoDettaglio.svelte'
@@ -62,10 +62,7 @@
     {:else if router.current === 'categorie'}
       <Categorie />
     {:else if router.current === 'analisi'}
-      <Placeholder
-        title="Analisi"
-        text="Grafici per categoria e per mese, budget e movimenti ricorrenti arrivano nella Fase 3, dopo la sincronizzazione."
-      />
+      <Analisi />
     {:else}
       <Altro />
     {/if}
