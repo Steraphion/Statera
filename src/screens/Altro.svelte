@@ -1,6 +1,7 @@
 <script lang="ts">
   import Card from '../components/Card.svelte'
   import ScreenHeader from '../components/ScreenHeader.svelte'
+  import DataCard from '../components/DataCard.svelte'
   import { device } from '../lib/device.svelte'
 </script>
 
@@ -48,6 +49,8 @@
     <dd>Non ancora attiva (Fase 2)</dd>
   </dl>
 </Card>
+
+<DataCard />
 
 <Card>
   <h2>Informazioni</h2>

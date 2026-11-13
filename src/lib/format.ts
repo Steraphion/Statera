@@ -85,3 +85,10 @@ const shortDayFmt = new Intl.DateTimeFormat('it-IT', { day: 'numeric', month: 's
 export function formatShortDay(day: string): string {
   return shortDayFmt.format(parseDay(day))
 }
+
+const dateTimeFmt = new Intl.DateTimeFormat('it-IT', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+
+/** Istante (ms o ISO) → '13 novembre 2026, 21:30' */
+export function formatDateTime(at: number | string): string {
+  return dateTimeFmt.format(new Date(at))
+}

@@ -1,6 +1,10 @@
 <script lang="ts">
   // Eliminazione in due tocchi: il primo chiede conferma, il secondo elimina.
-  let { onconfirm, label = 'Elimina' }: { onconfirm: () => void; label?: string } = $props()
+  let {
+    onconfirm,
+    label = 'Elimina',
+    confirmLabel = 'Conferma eliminazione',
+  }: { onconfirm: () => void; label?: string; confirmLabel?: string } = $props()
 
   let armed = $state(false)
 
@@ -20,5 +24,5 @@
     else armed = true
   }}
 >
-  {armed ? 'Conferma eliminazione' : label}
+  {armed ? confirmLabel : label}
 </button>
