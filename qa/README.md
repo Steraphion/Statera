@@ -12,3 +12,10 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
   chiave di recupero, secondo dispositivo con unione senza doppioni, modifiche e cancellazioni nei due sensi,
   permesso scaduto e riconnessione, cambio password, terzo dispositivo con chiave di recupero, backup e ripristino,
   profili, scollegamento, uso senza rete. Uso come `collaudo.py`.
+- `analisi.py` + `anno-di-esempio.js` — Fase 3: carica un anno di movimenti di esempio e controlla riquadri,
+  barre per categoria, colonne mensili (suggerimento al passaggio e vista tabella), budget, passaggio a Cerca.
+  Uso come `collaudo.py`.
+- `ricorrenti.py` — movimenti ricorrenti: occorrenze automatiche recuperate all'avvio senza doppioni,
+  "Da registrare" con conferma e salto, modifica, sospensione, eliminazione. Uso come `collaudo.py`.
+- `esportazione.py` — CSV per Excel da Cerca e da Analisi: BOM UTF-8, separatore `;`, importi con la virgola,
+  date gg/mm/aaaa, testo con `;` e virgolette, formule neutralizzate, periodo vuoto. Uso come `collaudo.py`.

@@ -15,6 +15,7 @@
   import { today } from '../lib/data/util'
   import { formatEuro, formatMonth, monthOf, parseDay, shiftMonth } from '../lib/format'
   import { ui } from '../lib/ui.svelte'
+  import { csvFileName, downloadText, movementsToCsv } from '../lib/data/csv'
 
   const refs = useRefs()
   const all = live(() => db.transactions.toArray(), [] as Transaction[])
@@ -41,6 +42,11 @@
 
   function shift(delta: number) {
     a.month = shiftMonth(a.month, a.kind === 'mese' ? delta : delta * 12)
+  }
+
+  function exportCsv() {
+    const r = an.periodRange(period)
+    downloadText(movementsToCsv(rows, refs.value), csvFileName(r.from, r.to))
   }
 
   /** Apre la ricerca con i movimenti di quella categoria nel periodo. */
@@ -134,11 +140,23 @@
   <MonthlyColumns points={series} highlight={a.kind === 'mese' ? a.month : ''} />
 </Card>
 
+<div class="export">
+  <button class="btn btn-ghost" onclick={exportCsv} disabled={rows.length === 0} aria-label="Esporta i movimenti del periodo per Excel (CSV)">
+    Esporta per Excel (CSV)
+  </button>
+</div>
+
 {#if budgetSheet}
   <BudgetSheet categories={refs.value.categories} onclose={() => (budgetSheet = false)} />
 {/if}
 
 <style>
+  .export {
+    display: flex;
+    justify-content: center;
+    margin: var(--space-2) 0 var(--space-4);
+  }
+
   .top {
     display: flex;
     align-items: center;

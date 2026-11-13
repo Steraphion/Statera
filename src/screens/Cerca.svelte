@@ -11,6 +11,7 @@
   import type { Transaction, TransactionType } from '../lib/data/types'
   import { formatEuro } from '../lib/format'
   import { ui } from '../lib/ui.svelte'
+  import { csvFileName, downloadText, movementsToCsv } from '../lib/data/csv'
 
   const refs = useRefs()
   const all = live(() => db.transactions.toArray(), [] as Transaction[])
@@ -33,6 +34,10 @@
   )
   const tops = $derived(refs.value.categories.filter((c) => c.parentId === null))
   const activeCount = $derived([f.from || f.to, f.type, f.source, f.categoryId].filter(Boolean).length)
+
+  function exportCsv() {
+    downloadText(movementsToCsv(results, refs.value), csvFileName(f.from, f.to))
+  }
 
   function reset() {
     Object.assign(f, mv.EMPTY_FILTERS)
@@ -137,11 +142,12 @@
         {/each}
       </ul>
     </Card>
-    {#if results.length > shown.length}
-      <div class="more">
+    <div class="more">
+      {#if results.length > shown.length}
         <button class="btn" onclick={() => (limit += 100)}>Mostra altri ({results.length - shown.length})</button>
-      </div>
-    {/if}
+      {/if}
+      <button class="btn btn-ghost" onclick={exportCsv}>Esporta per Excel (CSV)</button>
+    </div>
   {/if}
 {:else}
   <p class="empty-note">Scrivi qualcosa o usa i filtri per cercare tra tutti i movimenti.</p>
@@ -210,7 +216,10 @@
   }
 
   .more {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
     margin-top: var(--space-3);
-    text-align: center;
   }
 </style>
