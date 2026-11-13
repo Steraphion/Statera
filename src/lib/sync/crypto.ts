@@ -197,3 +197,34 @@ export function passwordProblem(pw: string): string | null {
   if (/^(.)\1+$/.test(pw)) return 'La password è troppo semplice'
   return null
 }
+
+// ---------- cifratura con sola password (backup esportati) ----------
+
+export interface PasswordSealed {
+  format: 'statera-cifrato'
+  v: 1
+  salt: string
+  iterations: number
+  iv: string
+  data: string
+}
+
+/** Cifra un valore con una password (per i file di backup esportati). */
+export async function sealWithPassword(password: string, value: unknown): Promise<PasswordSealed> {
+  const salt = random(16)
+  const iv = random(12)
+  const key = await deriveKek(password, salt, PASSWORD_ITERATIONS)
+  const data = await subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(JSON.stringify(value)))
+  return { format: 'statera-cifrato', v: 1, salt: toB64(salt), iterations: PASSWORD_ITERATIONS, iv: toB64(iv), data: toB64(data) }
+}
+
+export async function openWithPassword<T>(password: string, sealed: PasswordSealed): Promise<T> {
+  const key = await deriveKek(password, fromB64(sealed.salt), sealed.iterations)
+  let plain: ArrayBuffer
+  try {
+    plain = await subtle.decrypt({ name: 'AES-GCM', iv: fromB64(sealed.iv) }, key, fromB64(sealed.data))
+  } catch {
+    throw new WrongSecretError()
+  }
+  return JSON.parse(dec.decode(plain)) as T
+}

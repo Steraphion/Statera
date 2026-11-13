@@ -178,7 +178,10 @@
         <button type="button" class="btn btn-small" onclick={copyKey}>{copied ? 'Copiata ✓' : 'Copia'}</button>
         <button type="button" class="btn btn-small" onclick={downloadKey}>Scarica come file</button>
       </div>
-      <p class="muted">Conservala in un posto sicuro e separato dal telefono: stampata, o in un gestore di password.</p>
+      <p class="muted">
+        Conservala in un posto sicuro e separato dal telefono: stampata, o in un gestore di password. Se la scarichi come
+        file, dopo averla stampata o spostata elimina il file dalla cartella Download.
+      </p>
       <label class="check">
         <input type="checkbox" bind:checked={saved} />
         <span>Ho conservato la chiave di recupero in un posto sicuro</span>

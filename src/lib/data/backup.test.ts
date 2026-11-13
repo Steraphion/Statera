@@ -76,7 +76,24 @@ describe('backup', () => {
     expect(await src.categories.count()).toBeGreaterThan(10)
   })
 
+  it('backup protetto da password: illeggibile senza, ripristinabile con', async () => {
+    const file = await bk.buildBackup('test', src)
+    const enc = await bk.encryptBackup(file, 'password-del-backup')
+    const text = JSON.stringify(enc)
+    expect(text).not.toContain('Esempio')
+    expect(text).not.toContain('Conto')
+    const read = bk.readBackupFile(text)
+    expect('encrypted' in read).toBe(true)
+    if (!('encrypted' in read)) return
+    await expect(bk.decryptBackup(read.encrypted, 'sbagliata')).rejects.toThrow(/non corretta/)
+    const opened = await bk.decryptBackup(read.encrypted, 'password-del-backup')
+    expect(bk.summarize(opened)).toMatchObject({ accounts: 1, transactions: 1 })
+    // i file in chiaro si leggono ancora
+    expect('plain' in bk.readBackupFile(JSON.stringify(file))).toBe(true)
+  }, 30_000)
+
   it('nome file con la data', () => {
+    expect(bk.backupFileName(new Date(2026, 10, 3), true)).toBe('statera-backup-protetto-2026-11-03.json')
     expect(bk.backupFileName(new Date(2026, 10, 3))).toBe('statera-backup-2026-11-03.json')
   })
 })

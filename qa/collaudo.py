@@ -217,14 +217,27 @@ async def run_flow(b, label, ctx_opts, m):
 
     # backup -> azzera -> ripristina
     await pg.goto(BASE + "/#/altro"); await pg.wait_for_timeout(300)
+    await tap(pg.get_by_role("button", name="Esporta backup"), m)
+    check(f"{label}: esportazione propone la password di default", await pg.get_by_label("Proteggi il file con una password (consigliato)").is_checked())
+    pwf = pg.locator("label.field", has=pg.locator("span", has_text=re.compile("^Password del backup$"))).locator("input")
+    await pwf.fill("password del backup")
+    await pg.locator("label.field", has=pg.locator("span", has_text=re.compile("^Ripeti la password$"))).locator("input").fill("password del backup")
     async with pg.expect_download() as dl:
-        await tap(pg.get_by_role("button", name="Esporta backup"), m)
+        await tap(pg.get_by_role("button", name="Scarica il backup"), m)
     d = await dl.value; path = f"/home/claude/qa/{label}-backup.json"; await d.save_as(path)
+    txt = open(path).read()
+    check(f"{label}: file esportato protetto (illeggibile)", "statera-backup-cifrato" in txt and "Pranzo" not in txt and d.suggested_filename.startswith("statera-backup-protetto-"))
     await tap(pg.get_by_role("button", name="Elimina tutti i dati"), m)
     await tap(pg.get_by_role("button", name="Conferma eliminazione"), m); await pg.wait_for_timeout(500)
     data = await db_dump(pg)
     check(f"{label}: azzeramento", len(data["accounts"]) == 0 and len(data["categories"]) > 10)
     await pg.locator("input[type=file]").set_input_files(path); await pg.wait_for_timeout(300)
+    opw = pg.locator("label.field", has=pg.locator("span", has_text=re.compile("^Password del backup$"))).locator("input")
+    await opw.fill("sbagliata!!")
+    await tap(pg.get_by_role("button", name="Apri"), m); await pg.wait_for_timeout(2500)
+    check(f"{label}: backup protetto, password sbagliata rifiutata", "non corretta" in " ".join(await pg.locator(".error-box").all_inner_texts()))
+    await opw.fill("password del backup")
+    await tap(pg.get_by_role("button", name="Apri"), m); await pg.wait_for_timeout(2500)
     await tap(pg.get_by_role("button", name="Sostituisci i dati"), m)
     await tap(pg.get_by_role("button", name="Conferma sostituzione"), m); await pg.wait_for_timeout(600)
     data = await db_dump(pg)
@@ -236,6 +249,17 @@ async def run_flow(b, label, ctx_opts, m):
     await ctx.close()
 
 async def recovery_test(b):
+    print("\n===== Sicurezza: app dentro un altro sito =====")
+    ctx = await b.new_context(viewport={"width": 800, "height": 600})
+    pg = await ctx.new_page()
+    await pg.goto("http://127.0.0.1:4173/manifest.webmanifest")  # origine diversa da localhost
+    await pg.set_content('<iframe id="f" src="http://localhost:4173/" width="700" height="500"></iframe>')
+    await pg.wait_for_timeout(2500)
+    fr = pg.frame_locator("#f")
+    txt = await fr.locator("body").inner_text()
+    check("App dentro un altro sito: si rifiuta di funzionare", "non può essere aperta dentro un altro sito" in txt and await fr.locator("nav").count() == 0, txt[:80])
+    await ctx.close()
+
     print("\n===== Database bloccato / non apribile =====")
     ctx = await b.new_context(viewport={"width": 390, "height": 844}, locale="it-IT")
     pg = await ctx.new_page()

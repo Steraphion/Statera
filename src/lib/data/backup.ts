@@ -1,11 +1,13 @@
 import { db, type StateraDB } from './db'
 import { ensureSeeded } from './repo'
 import type { Account, Card, Category, Meta, Transaction } from './types'
+import { openWithPassword, sealWithPassword, type PasswordSealed } from '../sync/crypto'
 
 /**
  * Backup manuale: un file JSON con TUTTI i dati del dispositivo
  * (compresi i record cancellati, che servono alla sincronizzazione).
- * Il file non è cifrato: la cifratura arriva con la Fase 2.
+ * Il file può essere protetto da password (consigliato): in quel caso è un
+ * "involucro" cifrato AES-256-GCM con chiave derivata dalla password (PBKDF2).
  */
 
 export const BACKUP_FORMAT = 'statera-backup'
@@ -65,7 +67,41 @@ function isRecordList(v: unknown): v is { id: string }[] {
   return Array.isArray(v) && v.every((r) => r && typeof r === 'object' && typeof (r as { id: unknown }).id === 'string')
 }
 
-/** Legge e controlla un file di backup. Lancia un errore comprensibile se non è valido. */
+export const ENCRYPTED_FORMAT = 'statera-backup-cifrato'
+
+/** File di backup protetto da password: solo la data di esportazione è in chiaro. */
+export interface EncryptedBackupFile {
+  format: typeof ENCRYPTED_FORMAT
+  exportedAt: string
+  sealed: PasswordSealed
+}
+
+export async function encryptBackup(file: BackupFile, password: string): Promise<EncryptedBackupFile> {
+  return { format: ENCRYPTED_FORMAT, exportedAt: file.exportedAt, sealed: await sealWithPassword(password, file) }
+}
+
+/** Legge un file scelto dall'utente: backup in chiaro oppure protetto da password. */
+export function readBackupFile(text: string): { encrypted: EncryptedBackupFile } | { plain: BackupFile } {
+  let raw: unknown
+  try {
+    raw = JSON.parse(text)
+  } catch {
+    throw new Error('Il file non è un backup di Statera (formato non leggibile)')
+  }
+  const e = raw as Partial<EncryptedBackupFile>
+  if (e?.format === ENCRYPTED_FORMAT) {
+    if (!e.sealed?.data || !e.sealed.salt) throw new Error('Il backup è incompleto o danneggiato')
+    return { encrypted: e as EncryptedBackupFile }
+  }
+  return { plain: validateBackup(raw) }
+}
+
+/** Apre un backup protetto: password sbagliata → errore chiaro. */
+export async function decryptBackup(file: EncryptedBackupFile, password: string): Promise<BackupFile> {
+  return validateBackup(await openWithPassword<unknown>(password, file.sealed))
+}
+
+/** Legge e controlla un file di backup in chiaro. Lancia un errore comprensibile se non è valido. */
 export function parseBackup(text: string): BackupFile {
   let raw: unknown
   try {
@@ -73,6 +109,10 @@ export function parseBackup(text: string): BackupFile {
   } catch {
     throw new Error('Il file non è un backup di Statera (formato non leggibile)')
   }
+  return validateBackup(raw)
+}
+
+function validateBackup(raw: unknown): BackupFile {
   const b = raw as Partial<BackupFile>
   if (!b || b.format !== BACKUP_FORMAT) throw new Error('Il file non è un backup di Statera')
   if (typeof b.schema !== 'number' || b.schema > BACKUP_SCHEMA) {
@@ -131,7 +171,8 @@ export async function wipeAll(d: StateraDB = db) {
   await ensureSeeded(d)
 }
 
-export function backupFileName(date = new Date()): string {
+export function backupFileName(date = new Date(), encrypted = false): string {
   const p = (n: number) => String(n).padStart(2, '0')
-  return `statera-backup-${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}.json`
+  const day = `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}`
+  return encrypted ? `statera-backup-protetto-${day}.json` : `statera-backup-${day}.json`
 }
