@@ -111,7 +111,12 @@
     <label class="field">
       <span>{type === 'buoni_pasto' ? 'Disponibili alla data' : 'Saldo alla data'}</span>
       <input class="input" type="date" bind:value={initialDate} required />
-      <span class="hint">I movimenti precedenti a questa data non modificano il saldo.</span>
+      <span class="hint">
+        Il saldo vale dall'inizio di questo giorno: i movimenti con questa data o successivi lo modificano, quelli
+        precedenti no. Se il saldo comprende già entrate o spese che vuoi vedere nei totali del mese (es. l'ultimo
+        stipendio), registrale con la loro data reale, precedente a questa: compariranno nel mese senza essere contate
+        due volte.
+      </span>
     </label>
 
     <ColorPicker bind:value={color} />

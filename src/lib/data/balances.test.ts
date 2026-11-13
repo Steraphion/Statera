@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { accountBalance, netWorth } from './balances'
+import { accountBalance, accountLedger, netWorth } from './balances'
 import type { Account, Transaction, TransactionPart } from './types'
 
 const base = { createdAt: 0, updatedAt: 0, deletedAt: null }
@@ -56,5 +56,25 @@ describe('accountBalance', () => {
     expect(netWorth([conto, contanti, buoni, archived], txs)).toBe(
       accountBalance(conto, txs).amount + 7000 + accountBalance(buoni, txs).amount,
     )
+  })
+})
+
+describe('accountLedger', () => {
+  const conto = account({ id: 'cc', initialBalance: 10000, initialDate: '2026-11-05' })
+  const txs = [
+    tx({ id: 't1', date: '2026-11-01', type: 'entrata', parts: [part('cc', 5000)], accountIds: ['cc'] }),
+    tx({ id: 't2', date: '2026-11-06', type: 'uscita', parts: [part('cc', 1000)], accountIds: ['cc'] }),
+    tx({ id: 't3', date: '2026-11-07', type: 'trasferimento', parts: [part('x', 2000)], toAccountId: 'cc', accountIds: ['x', 'cc'] }),
+    tx({ id: 't4', date: '2026-11-08', type: 'uscita', parts: [part('x', 300)], accountIds: ['x'] }),
+  ]
+
+  it('saldo progressivo, dal più recente', () => {
+    const l = accountLedger(conto, txs)
+    expect(l.map((e) => [e.t.id, e.effect, e.balanceAfter, e.counted])).toEqual([
+      ['t3', 2000, 11000, true],
+      ['t2', -1000, 9000, true],
+      ['t1', 5000, 10000, false],
+    ])
+    expect(l[0].balanceAfter).toBe(accountBalance(conto, txs).amount)
   })
 })

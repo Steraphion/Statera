@@ -7,6 +7,7 @@
   import Placeholder from './screens/Placeholder.svelte'
   import Conti from './screens/Conti.svelte'
   import Categorie from './screens/Categorie.svelte'
+  import ContoDettaglio from './screens/ContoDettaglio.svelte'
 </script>
 
 <div class="shell">
@@ -37,6 +38,10 @@
       <Movimenti />
     {:else if router.current === 'conti'}
       <Conti />
+    {:else if router.current === 'conto'}
+      {#key router.param}
+        <ContoDettaglio id={router.param} />
+      {/key}
     {:else if router.current === 'categorie'}
       <Categorie />
     {:else if router.current === 'analisi'}

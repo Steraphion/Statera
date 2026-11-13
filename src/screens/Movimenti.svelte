@@ -3,36 +3,15 @@
   import Card from '../components/Card.svelte'
   import Icon from '../components/Icon.svelte'
   import MovementForm from '../components/MovementForm.svelte'
-  import { db } from '../lib/data/db'
-  import { live } from '../lib/data/live.svelte'
+  import MovementRow from '../components/MovementRow.svelte'
+  import { useRefs } from '../lib/data/refs.svelte'
   import * as mv from '../lib/data/transactions'
-  import type { Account, Card as CardT, Category, Transaction, TransactionType } from '../lib/data/types'
-  import { alive, byOrder, today } from '../lib/data/util'
-  import { formatDay, formatEuro, formatMonth, formatVouchers, monthOf, parseDay, shiftMonth } from '../lib/format'
+  import type { Transaction } from '../lib/data/types'
+  import { today } from '../lib/data/util'
+  import { formatDay, formatEuro, formatMonth, monthOf, parseDay, shiftMonth } from '../lib/format'
   import { ui } from '../lib/ui.svelte'
 
-  const refs = live(
-    async () => {
-      const [accounts, cards, categories, lastSources] = await Promise.all([
-        db.accounts.toArray(),
-        db.cards.toArray(),
-        db.categories.toArray(),
-        mv.lastSources(),
-      ])
-      return {
-        accounts: alive(accounts).sort(byOrder),
-        cards: alive(cards).sort(byOrder),
-        categories: alive(categories).sort(byOrder),
-        lastSources,
-      }
-    },
-    {
-      accounts: [] as Account[],
-      cards: [] as CardT[],
-      categories: [] as Category[],
-      lastSources: {} as Partial<Record<TransactionType, string>>,
-    },
-  )
+  const refs = useRefs()
 
   // La lettura dipende dal mese scelto: cambiando mese si riparte da capo
   let rows = $state<Transaction[]>([])
@@ -52,37 +31,11 @@
 
   const totals = $derived(mv.totals(rows))
   const days = $derived(mv.groupByDay(rows))
-  const accountMap = $derived(new Map(refs.value.accounts.map((a) => [a.id, a])))
-  const cardMap = $derived(new Map(refs.value.cards.map((c) => [c.id, c])))
-  const categoryMap = $derived(new Map(refs.value.categories.map((c) => [c.id, c])))
   const isCurrentMonth = $derived(ui.month === monthOf(today()))
   const noAccounts = $derived(refs.ready && refs.value.accounts.length === 0)
 
   let sheet = $state<{ movement?: Transaction } | null>(null)
 
-  function title(t: Transaction): string {
-    if (t.description) return t.description
-    if (t.type === 'trasferimento') return 'Trasferimento'
-    return mv.categoryLabel(t.categoryId, categoryMap)
-  }
-
-  function subtitle(t: Transaction): string {
-    const from = t.parts.map((p) => mv.partLabel(p, accountMap, cardMap)).join(' + ')
-    if (t.type === 'trasferimento') return `${from} → ${accountMap.get(t.toAccountId ?? '')?.name ?? '—'}`
-    const cat = t.description ? mv.categoryLabel(t.categoryId, categoryMap) : ''
-    return cat ? `${cat} · ${from}` : from
-  }
-
-  function vouchersOf(t: Transaction): number | null {
-    const n = t.parts.reduce((s, p) => s + (p.vouchers ?? 0), 0)
-    return n > 0 ? n : null
-  }
-
-  function colorOf(t: Transaction): string {
-    const c = t.categoryId ? categoryMap.get(t.categoryId) : null
-    const top = c?.parentId ? categoryMap.get(c.parentId) : c
-    return top ? `var(--swatch-${top.color})` : 'var(--color-text-muted)'
-  }
 </script>
 
 <header class="month">
@@ -143,30 +96,7 @@
     <Card>
       <ul class="list">
         {#each g.items as t (t.id)}
-          {@const v = vouchersOf(t)}
-          <li>
-            <button class="list-row" onclick={() => (sheet = { movement: t })}>
-              {#if t.type === 'trasferimento'}
-                <span class="icon"><Icon name="transfer" size={16} /></span>
-              {:else}
-                <span class="dot" style:background={colorOf(t)}></span>
-              {/if}
-              <span class="main">
-                <span class="name">{title(t)}</span>
-                <span class="sub">{subtitle(t)}</span>
-              </span>
-              <span class="end">
-                <span
-                  class="num amount"
-                  class:income={t.type === 'entrata'}
-                  class:expense={t.type === 'uscita'}
-                >
-                  {t.type === 'entrata' ? '+' : t.type === 'uscita' ? '−' : ''}{formatEuro(mv.total(t))}
-                </span>
-                {#if v}<span class="sub small">{formatVouchers(v)}</span>{/if}
-              </span>
-            </button>
-          </li>
+          <li><MovementRow {t} refs={refs.value} onclick={() => (sheet = { movement: t })} /></li>
         {/each}
       </ul>
     </Card>
@@ -255,28 +185,6 @@
     font-size: var(--text-sm);
     font-weight: 600;
     color: var(--color-text-muted);
-  }
-
-  .icon {
-    flex: none;
-    display: grid;
-    place-items: center;
-    width: 12px;
-    color: var(--color-text-muted);
-  }
-
-  .end {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-  }
-
-  .amount {
-    font-weight: 600;
-  }
-
-  .small {
-    font-size: var(--text-xs);
   }
 
   .empty {

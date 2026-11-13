@@ -50,7 +50,7 @@
 {#snippet accountRow(a: Account)}
   {@const b = accountBalance(a, data.value.transactions)}
   <li>
-    <button class="list-row" onclick={() => (accountSheet = { account: a })}>
+    <a class="list-row" href="#/conto/{a.id}">
       <span class="dot" style:background="var(--swatch-{a.color})"></span>
       <span class="main">
         <span class="name">{a.name}</span>
@@ -62,7 +62,7 @@
           <span class="sub vouchers">{formatVouchers(b.vouchers)}</span>
         {/if}
       </span>
-    </button>
+    </a>
   </li>
 {/snippet}
 
