@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from './components/Icon.svelte'
+  import UpdateBanner from './components/UpdateBanner.svelte'
   import { router, ROUTES } from './lib/router.svelte'
   import Movimenti from './screens/Movimenti.svelte'
   import Altro from './screens/Altro.svelte'
@@ -31,6 +32,7 @@
   </nav>
 
   <main class="content">
+    <UpdateBanner />
     {#if router.current === 'movimenti'}
       <Movimenti />
     {:else if router.current === 'conti'}

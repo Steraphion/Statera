@@ -8,6 +8,9 @@
     more: 'M5 12h.01M12 12h.01M19 12h.01',
     plus: 'M12 5v14M5 12h14',
     balance: 'M12 4v16M8 20h8M4 7h16M6 7l-3 7h6zM18 7l-3 7h6z',
+    transfer: 'M7 7h13M16 3l4 4-4 4M17 17H4M8 13l-4 4 4 4',
+    left: 'M15 18l-6-6 6-6',
+    right: 'M9 18l6-6-6-6',
   }
 
   let { name, size = 24 }: { name: string; size?: number } = $props()

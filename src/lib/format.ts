@@ -53,3 +53,28 @@ export function formatMonth(date: Date): string {
 export function formatVouchers(n: number): string {
   return n === 1 ? '1 buono' : `${n} buoni`
 }
+
+/** Data contabile 'AAAA-MM-GG' → oggetto Date locale (senza sorprese di fuso orario). */
+export function parseDay(day: string): Date {
+  const [y, m, d] = day.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
+const dayFmt = new Intl.DateTimeFormat('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })
+
+/** '2026-11-13' → 'Venerdì 13 novembre' */
+export function formatDay(day: string): string {
+  const s = dayFmt.format(parseDay(day))
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+/** Mese 'AAAA-MM' di una data contabile o di oggi. */
+export function monthOf(day: string): string {
+  return day.slice(0, 7)
+}
+
+export function shiftMonth(month: string, delta: number): string {
+  const [y, m] = month.split('-').map(Number)
+  const d = new Date(y, m - 1 + delta, 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}

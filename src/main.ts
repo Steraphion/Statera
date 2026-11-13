@@ -3,6 +3,9 @@ import './styles/tokens.css'
 import './styles/base.css'
 import App from './App.svelte'
 import { ensureSeeded } from './lib/data/repo'
+import { pwa } from './lib/pwa.svelte'
+
+pwa.start()
 
 // Al primo avvio prepara le categorie iniziali, poi mostra l'app
 ensureSeeded()

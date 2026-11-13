@@ -48,8 +48,9 @@ export default defineConfig({
     svelte(),
     contentSecurityPolicy(),
     VitePWA({
-      registerType: 'autoUpdate',
-      injectRegister: 'script',
+      // Nuova versione: l'app mostra un avviso "Aggiorna" (src/lib/pwa.svelte.ts)
+      registerType: 'prompt',
+      injectRegister: false,
       includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png'],
       manifest: {
         id: './',
