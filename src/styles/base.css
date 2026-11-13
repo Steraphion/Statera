@@ -19,6 +19,28 @@ body {
   background: var(--color-bg);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
+  /* Come un'app, non un documento: puntatore normale sul testo e nessuna
+     barretta lampeggiante cliccando tra le lettere. Il testo resta selezionabile. */
+  cursor: default;
+  caret-color: transparent;
+}
+
+input,
+textarea,
+[contenteditable='true'] {
+  cursor: text;
+  caret-color: auto;
+}
+
+select,
+button,
+a,
+label:has(> select) {
+  cursor: pointer;
+}
+
+input[type='date'] {
+  cursor: pointer;
 }
 
 #app {

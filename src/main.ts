@@ -2,12 +2,12 @@ import { mount } from 'svelte'
 import './styles/tokens.css'
 import './styles/base.css'
 import App from './App.svelte'
-import { ensureSeeded } from './lib/data/repo'
 import { pwa } from './lib/pwa.svelte'
+import { startup } from './lib/startup.svelte'
 
+startup.installHandlers()
 pwa.start()
 
-// Al primo avvio prepara le categorie iniziali, poi mostra l'app
-ensureSeeded()
-  .catch((e) => console.error('Preparazione dati non riuscita', e))
-  .finally(() => mount(App, { target: document.getElementById('app')! }))
+// L'interfaccia parte subito; il database si prepara in parallelo
+mount(App, { target: document.getElementById('app')! })
+startup.run()

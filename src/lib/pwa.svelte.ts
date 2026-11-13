@@ -10,11 +10,11 @@ import { registerSW } from 'virtual:pwa-register'
  */
 class PwaState {
   updateReady = $state(false)
-  #apply: ((reload?: boolean) => Promise<void>) | null = null
+  updating = $state(false)
 
   start() {
     if (!('serviceWorker' in navigator)) return
-    this.#apply = registerSW({
+    registerSW({
       immediate: true,
       onNeedRefresh: () => {
         this.updateReady = true
@@ -32,8 +32,29 @@ class PwaState {
     })
   }
 
+  /**
+   * Applica l'aggiornamento: attiva la nuova versione e ricarica.
+   * Funziona sia se la pagina è già gestita dal service worker sia se non lo è
+   * (es. primo avvio dopo l'installazione): in ogni caso si ricarica entro 3 secondi.
+   */
   async update() {
-    await this.#apply?.(true)
+    this.updating = true
+    try {
+      const reg = await navigator.serviceWorker.getRegistration()
+      const waiting = reg?.waiting
+      if (waiting) {
+        const activated = new Promise<void>((resolve) => {
+          navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), { once: true })
+          waiting.addEventListener('statechange', () => {
+            if (waiting.state === 'activated') resolve()
+          })
+        })
+        waiting.postMessage({ type: 'SKIP_WAITING' })
+        await Promise.race([activated, new Promise((r) => setTimeout(r, 3000))])
+      }
+    } finally {
+      location.reload()
+    }
   }
 }
 

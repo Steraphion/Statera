@@ -105,6 +105,8 @@ describe('movimenti', () => {
     expect(await balance(buoni)).toEqual({ amount: 4000 - 2400, vouchers: 2 })
     expect((await balance(conto)).amount).toBe(100000 - 740)
     expect(mv.totals([t]).expense).toBe(3140)
+    // per la prossima spesa si propone la carta, non i buoni
+    expect((await mv.lastSources(d)).uscita).toBe(`c:${bancomat.id}`)
   })
 
   it('pagamento misto: niente fonti doppie, solo per le uscite', async () => {

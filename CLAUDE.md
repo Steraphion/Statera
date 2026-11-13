@@ -9,4 +9,5 @@ Le specifiche complete sono nel Progetto claude.ai "Statera" (`claude/specifiche
 - Ogni record dati ha `id`, `createdAt`, `updatedAt`, `deletedAt` (cancellazione logica, serve alla sync).
 - Mai dati reali in chat, nei test o nei commit: solo dati di esempio.
 - Tutte le modifiche ai dati passano da `src/lib/data/repo.ts` (conti, carte, categorie) e `src/lib/data/transactions.ts` (movimenti); colori salvati come chiave (`s1`…`s8`), mai come valore.
-- Prima di pubblicare: `npm run check`, `npm test` e `npm run build` senza errori.
+- Prima di pubblicare: `npm run check`, `npm test` e `npm run build` senza errori; per modifiche all'interfaccia anche il collaudo in `qa/`.
+- Moduli: `novalidate` (validazione solo nostra), errori mostrati nel pannello accanto ai pulsanti, ogni salvataggio con `withTimeout`.

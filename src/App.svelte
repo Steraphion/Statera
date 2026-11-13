@@ -9,7 +9,14 @@
   import Categorie from './screens/Categorie.svelte'
   import ContoDettaglio from './screens/ContoDettaglio.svelte'
   import Cerca from './screens/Cerca.svelte'
+  import Recovery from './components/Recovery.svelte'
+  import ErrorToast from './components/ErrorToast.svelte'
+  import { startup } from './lib/startup.svelte'
 </script>
+
+{#if startup.state === 'failed'}
+  <Recovery message={startup.failure} />
+{:else}
 
 <div class="shell">
   <nav class="nav" aria-label="Sezioni">
@@ -35,6 +42,11 @@
 
   <main class="content">
     <UpdateBanner />
+    {#if startup.state === 'loading'}
+      <p class="loading">Caricamento…</p>
+    {:else}
+    <!-- Se una schermata va in errore, si mostra il recupero invece di bloccare tutto -->
+    <svelte:boundary onerror={(e) => console.error(e)}>
     {#if router.current === 'movimenti'}
       <Movimenti />
     {:else if router.current === 'conti'}
@@ -55,12 +67,25 @@
     {:else}
       <Altro />
     {/if}
+      {#snippet failed(error, reset)}
+        <Recovery message={error instanceof Error ? error.message : String(error)} onretry={reset} />
+      {/snippet}
+    </svelte:boundary>
+    {/if}
   </main>
 </div>
+<ErrorToast />
+{/if}
 
 <style>
   .shell {
     min-height: 100dvh;
+  }
+
+  .loading {
+    padding: var(--space-6) 0;
+    text-align: center;
+    color: var(--color-text-muted);
   }
 
   .content {

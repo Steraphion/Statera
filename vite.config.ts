@@ -74,6 +74,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
+        // La nuova versione, una volta attivata, prende subito il controllo della pagina
+        clientsClaim: true,
       },
     }),
   ],

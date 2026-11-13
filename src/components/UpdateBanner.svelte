@@ -5,7 +5,9 @@
 {#if pwa.updateReady}
   <div class="banner" role="status">
     <span>È disponibile una nuova versione di Statera.</span>
-    <button class="btn btn-primary btn-small" onclick={() => pwa.update()}>Aggiorna</button>
+    <button class="btn btn-primary btn-small" disabled={pwa.updating} onclick={() => pwa.update()}>
+      {pwa.updating ? 'Aggiornamento…' : 'Aggiorna'}
+    </button>
   </div>
 {/if}
 

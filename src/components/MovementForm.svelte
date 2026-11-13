@@ -7,7 +7,7 @@
   import DateField from './DateField.svelte'
   import * as mv from '../lib/data/transactions'
   import type { Account, Card, Category, Transaction, TransactionType } from '../lib/data/types'
-  import { today } from '../lib/data/util'
+  import { errorMessage, today, withTimeout } from '../lib/data/util'
   import { centsToInput, formatEuro, parseEuro } from '../lib/format'
 
   let {
@@ -124,9 +124,15 @@
   })
 
   /** Importo di una riga in centesimi, o null se non valido. */
+  /** Numero intero scritto dall'utente (accetta spazi), o NaN. */
+  function intOf(text: unknown): number {
+    const t = String(text ?? '').trim()
+    return /^\d+$/.test(t) ? Number(t) : NaN
+  }
+
   function rowAmount(r: PartRow): number | null {
     if (isVoucher(r.source)) {
-      const n = Number(r.vouchersText)
+      const n = intOf(r.vouchersText)
       return Number.isInteger(n) && n > 0 ? n * (optionOf(r.source)?.account.voucherValue ?? 0) : null
     }
     const c = parseEuro(r.amountText)
@@ -135,10 +141,27 @@
 
   const mixedTotal = $derived(parts.reduce((s, r) => s + (rowAmount(r) ?? 0), 0))
 
+  /** Nuova riga del pagamento misto: propone la fonte più probabile. */
   function addPart() {
     const used = new Set(parts.map((p) => p.source))
-    const next = options.find((o) => !used.has(o.key))?.key ?? ''
-    parts.push({ source: next, amountText: '', vouchersText: '' })
+    const free = options.filter((o) => !used.has(o.key))
+    const hasVoucher = parts.some((p) => isVoucher(p.source))
+    const lastKey = last.uscita
+    const next = hasVoucher
+      ? // ci sono già i buoni: il resto di solito si paga con la carta/conto usato l'ultima volta
+        (free.find((o) => o.key === lastKey && o.account.type !== 'buoni_pasto') ??
+        free.find((o) => o.account.type !== 'buoni_pasto'))
+      : // altrimenti di solito si aggiungono i buoni pasto
+        free.find((o) => o.account.type === 'buoni_pasto')
+    parts.push({ source: (next ?? free[0])?.key ?? '', amountText: '', vouchersText: '' })
+  }
+
+  /** Cambio fonte di una riga: se la fonte era già in un'altra riga, le due si scambiano. */
+  function setSource(i: number, key: string) {
+    const prev = parts[i].source
+    const j = parts.findIndex((p, k) => k !== i && p.source === key)
+    if (j >= 0) parts[j].source = prev
+    parts[i].source = key
   }
 
   // Movimento precedente alla data del saldo iniziale: non cambierebbe il saldo
@@ -167,7 +190,7 @@
       parts: parts.map((r) => ({
         source: r.source,
         amount: isVoucher(r.source) ? 0 : (parseEuro(r.amountText) ?? 0),
-        vouchers: isVoucher(r.source) ? Number(r.vouchersText) : null,
+        vouchers: isVoucher(r.source) ? intOf(r.vouchersText) : null,
       })),
       categoryId: type === 'trasferimento' ? null : categoryId,
       toAccountId: type === 'trasferimento' ? toAccountId : null,
@@ -176,8 +199,8 @@
     }
     busy = true
     try {
-      if (orig) await mv.updateMovement(orig.id, input)
-      else await mv.createMovement(input)
+      if (orig) await withTimeout(mv.updateMovement(orig.id, input))
+      else await withTimeout(mv.createMovement(input))
       if (addAnother) {
         parts = [{ source: parts[0].source, amountText: '', vouchersText: '' }]
         description = ''
@@ -190,7 +213,7 @@
         onclose()
       }
     } catch (e) {
-      error = e instanceof Error ? e.message : String(e)
+      error = errorMessage(e)
     } finally {
       busy = false
     }
@@ -198,19 +221,24 @@
 
   async function remove() {
     if (!orig) return
-    await mv.deleteMovement(orig.id)
-    onclose()
+    try {
+      await withTimeout(mv.deleteMovement(orig.id))
+      onclose()
+    } catch (e) {
+      error = errorMessage(e)
+    }
   }
 
   const title = orig ? 'Modifica movimento' : 'Nuovo movimento'
   const sourceLabel = $derived(type === 'trasferimento' ? 'Da' : type === 'entrata' ? 'Su' : 'Con')
 </script>
 
-<Sheet {title} {onclose}>
+<Sheet {title} {onclose} {error}>
   {#if options.length === 0}
     <p class="empty-note">Per registrare un movimento crea prima un conto nella sezione Conti.</p>
   {:else}
     <form
+      novalidate
       id="movement-form"
       class="form"
       onsubmit={(e) => {
@@ -236,9 +264,6 @@
             <input
               class="input amount num"
               bind:value={parts[0].vouchersText}
-              type="number"
-              min="1"
-              step="1"
               inputmode="numeric"
               placeholder="0"
             />
@@ -295,11 +320,14 @@
           <div class="parts">
             {#each parts as r, i (i)}
               <div class="part">
-                <select class="input" aria-label="Fonte {i + 1}" bind:value={r.source}>
+                <select
+                  class="input"
+                  aria-label="Fonte {i + 1}"
+                  value={r.source}
+                  onchange={(e) => setSource(i, e.currentTarget.value)}
+                >
                   {#each options as o (o.key)}
-                    <option value={o.key} disabled={o.key !== r.source && parts.some((p) => p.source === o.key)}>
-                      {o.label}
-                    </option>
+                    <option value={o.key}>{o.label}</option>
                   {/each}
                 </select>
                 {#if isVoucher(r.source)}
@@ -307,9 +335,6 @@
                     class="input num small-input"
                     aria-label="Buoni {i + 1}"
                     bind:value={r.vouchersText}
-                    type="number"
-                    min="1"
-                    step="1"
                     inputmode="numeric"
                     placeholder="n. buoni"
                   />
@@ -374,10 +399,6 @@
           La data è precedente al saldo iniziale di {beforeStart.join(' e ')}: il movimento verrà registrato e
           comparirà nei totali del mese, ma non cambierà il saldo del conto (lo considera già compreso).
         </p>
-      {/if}
-
-      {#if error}
-        <p class="error-box" role="alert">{error}</p>
       {/if}
       {#if savedCount > 0 && !error}
         <p class="saved" role="status">

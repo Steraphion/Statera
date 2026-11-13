@@ -5,6 +5,7 @@
   import DeleteButton from './DeleteButton.svelte'
   import Segmented from './Segmented.svelte'
   import * as repo from '../lib/data/repo'
+  import { errorMessage, withTimeout } from '../lib/data/util'
   import type { Category, CategoryKind, SwatchKey } from '../lib/data/types'
 
   let {
@@ -55,10 +56,10 @@
     error = ''
     busy = true
     try {
-      await action()
+      await withTimeout(action())
       onclose()
     } catch (e) {
-      error = e instanceof Error ? e.message : String(e)
+      error = errorMessage(e)
     } finally {
       busy = false
     }
@@ -71,8 +72,8 @@
   }
 </script>
 
-<Sheet title={category ? 'Modifica categoria' : 'Nuova categoria'} {onclose}>
-  <form id="category-form" class="form" onsubmit={save}>
+<Sheet title={category ? 'Modifica categoria' : 'Nuova categoria'} {onclose} {error}>
+  <form novalidate id="category-form" class="form" onsubmit={save}>
     <label class="field">
       <span>Nome</span>
       <input class="input" bind:value={name} maxlength="40" required />
@@ -110,10 +111,6 @@
 
     {#if category && !category.parentId && !category.archived && onaddchild}
       <button type="button" class="btn btn-ghost add-child" onclick={onaddchild}>+ Aggiungi sottocategoria</button>
-    {/if}
-
-    {#if error}
-      <p class="error-box" role="alert">{error}</p>
     {/if}
   </form>
 

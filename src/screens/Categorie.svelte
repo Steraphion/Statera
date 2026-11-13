@@ -7,9 +7,9 @@
   import { db } from '../lib/data/db'
   import { live } from '../lib/data/live.svelte'
   import { SWATCHES, type Category, type CategoryKind } from '../lib/data/types'
-  import { alive, byOrder } from '../lib/data/util'
+  import { alive, byName } from '../lib/data/util'
 
-  const data = live(async () => alive(await db.categories.toArray()).sort(byOrder), [] as Category[])
+  const data = live(async () => alive(await db.categories.toArray()).sort(byName), [] as Category[])
 
   let kind = $state<CategoryKind>('uscita')
   let showArchived = $state(false)

@@ -5,7 +5,7 @@
   import DeleteButton from './DeleteButton.svelte'
   import * as repo from '../lib/data/repo'
   import { ACCOUNT_TYPE_LABELS, type Account, type AccountType, type SwatchKey } from '../lib/data/types'
-  import { today } from '../lib/data/util'
+  import { today, errorMessage, withTimeout } from '../lib/data/util'
   import { centsToInput, parseEuro } from '../lib/format'
 
   let {
@@ -34,10 +34,10 @@
     error = ''
     busy = true
     try {
-      await action()
+      await withTimeout(action())
       onclose()
     } catch (e) {
-      error = e instanceof Error ? e.message : String(e)
+      error = errorMessage(e)
     } finally {
       busy = false
     }
@@ -56,7 +56,11 @@
       error = 'Indica il valore di un buono (es. 8,00)'
       return
     }
-    const count = isVoucher ? Number(initialVouchers) : null
+    const count = isVoucher ? (/^\d+$/.test(String(initialVouchers).trim()) ? Number(String(initialVouchers).trim()) : NaN) : null
+    if (isVoucher && Number.isNaN(count)) {
+      error = 'Il numero di buoni deve essere un numero intero (es. 10)'
+      return
+    }
     const input: repo.AccountInput = {
       name,
       type,
@@ -70,8 +74,8 @@
   }
 </script>
 
-<Sheet title={editing ? 'Modifica conto' : 'Nuovo conto'} {onclose}>
-  <form id="account-form" class="form" onsubmit={save}>
+<Sheet title={editing ? 'Modifica conto' : 'Nuovo conto'} {onclose} {error}>
+  <form novalidate id="account-form" class="form" onsubmit={save}>
     <label class="field">
       <span>Nome</span>
       <input class="input" bind:value={name} placeholder="Es. Conto principale" maxlength="40" required />
@@ -97,7 +101,7 @@
         </label>
         <label class="field">
           <span>Buoni disponibili</span>
-          <input class="input num" bind:value={initialVouchers} type="number" min="0" step="1" inputmode="numeric" />
+          <input class="input num" bind:value={initialVouchers} inputmode="numeric" />
         </label>
       </div>
     {:else}
@@ -120,10 +124,6 @@
     </label>
 
     <ColorPicker bind:value={color} />
-
-    {#if error}
-      <p class="error-box" role="alert">{error}</p>
-    {/if}
   </form>
 
   {#snippet footer()}

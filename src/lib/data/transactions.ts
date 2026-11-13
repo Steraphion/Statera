@@ -114,7 +114,9 @@ export async function createMovement(input: MovementInput, d: StateraDB = db): P
   const t: Transaction = { ...baseFields(), ...data }
   await d.transaction('rw', d.transactions, d.meta, async () => {
     await d.transactions.add(t)
-    await rememberSource(input.type, input.parts[0].source, d)
+    // Nei pagamenti misti si ricorda la fonte "normale" (carta/conto), non i buoni
+    const i = data.parts.length > 1 ? Math.max(0, data.parts.findIndex((p) => p.vouchers === null)) : 0
+    await rememberSource(input.type, input.parts[i].source, d)
   })
   return t
 }

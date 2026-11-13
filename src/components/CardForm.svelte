@@ -3,6 +3,7 @@
   import Sheet from './Sheet.svelte'
   import DeleteButton from './DeleteButton.svelte'
   import * as repo from '../lib/data/repo'
+  import { errorMessage, withTimeout } from '../lib/data/util'
   import type { Account, Card } from '../lib/data/types'
 
   let { card, accounts, onclose }: { card?: Card; accounts: Account[]; onclose: () => void } = $props()
@@ -20,10 +21,10 @@
     error = ''
     busy = true
     try {
-      await action()
+      await withTimeout(action())
       onclose()
     } catch (e) {
-      error = e instanceof Error ? e.message : String(e)
+      error = errorMessage(e)
     } finally {
       busy = false
     }
@@ -36,13 +37,13 @@
   }
 </script>
 
-<Sheet title={card ? 'Modifica carta' : 'Nuova carta'} {onclose}>
+<Sheet title={card ? 'Modifica carta' : 'Nuova carta'} {onclose} {error}>
   {#if accounts.length === 0}
     <p class="empty-note">
       Per aggiungere una carta di debito crea prima un conto di tipo "Conto corrente".
     </p>
   {:else}
-    <form id="card-form" class="form" onsubmit={save}>
+    <form novalidate id="card-form" class="form" onsubmit={save}>
       <label class="field">
         <span>Nome</span>
         <input class="input" bind:value={name} placeholder="Es. Bancomat" maxlength="40" required />
@@ -58,10 +59,6 @@
         </select>
         <span class="hint">Le spese con questa carta scalano subito da questo conto.</span>
       </label>
-
-      {#if error}
-        <p class="error-box" role="alert">{error}</p>
-      {/if}
     </form>
   {/if}
 

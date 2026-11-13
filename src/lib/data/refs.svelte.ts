@@ -2,7 +2,7 @@ import { db } from './db'
 import { live } from './live.svelte'
 import { lastSources } from './transactions'
 import type { Account, Card, Category, TransactionType } from './types'
-import { alive, byOrder } from './util'
+import { alive, byName, byOrder } from './util'
 
 export interface Refs {
   accounts: Account[]
@@ -29,7 +29,7 @@ export function useRefs() {
       ])
       const a = alive(accounts).sort(byOrder)
       const c = alive(cards).sort(byOrder)
-      const k = alive(categories).sort(byOrder)
+      const k = alive(categories).sort(byName) // categorie sempre in ordine alfabetico
       return {
         accounts: a,
         cards: c,

@@ -23,6 +23,7 @@ export interface AccountInput {
 function normalizeAccount(input: AccountInput): AccountInput {
   const name = input.name.trim()
   if (!name) throw new Error('Il nome del conto è obbligatorio')
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.initialDate)) throw new Error('Indica la data del saldo')
   if (input.type === 'buoni_pasto') {
     const value = input.voucherValue ?? 0
     const count = input.initialVouchers ?? 0

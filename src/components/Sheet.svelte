@@ -7,7 +7,8 @@
     onclose,
     children,
     footer,
-  }: { title: string; onclose: () => void; children: Snippet; footer?: Snippet } = $props()
+    error = '',
+  }: { title: string; onclose: () => void; children: Snippet; footer?: Snippet; error?: string } = $props()
 
   let dialog: HTMLDialogElement
 
@@ -36,6 +37,9 @@
     <div class="body">
       {@render children()}
     </div>
+    {#if error}
+      <p class="error-box sheet-error" role="alert">{error}</p>
+    {/if}
     {#if footer}
       <footer>{@render footer()}</footer>
     {/if}
@@ -82,6 +86,10 @@
   .body {
     overflow-y: auto;
     padding: var(--space-2) var(--space-4) var(--space-4);
+  }
+
+  .sheet-error {
+    margin: var(--space-2) var(--space-4) 0;
   }
 
   footer {
