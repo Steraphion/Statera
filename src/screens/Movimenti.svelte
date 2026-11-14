@@ -5,9 +5,10 @@
   import MovementForm from '../components/MovementForm.svelte'
   import MovementRow from '../components/MovementRow.svelte'
   import PendingCard from '../components/PendingCard.svelte'
+  import FavoritesBar from '../components/FavoritesBar.svelte'
   import { useRefs } from '../lib/data/refs.svelte'
   import * as mv from '../lib/data/transactions'
-  import type { Transaction, TransactionType } from '../lib/data/types'
+  import type { Template, Transaction, TransactionType } from '../lib/data/types'
   import { router } from '../lib/router.svelte'
   import { today } from '../lib/data/util'
   import { formatDay, formatEuro, formatMonth, monthOf, parseDay, shiftMonth } from '../lib/format'
@@ -36,7 +37,7 @@
   const isCurrentMonth = $derived(ui.month === monthOf(today()))
   const noAccounts = $derived(refs.ready && refs.value.accounts.length === 0)
 
-  let sheet = $state<{ movement?: Transaction; type?: TransactionType } | null>(null)
+  let sheet = $state<{ movement?: Transaction; type?: TransactionType; template?: Template } | null>(null)
 
   // Scorciatoie dall'icona dell'app: #/movimenti/nuova-uscita, #/movimenti/nuova-entrata
   $effect(() => {
@@ -88,6 +89,10 @@
 </header>
 
 <PendingCard refs={refs.value} />
+
+{#if !noAccounts}
+  <FavoritesBar refs={refs.value} onopen={(t) => (sheet = { template: t })} />
+{/if}
 
 <Card>
   <div class="totals">
@@ -148,6 +153,7 @@
   <MovementForm
     movement={sheet.movement}
     defaultType={sheet.type}
+    template={sheet.template}
     accounts={refs.value.accounts}
     cards={refs.value.cards}
     categories={refs.value.categories}

@@ -22,3 +22,7 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
 - `inserimento.py` — Fase 4.1: calcoli nel campo importo e pulsante +, suggerimenti dalla descrizione (categoria,
   fonte e importo dell'ultima volta, frecce e Invio su PC), scorciatoie dell'icona (`#/movimenti/nuova-uscita`),
   ricerca per importo, icone delle scorciatoie nel manifest. Uso come `collaudo.py`.
+- `preferiti.py` — Fase 4.2: preferito dal modulo (con e senza importo), un tocco registra con avviso "Annulla",
+  preferito senza importo apre il modulo compilato, gestione (rinomina, ordine, eliminazione), riavvio.
+  Il passaggio del database dalla versione 2 alla 3 (v0.14.0 → v0.15.0, dati intatti) è stato verificato con lo
+  schema di `aggiornamento.py`. Uso come `collaudo.py`.

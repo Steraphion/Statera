@@ -7,7 +7,8 @@
   import DateField from './DateField.svelte'
   import * as mv from '../lib/data/transactions'
   import * as rec from '../lib/data/recurring'
-  import type { Account, Card, Category, Frequency, Recurring, Transaction, TransactionType } from '../lib/data/types'
+  import * as tp from '../lib/data/templates'
+  import type { Account, Card, Category, Frequency, Recurring, Template, Transaction, TransactionType } from '../lib/data/types'
   import { db } from '../lib/data/db'
   import { errorMessage, today, withTimeout } from '../lib/data/util'
   import { centsToInput, evalAmount, formatEuro, isExpression } from '../lib/format'
@@ -18,6 +19,7 @@
     confirm,
     defaultRepeat,
     defaultType,
+    template,
     accounts,
     cards,
     categories,
@@ -33,6 +35,8 @@
     defaultRepeat?: Frequency
     /** Nuovo movimento di questo tipo (es. dalla scorciatoia "Nuova entrata"). */
     defaultType?: TransactionType
+    /** Nuovo movimento a partire da un preferito (senza importo fisso). */
+    template?: Template
     accounts: Account[]
     cards: Card[]
     categories: Category[]
@@ -51,8 +55,10 @@
   const orig = untrack(() => movement)
   const rec0 = untrack(() => recurring)
   const conf0 = untrack(() => confirm)
-  /** Modello da cui partire (ripetizione in modifica o da confermare). */
-  const tpl = rec0 ?? conf0?.r ?? null
+  const fav0 = untrack(() => template)
+  /** Modello da cui partire (ripetizione in modifica o da confermare, oppure un preferito). */
+  const tpl: (Pick<Recurring, 'type' | 'parts' | 'categoryId' | 'toAccountId' | 'description'> & { notes?: string }) | null =
+    rec0 ?? conf0?.r ?? fav0 ?? null
   const initType = orig?.type ?? tpl?.type ?? null
   const last = untrack(() => lastSources)
   const origKeys = orig ? orig.parts.map(mv.sourceKey) : tpl ? tpl.parts.map((p) => p.source) : []
@@ -68,7 +74,7 @@
       : tpl
         ? tpl.parts.map((p) => ({
             source: p.source,
-            amountText: p.vouchers === null ? centsToInput(p.amount) : '',
+            amountText: p.vouchers === null && p.amount > 0 ? centsToInput(p.amount) : '',
             vouchersText: p.vouchers ? String(p.vouchers) : '',
           }))
         : [{ source: '', amountText: '', vouchersText: '' }],
@@ -86,6 +92,11 @@
   let mode = $state<'auto' | 'conferma'>(rec0 && !rec0.auto ? 'conferma' : 'auto')
   let endDate = $state(rec0?.endDate ?? '')
   const dateLabel = rec0 ? 'Prossima data' : 'Data'
+  // Salva anche tra i preferiti
+  const canFavorite = !rec0 && !conf0 && !fav0
+  let favorite = $state(false)
+  let favName = $state('')
+  let favAmount = $state(true)
   let error = $state('')
   let busy = $state(false)
   let savedCount = $state(0)
@@ -321,6 +332,11 @@
     }
     busy = true
     try {
+      if (favorite) {
+        const catName = categories.find((c) => c.id === input.categoryId)?.name ?? ''
+        const fav = favAmount ? input : { ...input, parts: input.parts.map((p) => ({ ...p, amount: 0, vouchers: null })) }
+        await withTimeout(tp.createTemplate(favName.trim() || tp.suggestedName(input, catName), fav))
+      }
       const schedule = { frequency: (repeat || 'mensile') as Frequency, date, endDate: endDate || null, auto: mode === 'auto' }
       if (rec0) await withTimeout(rec.updateRecurring(rec0.id, input, schedule))
       else if (conf0) await withTimeout(rec.confirmOccurrence(conf0.r, input, conf0.date))
@@ -336,6 +352,8 @@
         categoryId = null
         repeat = ''
         endDate = ''
+        favorite = false
+        favName = ''
         savedCount++
         amountInput?.focus()
       } else {
@@ -583,6 +601,35 @@
         <button type="button" class="btn btn-ghost link" onclick={() => (showNotes = true)}>+ Aggiungi nota</button>
       {/if}
 
+      {#if canFavorite}
+        <div class="favorite">
+          <label class="check">
+            <input type="checkbox" bind:checked={favorite} />
+            <span>Salva anche tra i preferiti</span>
+          </label>
+          {#if favorite}
+            <label class="field">
+              <span>Nome del preferito</span>
+              <input
+                class="input"
+                bind:value={favName}
+                maxlength="30"
+                placeholder={tp.suggestedName({ description }, categories.find((c) => c.id === categoryId)?.name ?? '')}
+              />
+            </label>
+            <label class="check">
+              <input type="checkbox" bind:checked={favAmount} />
+              <span>Ricorda anche l'importo</span>
+            </label>
+            <span class="hint">
+              {favAmount
+                ? 'Un tocco sul preferito registra subito il movimento.'
+                : "Un tocco sul preferito apre il modulo già compilato: scrivi solo l'importo."}
+            </span>
+          {/if}
+        </div>
+      {/if}
+
       {#if canRepeat || rec0}
         <div class="repeat">
           <label class="field">
@@ -781,6 +828,33 @@
 
   textarea.input {
     resize: vertical;
+  }
+
+  .favorite {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .favorite .hint {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+  }
+
+  .check {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 40px;
+    cursor: pointer;
+  }
+
+  .check input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--color-accent);
   }
 
   .repeat {

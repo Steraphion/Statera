@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie'
-import type { Account, Card, Category, Meta, Recurring, Transaction } from './types'
+import type { Account, Card, Category, Goal, Meta, Recurring, Template, Transaction } from './types'
 import { activeDbName } from '../profiles'
 
 /**
@@ -12,6 +12,8 @@ export class StateraDB extends Dexie {
   categories!: Table<Category, string>
   transactions!: Table<Transaction, string>
   recurring!: Table<Recurring, string>
+  templates!: Table<Template, string>
+  goals!: Table<Goal, string>
   meta!: Table<Meta, string>
 
   constructor(name = 'statera-locale') {
@@ -26,6 +28,11 @@ export class StateraDB extends Dexie {
     // v2 (Fase 3): movimenti ricorrenti
     this.version(2).stores({
       recurring: 'id, updatedAt',
+    })
+    // v3 (Fase 4-5): movimenti preferiti e obiettivi di risparmio
+    this.version(3).stores({
+      templates: 'id, updatedAt',
+      goals: 'id, updatedAt',
     })
   }
 }

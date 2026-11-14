@@ -1,6 +1,7 @@
 import { db, type StateraDB } from './db'
 import { ensureSeeded } from './repo'
-import type { Account, Card, Category, Meta, Recurring, Transaction } from './types'
+import type { Account, Card, Category, Goal, Meta, Recurring, Template, Transaction } from './types'
+import { TABLES, type Snapshot } from '../sync/merge'
 import { openWithPassword, sealWithPassword, type PasswordSealed } from '../sync/crypto'
 
 /**
@@ -25,6 +26,9 @@ export interface BackupFile {
     transactions: Transaction[]
     /** Dalla Fase 3 (assente nei backup precedenti). */
     recurring?: Recurring[]
+    /** Dalla v0.15 (assenti nei backup precedenti). */
+    templates?: Template[]
+    goals?: Goal[]
     meta: Meta[]
   }
 }
@@ -41,20 +45,17 @@ export interface BackupSummary {
 const LOCAL_META = new Set(['ultimoBackup', 'sync', 'syncKey'])
 
 export async function buildBackup(appVersion: string, d: StateraDB = db): Promise<BackupFile> {
-  const [accounts, cards, categories, transactions, recurring, meta] = await Promise.all([
-    d.accounts.toArray(),
-    d.cards.toArray(),
-    d.categories.toArray(),
-    d.transactions.toArray(),
-    d.recurring.toArray(),
-    d.meta.toArray(),
-  ])
+  const rows = await Promise.all(TABLES.map((t) => d.table(t).toArray()))
+  const meta = await d.meta.toArray()
   return {
     format: BACKUP_FORMAT,
     schema: BACKUP_SCHEMA,
     appVersion,
     exportedAt: new Date().toISOString(),
-    data: { accounts, cards, categories, transactions, recurring, meta: meta.filter((m) => !LOCAL_META.has(m.key)) },
+    data: {
+      ...(Object.fromEntries(TABLES.map((t, i) => [t, rows[i]])) as unknown as Snapshot),
+      meta: meta.filter((m) => !LOCAL_META.has(m.key)),
+    },
   }
 }
 
@@ -150,21 +151,10 @@ export function summarize(b: BackupFile): BackupSummary {
 export async function restoreBackup(backup: BackupFile, d: StateraDB = db) {
   // Copia "pulita" (solo dati), qualunque sia l'origine dell'oggetto
   const b: BackupFile = JSON.parse(JSON.stringify(backup))
-  await d.transaction('rw', [d.accounts, d.cards, d.categories, d.transactions, d.recurring, d.meta], async () => {
+  await d.transaction('rw', [...TABLES.map((t) => d.table(t)), d.meta], async () => {
     const keep = (await d.meta.toArray()).filter((m) => LOCAL_META.has(m.key))
-    await Promise.all([
-      d.accounts.clear(),
-      d.cards.clear(),
-      d.categories.clear(),
-      d.transactions.clear(),
-      d.recurring.clear(),
-      d.meta.clear(),
-    ])
-    await d.accounts.bulkAdd(b.data.accounts)
-    await d.cards.bulkAdd(b.data.cards)
-    await d.categories.bulkAdd(b.data.categories)
-    await d.transactions.bulkAdd(b.data.transactions)
-    await d.recurring.bulkAdd(b.data.recurring ?? [])
+    await Promise.all([...TABLES.map((t) => d.table(t).clear()), d.meta.clear()])
+    for (const t of TABLES) await d.table(t).bulkAdd(((b.data as unknown as Record<string, unknown[]>)[t] ?? []) as object[])
     await d.meta.bulkPut([...b.data.meta.filter((m) => !LOCAL_META.has(m.key)), ...keep])
     // Un backup ha sempre già le sue categorie: non ricaricare quelle iniziali
     await d.meta.put({ key: 'seeded', value: { restoredAt: Date.now() } })
@@ -176,15 +166,8 @@ export async function restoreBackup(backup: BackupFile, d: StateraDB = db) {
  * Scollega anche questo dispositivo dalla sincronizzazione: i dati su Drive restano.
  */
 export async function wipeAll(d: StateraDB = db) {
-  await d.transaction('rw', [d.accounts, d.cards, d.categories, d.transactions, d.recurring, d.meta], async () => {
-    await Promise.all([
-      d.accounts.clear(),
-      d.cards.clear(),
-      d.categories.clear(),
-      d.transactions.clear(),
-      d.recurring.clear(),
-      d.meta.clear(),
-    ])
+  await d.transaction('rw', [...TABLES.map((t) => d.table(t)), d.meta], async () => {
+    await Promise.all([...TABLES.map((t) => d.table(t).clear()), d.meta.clear()])
   })
   await ensureSeeded(d)
 }

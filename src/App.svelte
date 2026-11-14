@@ -13,6 +13,7 @@
   import Ricorrenti from './screens/Ricorrenti.svelte'
   import Recovery from './components/Recovery.svelte'
   import ErrorToast from './components/ErrorToast.svelte'
+  import Toast from './components/Toast.svelte'
   import { startup } from './lib/startup.svelte'
 </script>
 
@@ -76,6 +77,7 @@
     {/if}
   </main>
 </div>
+<Toast />
 <ErrorToast />
 {/if}
 

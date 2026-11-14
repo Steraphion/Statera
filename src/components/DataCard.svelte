@@ -5,6 +5,7 @@
   import { live } from '../lib/data/live.svelte'
   import * as bk from '../lib/data/backup'
   import { sync } from '../lib/sync/sync.svelte'
+  import { snapshotOf } from '../lib/sync/merge'
   import { formatDateTime } from '../lib/format'
   import { passwordProblem } from '../lib/sync/crypto'
   import { errorMessage } from '../lib/data/util'
@@ -103,7 +104,7 @@
   async function restore() {
     if (!pending) return
     try {
-      if (sync.meta) await sync.restoreSnapshot({ ...pending.file.data, recurring: pending.file.data.recurring ?? [] })
+      if (sync.meta) await sync.restoreSnapshot(snapshotOf(pending.file.data))
       else await bk.restoreBackup(pending.file)
       message = 'Dati ripristinati dal backup.'
       pending = null

@@ -6,7 +6,7 @@ import { upsertProfile } from '../profiles'
 import * as core from './core'
 import * as cr from './crypto'
 import { AuthExpiredError, Drive, OfflineError, requestToken, revokeToken, type DriveFile, type Token } from './google'
-import { hasUserData } from './merge'
+import { hasUserData, TABLES } from './merge'
 
 /**
  * Stato della sincronizzazione per l'interfaccia, e quando sincronizzare:
@@ -315,7 +315,7 @@ class SyncEngine {
   /** "Impronta" dei dati locali: l'orario della modifica più recente. */
   async #localStamp(): Promise<number> {
     const last = await Promise.all(
-      (['accounts', 'cards', 'categories', 'transactions', 'recurring'] as const).map((t) =>
+      TABLES.map((t) =>
         db.table(t).orderBy('updatedAt').last(),
       ),
     )

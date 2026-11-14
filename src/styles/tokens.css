@@ -46,6 +46,10 @@
   --shadow-1: 0 1px 2px rgb(30 42 48 / 0.08), 0 2px 8px rgb(30 42 48 / 0.06);
   --shadow-2: 0 8px 32px rgb(30 42 48 / 0.18);
   --color-backdrop: rgb(18 23 26 / 0.45);
+  /* Avviso breve in basso (es. "Registrato · Annulla") */
+  --toast-bg: #1e2a30;
+  --toast-text: #f5f3ee;
+  --toast-action: #e2b864;
 
   /* Grafici: coppia verificata anche per daltonismo (non il verde/rosso dei testi) */
   --chart-income: #2a78d6;
@@ -90,6 +94,9 @@
     --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
     --shadow-2: 0 8px 32px rgb(0 0 0 / 0.5);
     --color-backdrop: rgb(0 0 0 / 0.6);
+    --toast-bg: #e9e6df;
+    --toast-text: #1b2226;
+    --toast-action: #7a5214;
 
     --chart-income: #3987e5;
     --chart-expense: #d95926;

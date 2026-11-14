@@ -31,14 +31,8 @@ interface Payload {
 // ---------- dati locali ----------
 
 export async function readLocal(d: StateraDB): Promise<Snapshot> {
-  const [accounts, cards, categories, transactions, recurring] = await Promise.all([
-    d.accounts.toArray(),
-    d.cards.toArray(),
-    d.categories.toArray(),
-    d.transactions.toArray(),
-    d.recurring.toArray(),
-  ])
-  return { accounts, cards, categories, transactions, recurring }
+  const rows = await Promise.all(TABLES.map((t) => d.table(t).toArray()))
+  return Object.fromEntries(TABLES.map((t, i) => [t, rows[i]])) as unknown as Snapshot
 }
 
 /**
@@ -47,7 +41,7 @@ export async function readLocal(d: StateraDB): Promise<Snapshot> {
  */
 export async function applyToLocal(d: StateraDB, incoming: Snapshot): Promise<number> {
   let written = 0
-  await d.transaction('rw', [d.accounts, d.cards, d.categories, d.transactions, d.recurring], async () => {
+  await d.transaction('rw', TABLES.map((t) => d.table(t)), async () => {
     for (const t of TABLES) {
       const rows = (incoming[t] ?? []) as Base[]
       if (!rows.length) continue
@@ -64,7 +58,7 @@ export async function applyToLocal(d: StateraDB, incoming: Snapshot): Promise<nu
 /** Sostituisce tutti i dati del dispositivo (conti, carte, categorie, movimenti). */
 export async function replaceLocal(d: StateraDB, snap: Snapshot) {
   const clean: Snapshot = { ...emptySnapshot(), ...JSON.parse(JSON.stringify(snap)) }
-  await d.transaction('rw', [d.accounts, d.cards, d.categories, d.transactions, d.recurring], async () => {
+  await d.transaction('rw', TABLES.map((t) => d.table(t)), async () => {
     await Promise.all(TABLES.map((t) => d.table(t).clear()))
     for (const t of TABLES) await d.table(t).bulkAdd(clean[t] as Base[])
   })

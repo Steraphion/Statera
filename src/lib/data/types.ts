@@ -113,6 +113,34 @@ export interface Recurring extends Base {
   paused: boolean
 }
 
+/** Movimento preferito: si registra con un tocco dalla schermata Movimenti. */
+export interface Template extends Base {
+  /** Nome breve sul pulsante (es. "Caffè"). */
+  name: string
+  type: TransactionType
+  /** Come nei ricorrenti; importo 0 senza buoni = "chiedi l'importo". */
+  parts: RecurringPart[]
+  categoryId: string | null
+  toAccountId: string | null
+  description: string
+  order: number
+}
+
+/** Obiettivo di risparmio (Fase 5). */
+export interface Goal extends Base {
+  name: string
+  /** Importo da raggiungere, in centesimi. */
+  target: number
+  /** Conto dedicato: il progresso è il suo saldo. Se null si usa `saved`. */
+  accountId: string | null
+  /** Accantonato a mano, in centesimi (se non c'è un conto dedicato). */
+  saved: number
+  /** Data entro cui raggiungerlo, o null. */
+  dueDate: string | null
+  color: SwatchKey
+  archived: boolean
+}
+
 export interface Meta {
   key: string
   value: unknown
