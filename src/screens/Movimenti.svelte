@@ -7,6 +7,7 @@
   import PendingCard from '../components/PendingCard.svelte'
   import FavoritesBar from '../components/FavoritesBar.svelte'
   import SetupGuide from '../components/SetupGuide.svelte'
+  import MonthRecapCard from '../components/MonthRecapCard.svelte'
   import { useRefs } from '../lib/data/refs.svelte'
   import * as mv from '../lib/data/transactions'
   import type { Template, Transaction, TransactionType } from '../lib/data/types'
@@ -94,6 +95,10 @@
 {/if}
 
 <PendingCard refs={refs.value} />
+
+{#if refs.ready && !noAccounts}
+  <MonthRecapCard categories={refs.value.categories} />
+{/if}
 
 {#if !noAccounts}
   <FavoritesBar refs={refs.value} onopen={(t) => (sheet = { template: t })} />

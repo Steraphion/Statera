@@ -1,5 +1,6 @@
-import type { Category, CategoryKind, Transaction } from './types'
+import type { Account, Category, CategoryKind, Transaction } from './types'
 import { total } from './transactions'
+import { accountBalance } from './balances'
 
 /**
  * Calcoli per la sezione Analisi. Regole:
@@ -149,4 +150,161 @@ export function daysLeftInMonth(month: string, todayStr: string): number {
 export function perDay(left: number, days: number): number | null {
   if (left <= 0 || days <= 0) return null
   return Math.floor(left / days)
+}
+
+// ---------- Fase 5: confronti, previsione, patrimonio, riepilogo ----------
+
+/** 'AAAA-MM' spostato di `delta` mesi. */
+function addMonths(month: string, delta: number): string {
+  const [y, m] = month.split('-').map(Number)
+  const d = new Date(y, m - 1 + delta, 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+function lastDay(month: string): string {
+  const [y, m] = month.split('-').map(Number)
+  return `${month}-${String(new Date(y, m, 0).getDate()).padStart(2, '0')}`
+}
+
+export interface CategoryChange {
+  category: Category
+  current: number
+  /** Media dei mesi precedenti (centesimi). */
+  average: number
+  diff: number
+  /** diff / average; null se la categoria non c'era nei mesi precedenti. */
+  ratio: number | null
+}
+
+/**
+ * Categorie (principali) che nel mese cambiano di più rispetto alla media dei `months` mesi precedenti.
+ * Si mostrano solo differenze che contano: almeno 10 € e almeno il 20%.
+ */
+export function categoryChanges(
+  rows: Transaction[],
+  month: string,
+  kind: CategoryKind,
+  categories: Category[],
+  months = 3,
+): CategoryChange[] {
+  const now = new Map(byCategory(periodRows(rows, { kind: 'mese', month }), kind, categories).map((g) => [g.category.id, g]))
+  const past = new Map<string, number>()
+  for (let i = 1; i <= months; i++) {
+    for (const g of byCategory(periodRows(rows, { kind: 'mese', month: addMonths(month, -i) }), kind, categories)) {
+      past.set(g.category.id, (past.get(g.category.id) ?? 0) + g.total)
+    }
+  }
+  // Senza storia (es. primo mese di utilizzo) non ha senso confrontare
+  if (past.size === 0) return []
+  const ids = new Set([...now.keys(), ...past.keys()])
+  const map = new Map(categories.map((c) => [c.id, c]))
+  const out: CategoryChange[] = []
+  for (const id of ids) {
+    const category = map.get(id)
+    if (!category) continue
+    const current = now.get(id)?.total ?? 0
+    const average = Math.round((past.get(id) ?? 0) / months)
+    const diff = current - average
+    const ratio = average > 0 ? diff / average : null
+    if (Math.abs(diff) < 1000) continue
+    if (ratio !== null && Math.abs(ratio) < 0.2) continue
+    out.push({ category, current, average, diff, ratio })
+  }
+  return out.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff))
+}
+
+export interface Pace {
+  /** Uscite registrate finora nel mese (fino a oggi compreso per il mese in corso). */
+  spent: number
+  /** Spesa media al giorno. */
+  perDay: number
+  /** Stima delle uscite a fine mese (solo mese in corso, dal 3° giorno), o null. */
+  projected: number | null
+  daysElapsed: number
+  daysInMonth: number
+}
+
+/** Ritmo di spesa del mese: media al giorno e, per il mese in corso, stima di fine mese (proporzionale). */
+export function monthPace(rows: Transaction[], month: string, todayStr: string): Pace | null {
+  const current = todayStr.slice(0, 7)
+  if (month > current) return null
+  const daysInMonth = Number(lastDay(month).slice(8))
+  const isCurrent = month === current
+  const daysElapsed = isCurrent ? Number(todayStr.slice(8, 10)) : daysInMonth
+  let spent = 0
+  for (const t of rows) {
+    if (t.deletedAt !== null || t.type !== 'uscita' || !t.date.startsWith(month + '-')) continue
+    if (isCurrent && t.date > todayStr) continue
+    spent += total(t)
+  }
+  const perDay = Math.round(spent / daysElapsed)
+  const projected = isCurrent && daysElapsed >= 3 ? Math.round((spent / daysElapsed) * daysInMonth) : null
+  return { spent, perDay, projected, daysElapsed, daysInMonth }
+}
+
+export interface WorthPoint {
+  month: string
+  /** Patrimonio a fine mese, o null se nessun conto era ancora iniziato. */
+  value: number | null
+}
+
+/**
+ * Patrimonio (somma dei saldi) alla fine di ciascuno degli ultimi `n` mesi.
+ * Contano i conti non eliminati già iniziati a quella data (anche quelli archiviati poi).
+ * Per il mese in corso: alla data di oggi.
+ */
+export function netWorthSeries(accounts: Account[], rows: Transaction[], endMonth: string, todayStr: string, n = 12): WorthPoint[] {
+  const alive = accounts.filter((a) => a.deletedAt === null)
+  const txs = rows.filter((t) => t.deletedAt === null)
+  const out: WorthPoint[] = []
+  for (let i = n - 1; i >= 0; i--) {
+    const month = addMonths(endMonth, -i)
+    let end = lastDay(month)
+    if (end > todayStr) end = todayStr
+    if (month > todayStr.slice(0, 7)) {
+      out.push({ month, value: null })
+      continue
+    }
+    const started = alive.filter((a) => a.initialDate <= end)
+    if (!started.length) {
+      out.push({ month, value: null })
+      continue
+    }
+    const until = txs.filter((t) => t.date <= end)
+    out.push({ month, value: started.reduce((s, a) => s + accountBalance(a, until).amount, 0) })
+  }
+  return out
+}
+
+export interface MonthRecap {
+  month: string
+  income: number
+  expense: number
+  net: number
+  /** Uscite del mese prima, per il confronto. */
+  previousExpense: number
+  top: { category: Category; total: number } | null
+  count: number
+}
+
+export function monthRecap(rows: Transaction[], month: string, categories: Category[]): MonthRecap {
+  const cur = periodRows(rows, { kind: 'mese', month })
+  const prev = periodRows(rows, { kind: 'mese', month: addMonths(month, -1) })
+  let income = 0
+  let expense = 0
+  for (const t of cur) {
+    if (t.type === 'entrata') income += total(t)
+    else if (t.type === 'uscita') expense += total(t)
+  }
+  const previousExpense = prev.filter((t) => t.type === 'uscita').reduce((s, t) => s + total(t), 0)
+  const first = byCategory(cur, 'uscita', categories)[0]
+  return {
+    month,
+    income,
+    expense,
+    net: income - expense,
+    previousExpense,
+    top: first ? { category: first.category, total: first.total } : null,
+    count: cur.filter((t) => t.type !== 'trasferimento').length,
+  }
 }

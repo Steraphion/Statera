@@ -54,6 +54,8 @@
   /* Grafici: coppia verificata anche per daltonismo (non il verde/rosso dei testi) */
   --chart-income: #2a78d6;
   --chart-expense: #eb6834;
+  /* Andamento del patrimonio: una sola serie, tinta neutra diversa da entrate e uscite */
+  --chart-worth: #3d5a6c;
   --chart-track: #ece9e1;
   --chart-grid: #e6e2d8;
   /* Stati (budget): sempre accompagnati da un'etichetta, mai solo colore */
@@ -100,6 +102,7 @@
 
     --chart-income: #3987e5;
     --chart-expense: #d95926;
+    --chart-worth: #9cc0d4;
     --chart-track: #2a3338;
     --chart-grid: #2c353a;
     --status-warning: #fab219;

@@ -33,3 +33,6 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
   controllo dei PIN prevedibili, blocco/sblocco, impronta all'avvio ma non dopo "Blocca ora", tempi di blocco,
   copertura dei pannelli aperti ed Esc, inserimento a metà conservato, cambio PIN, attese dopo 5 errori, PIN
   dimenticato (eliminazione dei dati del dispositivo), disattivazione. Uso come `collaudo.py`.
+- `approfondimenti.py` — Fase 5.1 con orologio fisso e un anno di dati di esempio: riepilogo del mese precedente
+  nei primi 7 giorni (e poi non più), ritmo di spesa e stima di fine mese, confronto con la media dei 3 mesi
+  prima, patrimonio nel tempo (grafico e tabella). Uso come `collaudo.py`.

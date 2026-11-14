@@ -330,3 +330,13 @@ export async function guideDismissed(d: StateraDB = db): Promise<boolean> {
 export async function dismissGuide(d: StateraDB = db) {
   await d.meta.put({ key: 'guidaChiusa', value: true })
 }
+
+// ---------- Riepilogo del mese ----------
+
+export async function recapSeen(d: StateraDB = db): Promise<string | null> {
+  return ((await d.meta.get('riepilogoVisto'))?.value as string | undefined) ?? null
+}
+
+export async function setRecapSeen(month: string, d: StateraDB = db) {
+  await d.meta.put({ key: 'riepilogoVisto', value: month })
+}

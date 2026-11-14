@@ -6,6 +6,7 @@
   import CategoryBars from '../components/charts/CategoryBars.svelte'
   import MonthlyColumns from '../components/charts/MonthlyColumns.svelte'
   import BudgetMeters from '../components/charts/BudgetMeters.svelte'
+  import WorthLine from '../components/charts/WorthLine.svelte'
   import { db } from '../lib/data/db'
   import { live } from '../lib/data/live.svelte'
   import { useRefs } from '../lib/data/refs.svelte'
@@ -33,6 +34,11 @@
   const groups = $derived(an.byCategory(rows, kind, refs.value.categories))
   const endMonth = $derived(a.kind === 'mese' ? a.month : `${a.month.slice(0, 4)}-12`)
   const series = $derived(an.monthlySeries(all.value, endMonth, 12))
+  const pace = $derived(a.kind === 'mese' ? an.monthPace(all.value, a.month, today()) : null)
+  const changes = $derived(
+    a.kind === 'mese' ? an.categoryChanges(all.value, a.month, 'uscita', refs.value.categories).slice(0, 5) : [],
+  )
+  const worth = $derived(an.netWorthSeries(refs.value.accounts, all.value, endMonth, today(), 12))
   const budgets = $derived(a.kind === 'mese' ? an.budgetStatus(all.value, a.month, refs.value.categories) : [])
   const isCurrent = $derived(
     a.kind === 'mese' ? a.month === monthOf(today()) : a.month.slice(0, 4) === today().slice(0, 4),
@@ -94,6 +100,14 @@
   </div>
 </div>
 
+{#if pace && pace.spent > 0}
+  <p class="pace">
+    Spesa media <strong class="num">{formatEuro(pace.perDay)}</strong> al giorno{#if pace.projected !== null}{' · '}a
+      questo ritmo il mese chiude con circa <strong class="num">{formatEuro(pace.projected)}</strong> di uscite
+      (stima){/if}
+  </p>
+{/if}
+
 <Card>
   <div class="card-head">
     <h2>{kind === 'uscita' ? 'Uscite' : 'Entrate'} per categoria</h2>
@@ -114,6 +128,34 @@
     onshow={showMovements}
   />
 </Card>
+
+{#if changes.length}
+  <Card>
+    <div class="card-head">
+      <h2>Rispetto alla media dei 3 mesi prima</h2>
+    </div>
+    <ul class="changes">
+      {#each changes as c (c.category.id)}
+        <li>
+          <button class="change" onclick={() => showMovements(c.category)}>
+            <span class="name"><span class="dot" style:background="var(--swatch-{c.category.color})"></span>{c.category.name}</span>
+            <span class="what">
+              {#if c.ratio === null}
+                <span class="dir">▲</span> nuova
+              {:else}
+                <span class="dir">{c.diff > 0 ? '▲ più' : '▼ meno'}</span>
+                <span class="num">{c.diff > 0 ? '+' : '−'}{Math.round(Math.abs(c.ratio) * 100)}%</span>
+              {/if}
+            </span>
+            <span class="detail"
+              ><span class="num">{formatEuro(c.current)}</span> contro una media di <span class="num">{formatEuro(c.average)}</span></span
+            >
+          </button>
+        </li>
+      {/each}
+    </ul>
+  </Card>
+{/if}
 
 {#if a.kind === 'mese'}
   <Card>
@@ -140,6 +182,15 @@
   <MonthlyColumns points={series} highlight={a.kind === 'mese' ? a.month : ''} />
 </Card>
 
+{#if worth.some((p) => p.value !== null)}
+  <Card>
+    <div class="card-head">
+      <h2>Patrimonio</h2>
+    </div>
+    <WorthLine points={worth} />
+  </Card>
+{/if}
+
 <div class="export">
   <button class="btn btn-ghost" onclick={exportCsv} disabled={rows.length === 0} aria-label="Esporta i movimenti del periodo per Excel (CSV)">
     Esporta per Excel (CSV)
@@ -151,6 +202,69 @@
 {/if}
 
 <style>
+  .pace {
+    margin: calc(-1 * var(--space-1)) 0 var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  .pace strong {
+    color: var(--color-text);
+  }
+
+  .changes {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .changes li + li {
+    border-top: 1px solid var(--color-border);
+  }
+
+  .change {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px var(--space-3);
+    width: 100%;
+    padding: var(--space-2) 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .change .name {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-weight: 600;
+  }
+
+  .change .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .change .what {
+    font-weight: 650;
+  }
+
+  .change .dir {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    font-weight: 400;
+  }
+
+  .change .detail {
+    grid-column: 1 / -1;
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+  }
+
   .export {
     display: flex;
     justify-content: center;
