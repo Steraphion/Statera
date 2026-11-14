@@ -21,4 +21,5 @@ Ogni modifica sul ramo `main` viene pubblicata automaticamente su GitHub Pages.
 - `src/components/` — elementi riutilizzabili
 - `src/lib/data/` — modello dati, database locale, regole e calcolo dei saldi
 - `src/lib/` — navigazione, formattazione, stato del dispositivo
-- `public/icons/` — icone dell'app
+- `public/icons/`, `public/favicon.*` — icone dell'app e favicon, generate da `scripts/icona-app.mjs` (bilancia a tratto)
+- `icona/` — sorgenti del simbolo e icona adattiva Android a due livelli (primo piano e sfondo)

@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from './components/Icon.svelte'
+  import Logo from './components/Logo.svelte'
   import UpdateBanner from './components/UpdateBanner.svelte'
   import SyncBanner from './components/sync/SyncBanner.svelte'
   import { router, ROUTES } from './lib/router.svelte'
@@ -64,7 +65,7 @@
 <div class="shell" class:sub={router.current !== router.section}>
   <nav class="nav" aria-label="Sezioni">
     <div class="brand">
-      <span class="mark" aria-hidden="true"><Icon name="scale" /></span>
+      <Logo size={36} />
       <span>Statera</span>
     </div>
     <!-- PC: comando principale in cima alla barra laterale -->
@@ -284,15 +285,6 @@
       letter-spacing: var(--tracking-tight);
     }
 
-    .mark {
-      display: grid;
-      place-items: center;
-      width: 36px;
-      height: 36px;
-      border-radius: var(--radius-full);
-      background: var(--color-primary);
-      color: var(--color-on-primary);
-    }
 
     .new-pc {
       display: flex;

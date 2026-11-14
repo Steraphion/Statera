@@ -52,3 +52,8 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
   riavvio, colore della barra di sistema) e tastierino degli importi su telefono (cifre, virgola, somme, "=",
   cancella, "Fatto", Salva visibile, buoni solo cifre, tastierino in fondo alla pagina in Cerca; su PC tastiera
   normale). Uso come `collaudo.py`.
+- `icona.py` — v0.29: logo e icone (bilancia a tratto). Manifest con icone any 16–512, maskable 192/512 e monochrome
+  della dimensione dichiarata; any con angoli trasparenti, maskable piena, monochrome trasparente fuori dal simbolo;
+  scorciatoie a 96 px; favicon ICO (16, 32, 48) e SVG; icona Apple 180 px; tutto nella cache per l'uso senza rete;
+  logo nella barra laterale (indaco in chiaro, lilla col simbolo scuro in scuro), nascosto su telefono.
+  Uso come `collaudo.py`.

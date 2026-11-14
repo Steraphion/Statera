@@ -53,7 +53,7 @@ export default defineConfig({
       // Nuova versione: l'app mostra un avviso "Aggiorna" (src/lib/pwa.svelte.ts)
       registerType: 'prompt',
       injectRegister: false,
-      includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png', 'licenze.html'],
+      includeAssets: ['favicon.svg', 'favicon.ico', 'icons/apple-touch-icon.png', 'licenze.html'],
       manifest: {
         id: './',
         name: 'Statera',
@@ -67,12 +67,22 @@ export default defineConfig({
         // Aprendo l'app (anche con doppio clic o dalle scorciatoie) torna in primo piano la finestra già
         // aperta invece di aprirne un'altra; la scorciatoia scelta arriva a src/lib/launch.ts
         launch_handler: { client_mode: ['focus-existing', 'auto'] },
+        // Schermata d'avvio (Android la compone con sfondo, icona e nome) e barra di sistema: lo sfondo dell'app
+        // in tema chiaro. Il tema scuro e la scelta fatta in Altro → Aspetto li applica index.html
+        // (meta theme-color) e src/lib/theme.svelte.ts.
         background_color: '#F4F5FB',
         theme_color: '#F4F5FB',
+        // Icone generate da scripts/icona-app.mjs (bilancia a tratto). Fino a 32 px un disegno semplificato.
         icons: [
+          { src: 'icons/icon-16.png', sizes: '16x16', type: 'image/png' },
+          { src: 'icons/icon-24.png', sizes: '24x24', type: 'image/png' },
+          { src: 'icons/icon-32.png', sizes: '32x32', type: 'image/png' },
+          { src: 'icons/icon-48.png', sizes: '48x48', type: 'image/png' },
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'icons/maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
           { src: 'icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: 'icons/monochrome-512.png', sizes: '512x512', type: 'image/png', purpose: 'monochrome' },
         ],
         // Tenendo premuta l'icona dell'app (Android) o con il tasto destro (Windows)
         shortcuts: [
@@ -97,7 +107,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,webmanifest}'],
         navigateFallback: 'index.html',
         // Le pagine statiche (es. informativa privacy) non vanno sostituite dall'app
         navigateFallbackDenylist: [/privacy\.html$/, /licenze\.html$/],

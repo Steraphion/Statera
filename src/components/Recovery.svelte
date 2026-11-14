@@ -1,11 +1,12 @@
 <script lang="ts">
   import { startup } from '../lib/startup.svelte'
+  import Logo from './Logo.svelte'
 
   let { message, onretry }: { message: string; onretry?: () => void } = $props()
 </script>
 
 <div class="recovery" role="alert">
-  <img src="./favicon.svg" alt="" width="48" height="48" />
+  <Logo size={48} />
   <h1>Statera non riesce ad aprirsi</h1>
   <p class="msg">{message}</p>
   <ol>
