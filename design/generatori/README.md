@@ -19,6 +19,9 @@ I file vengono scritti in `out/project/`, oppure nella cartella indicata dalla v
 | `altre.py` | Indaco morbido, telefono: Conti, dettaglio conto, Cerca, Altro, Ricorrenti, Categorie, blocco col PIN, guida al primo avvio, stati vuoti, avvisi, conferma. Ruoli nuovi `warn` e `danger`, icone dell'interfaccia, controllo contrasti `check()` |
 | `pc.py` | Indaco morbido, PC (1280 px, tavole fluide): barra laterale, Nuova spesa in finestra, Analisi, Conti con dettaglio, scorciatoie |
 | `pagina_altre.py` | Pagina "Altre schermate · Indaco morbido": scrive le tavole `ind-*.dc.html` e le voci da aggiungere a `canvas.json` (`voci-mobile.json`, `voci-pc.json`) |
+| `icone.py` | Pagina "Icone delle categorie": Lucide, Tabler e Phosphor a confronto, in contesto, e scelta dell'icona nel modulo della categoria (voci in `voci-icone.json`) |
+| `icone_set.json` | Le ~100 icone usate, nei tre set (solo forme geometriche). Licenze in `LICENZE-ICONE.md` |
+| `voglio.json`, `risolvi.py`, `estrai.py` | Da quale icona di ogni set viene ogni chiave, e come rigenerare `icone_set.json` dai pacchetti npm (`npm pack lucide-static @tabler/icons @phosphor-icons/core`, poi estrarre e passare le cartelle agli script) |
 
 Per le schermate nuove, parti da `scelta.py`: usa `IND_L` / `IND_D` / `IND_SW` con
 `gen.page()` e le funzioni di `coolors.py` e `scelta.py`.
