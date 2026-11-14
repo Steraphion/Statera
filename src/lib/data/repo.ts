@@ -232,6 +232,36 @@ export function seedId(kind: CategoryKind, ...names: string[]): string {
   return ['seed', kind, ...names.map(slug)].join('-')
 }
 
+export const ADJUST_CATEGORY_NAME = 'Rettifica saldo'
+
+/**
+ * Categoria per i movimenti di "Allinea saldo". Ha un id fisso, così due dispositivi non ne creano
+ * due copie; se era stata cancellata o archiviata torna disponibile.
+ */
+export async function ensureAdjustCategory(kind: CategoryKind, d: StateraDB = db): Promise<Category> {
+  const id = seedId(kind, ADJUST_CATEGORY_NAME)
+  const existing = await d.categories.get(id)
+  const now = Date.now()
+  if (existing) {
+    if (existing.deletedAt !== null || existing.archived) {
+      await d.categories.update(id, { deletedAt: null, archived: false, updatedAt: now })
+    }
+    return (await d.categories.get(id))!
+  }
+  const cat: Category = {
+    ...baseFields(),
+    id,
+    name: ADJUST_CATEGORY_NAME,
+    kind,
+    parentId: null,
+    color: 's4',
+    order: (await d.categories.count()) + 1,
+    archived: false,
+  }
+  await d.categories.add(cat)
+  return cat
+}
+
 /** Al primo avvio carica le categorie iniziali. Non si ripete mai, anche se le cancelli. */
 export async function ensureSeeded(d: StateraDB = db) {
   await d.transaction('rw', d.meta, d.categories, async () => {
@@ -289,4 +319,14 @@ export async function moveAccount(id: string, dir: -1 | 1, d: StateraDB = db) {
       if (list[k].order !== k + 1) await d.accounts.update(list[k].id, { order: k + 1, updatedAt: now })
     }
   })
+}
+
+// ---------- Guida al primo avvio ----------
+
+export async function guideDismissed(d: StateraDB = db): Promise<boolean> {
+  return !!(await d.meta.get('guidaChiusa'))?.value
+}
+
+export async function dismissGuide(d: StateraDB = db) {
+  await d.meta.put({ key: 'guidaChiusa', value: true })
 }

@@ -1,9 +1,10 @@
 <script lang="ts">
-  import type { BudgetStatus } from '../../lib/data/analytics'
+  import { perDay, type BudgetStatus } from '../../lib/data/analytics'
   import { formatEuro } from '../../lib/format'
 
   // Indicatori di budget: il colore segue lo stato, sempre con un'etichetta (mai solo colore).
-  let { items }: { items: BudgetStatus[] } = $props()
+  /** daysLeft: giorni che restano nel mese (per "circa X € al giorno"); 0 se il mese è passato. */
+  let { items, daysLeft = 0 }: { items: BudgetStatus[]; daysLeft?: number } = $props()
 
   const LABEL: Record<BudgetStatus['state'], string> = {
     ok: 'Nei limiti',
@@ -15,6 +16,7 @@
 <ul class="meters">
   {#each items as b (b.category.id)}
     {@const left = b.budget - b.spent}
+    {@const day = perDay(left, daysLeft)}
     <li class={b.state}>
       <div class="top">
         <span class="name"><span class="dot" style:background="var(--swatch-{b.category.color})"></span>{b.category.name}</span>
@@ -34,6 +36,11 @@
         <span>{formatEuro(b.spent)} di {formatEuro(b.budget)}</span>
         <span>{left >= 0 ? `restano ${formatEuro(left)}` : `oltre di ${formatEuro(-left)}`}</span>
       </div>
+      {#if day !== null}
+        <p class="per-day">
+          Circa <strong class="num">{formatEuro(day)}</strong> al giorno per {daysLeft === 1 ? "l'ultimo giorno" : `i ${daysLeft} giorni che restano`}
+        </p>
+      {/if}
     </li>
   {/each}
 </ul>
@@ -46,6 +53,12 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
+  }
+
+  .per-day {
+    margin-top: var(--space-1);
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
   }
 
   .top,

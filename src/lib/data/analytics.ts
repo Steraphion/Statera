@@ -132,3 +132,21 @@ export function niceTicks(max: number, count = 4): number[] {
   if (ticks[ticks.length - 1] < max) ticks.push(ticks[ticks.length - 1] + step)
   return ticks
 }
+
+/**
+ * Giorni che restano nel mese, oggi compreso: tutto il mese se è futuro, 0 se è passato.
+ */
+export function daysLeftInMonth(month: string, todayStr: string): number {
+  const [y, m] = month.split('-').map(Number)
+  const last = new Date(y, m, 0).getDate()
+  const current = todayStr.slice(0, 7)
+  if (month < current) return 0
+  if (month > current) return last
+  return last - Number(todayStr.slice(8, 10)) + 1
+}
+
+/** Quanto si può spendere al giorno per restare nel budget (centesimi, arrotondato per difetto). */
+export function perDay(left: number, days: number): number | null {
+  if (left <= 0 || days <= 0) return null
+  return Math.floor(left / days)
+}

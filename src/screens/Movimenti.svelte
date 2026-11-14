@@ -6,6 +6,7 @@
   import MovementRow from '../components/MovementRow.svelte'
   import PendingCard from '../components/PendingCard.svelte'
   import FavoritesBar from '../components/FavoritesBar.svelte'
+  import SetupGuide from '../components/SetupGuide.svelte'
   import { useRefs } from '../lib/data/refs.svelte'
   import * as mv from '../lib/data/transactions'
   import type { Template, Transaction, TransactionType } from '../lib/data/types'
@@ -88,6 +89,10 @@
   </button>
 </header>
 
+{#if refs.ready}
+  <SetupGuide hasAccounts={!noAccounts} onnew={() => (sheet = {})} />
+{/if}
+
 <PendingCard refs={refs.value} />
 
 {#if !noAccounts}
@@ -112,13 +117,7 @@
 </Card>
 
 {#if noAccounts}
-  <Card>
-    <div class="empty">
-      <p class="title">Benvenuto in Statera</p>
-      <p class="hint">Per iniziare crea i tuoi conti: conto corrente, contanti, buoni pasto.</p>
-      <a class="btn btn-primary" href="#/conti">Vai ai conti</a>
-    </div>
-  </Card>
+  <!-- La guida al primo avvio spiega come iniziare -->
 {:else if loaded && rows.length === 0}
   <Card>
     <div class="empty">

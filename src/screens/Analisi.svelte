@@ -124,7 +124,7 @@
       </button>
     </div>
     {#if budgets.length}
-      <BudgetMeters items={budgets} />
+      <BudgetMeters items={budgets} daysLeft={an.daysLeftInMonth(a.month, today())} />
     {:else}
       <p class="empty-note">
         Nessun budget impostato. Un budget ti avvisa quando una categoria si avvicina al limite mensile.

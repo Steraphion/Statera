@@ -1,7 +1,9 @@
-import { parseEuro } from '../format'
+import { formatEuro, parseEuro } from '../format'
 import { db, type StateraDB } from './db'
 import type { Account, Card, Category, Transaction, TransactionPart, TransactionType } from './types'
-import { baseFields } from './util'
+import { baseFields, today } from './util'
+import { accountBalance } from './balances'
+import { ensureAdjustCategory } from './repo'
 
 /**
  * "Con cosa": la fonte di un movimento può essere un conto oppure una carta.
@@ -386,4 +388,53 @@ export function descriptionSuggestions(
       (a.s.last.date < b.s.last.date ? 1 : a.s.last.date > b.s.last.date ? -1 : 0),
   )
   return scored.slice(0, limit).map((x) => x.s)
+}
+
+// ---------- Allinea saldo ----------
+
+/**
+ * Porta il saldo del conto al valore reale indicato, con un movimento di rettifica
+ * (entrata se il saldo reale è più alto, uscita se è più basso) nella categoria "Rettifica saldo".
+ * Per i buoni pasto si indica il numero di buoni. Restituisce null se il saldo era già giusto.
+ */
+export async function alignBalance(
+  accountId: string,
+  real: { amount?: number; vouchers?: number },
+  date: string = today(),
+  d: StateraDB = db,
+): Promise<Transaction | null> {
+  const account = await d.accounts.get(accountId)
+  if (!account || account.deletedAt !== null) throw new Error('Conto non trovato')
+  if (date < account.initialDate) throw new Error('La data è precedente al saldo iniziale del conto')
+  const rows = await d.transactions.where('accountIds').equals(accountId).toArray()
+  // Saldo alla fine del giorno indicato
+  const current = accountBalance(account, rows.filter((t) => t.date <= date))
+  const isVoucher = account.type === 'buoni_pasto'
+  let delta: number
+  if (isVoucher) {
+    if (real.vouchers === undefined || !Number.isInteger(real.vouchers) || real.vouchers < 0) {
+      throw new Error('Indica quanti buoni hai')
+    }
+    delta = real.vouchers - (current.vouchers ?? 0)
+  } else {
+    if (real.amount === undefined || !Number.isInteger(real.amount)) throw new Error('Inserisci il saldo reale')
+    delta = real.amount - current.amount
+  }
+  if (delta === 0) return null
+  const type: TransactionType = delta > 0 ? 'entrata' : 'uscita'
+  const cat = await ensureAdjustCategory(type, d)
+  const shown = isVoucher ? `${real.vouchers} buoni` : formatEuro(real.amount!)
+  return createMovement(
+    {
+      type,
+      date,
+      parts: [{ source: `a:${accountId}`, amount: isVoucher ? 0 : Math.abs(delta), vouchers: isVoucher ? Math.abs(delta) : null }],
+      categoryId: cat.id,
+      toAccountId: null,
+      description: 'Allineamento saldo',
+      notes: `Saldo reale indicato: ${shown}`,
+    },
+    d,
+    { remember: false },
+  )
 }

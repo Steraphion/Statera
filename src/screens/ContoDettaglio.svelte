@@ -3,6 +3,7 @@
   import ScreenHeader from '../components/ScreenHeader.svelte'
   import AccountForm from '../components/AccountForm.svelte'
   import MovementForm from '../components/MovementForm.svelte'
+  import AlignSheet from '../components/AlignSheet.svelte'
   import MovementRow from '../components/MovementRow.svelte'
   import Icon from '../components/Icon.svelte'
   import { db } from '../lib/data/db'
@@ -41,6 +42,7 @@
   })
 
   let editAccount = $state(false)
+  let aligning = $state(false)
   let movementSheet = $state<{ movement?: Transaction } | null>(null)
 </script>
 
@@ -60,6 +62,9 @@
       {/if}
       {#if cards.length > 0}
         <span class="sub">Carte: {cards.map((c) => c.name).join(', ')}</span>
+      {/if}
+      {#if !account.archived}
+        <button class="btn btn-ghost btn-small align" onclick={() => (aligning = true)}>Allinea al saldo reale</button>
       {/if}
     </div>
   </Card>
@@ -107,6 +112,10 @@
     <Icon name="plus" size={28} />
   </button>
 
+  {#if aligning}
+    <AlignSheet {account} transactions={txs.value} onclose={() => (aligning = false)} />
+  {/if}
+
   {#if editAccount}
     <AccountForm account={account} onclose={() => (editAccount = false)} />
   {/if}
@@ -124,6 +133,12 @@
 {/if}
 
 <style>
+  .align {
+    margin-top: var(--space-2);
+    padding: 0;
+    min-height: 32px;
+  }
+
   .back {
     display: inline-block;
     margin: calc(-1 * var(--space-2)) 0 var(--space-3);

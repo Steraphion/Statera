@@ -26,3 +26,6 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
   preferito senza importo apre il modulo compilato, gestione (rinomina, ordine, eliminazione), riavvio.
   Il passaggio del database dalla versione 2 alla 3 (v0.14.0 → v0.15.0, dati intatti) è stato verificato con lo
   schema di `aggiornamento.py`. Uso come `collaudo.py`.
+- `guida-saldo.py` — Fase 4.3: guida al primo avvio (tre passi, non nascondibile senza conti, sparisce a fine),
+  budget con "circa X € al giorno" (solo mese in corso), Allinea saldo con anteprima, rettifica e caso "già
+  giusto". Uso come `collaudo.py`.
