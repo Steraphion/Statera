@@ -64,6 +64,9 @@ export default defineConfig({
         scope: './',
         display: 'standalone',
         orientation: 'any',
+        // Aprendo l'app (anche con doppio clic o dalle scorciatoie) torna in primo piano la finestra già
+        // aperta invece di aprirne un'altra; la scorciatoia scelta arriva a src/lib/launch.ts
+        launch_handler: { client_mode: ['focus-existing', 'auto'] },
         background_color: '#F4F5FB',
         theme_color: '#F4F5FB',
         icons: [
