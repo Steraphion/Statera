@@ -1,4 +1,5 @@
 <script lang="ts">
+  import CategoryIcon from '../components/CategoryIcon.svelte'
   import Card from '../components/Card.svelte'
   import Icon from '../components/Icon.svelte'
   import Segmented from '../components/Segmented.svelte'
@@ -101,7 +102,7 @@
     <span class="label">Uscite</span>
     <span class="value num">{formatEuro(sums.expense)}</span>
   </div>
-  <div class="tile">
+  <div class="tile save">
     <span class="label">Risparmio</span>
     <span class="value num" class:amount-neg={sums.net < 0}>{formatEuro(sums.net)}</span>
     {#if savingRate !== null}<span class="delta">{Math.round(savingRate * 100)}% delle entrate</span>{/if}
@@ -146,7 +147,7 @@
       {#each changes as c (c.category.id)}
         <li>
           <button class="change" onclick={() => showMovements(c.category)}>
-            <span class="name"><span class="dot" style:background="var(--swatch-{c.category.color})"></span>{c.category.name}</span>
+            <span class="name"><CategoryIcon category={c.category} size="s" />{c.category.name}</span>
             <span class="what">
               {#if c.ratio === null}
                 <span class="dir">▲</span> nuova
@@ -272,14 +273,9 @@
     font-weight: 600;
   }
 
-  .change .dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-  }
 
   .change .what {
-    font-weight: 650;
+    font-weight: 700;
   }
 
   .change .dir {
@@ -308,9 +304,7 @@
   }
 
   .top h1 {
-    font-size: var(--text-xl);
-    font-weight: 650;
-    letter-spacing: -0.01em;
+    font-size: var(--text-2xl);
     white-space: nowrap;
   }
 
@@ -331,30 +325,31 @@
 
   .tiles {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--space-2);
-    margin-bottom: var(--space-3);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
   }
 
   .tile {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    padding: var(--space-3);
-    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-lg);
     background: var(--color-surface);
-    border: 1px solid var(--color-border);
     min-width: 0;
   }
 
   .tile .label {
-    font-size: var(--text-xs);
+    font-size: var(--text-sm);
+    font-weight: 600;
     color: var(--color-text-muted);
   }
 
   .tile .value {
-    font-weight: 650;
-    font-size: var(--text-md);
+    font-weight: 800;
+    font-size: var(--amount-s);
+    letter-spacing: var(--tracking-tight);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -363,6 +358,43 @@
   .tile .delta {
     font-size: var(--text-xs);
     color: var(--color-text-muted);
+  }
+
+  /* Il risparmio è il riquadro protagonista: pieno in chiaro, tenue in scuro per non abbagliare */
+  .tile.save {
+    grid-column: 1 / -1;
+    order: -1;
+    gap: var(--space-1);
+    padding: var(--space-5);
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+
+  .tile.save .label,
+  .tile.save .delta {
+    color: inherit;
+  }
+
+  .tile.save .value {
+    font-size: var(--amount-m);
+    letter-spacing: var(--tracking-tighter);
+  }
+
+  .tile.save .delta {
+    align-self: flex-start;
+    margin-top: var(--space-1);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    background: color-mix(in srgb, currentColor 16%, transparent);
+    font-size: var(--text-sm);
+    font-weight: 700;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .tile.save {
+      background: var(--color-accent-soft);
+      color: var(--color-text);
+    }
   }
 
   .card-head {
@@ -375,8 +407,8 @@
   }
 
   h2 {
-    font-size: var(--text-md);
-    font-weight: 650;
+    font-size: var(--text-lg);
+    font-weight: 800;
   }
 
   .small-seg {

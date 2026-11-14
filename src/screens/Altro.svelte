@@ -1,5 +1,6 @@
 <script lang="ts">
   import Card from '../components/Card.svelte'
+  import Icon from '../components/Icon.svelte'
   import ScreenHeader from '../components/ScreenHeader.svelte'
   import DataCard from '../components/DataCard.svelte'
   import SyncCard from '../components/sync/SyncCard.svelte'
@@ -18,12 +19,14 @@
 <Card>
   <h2>Gestione</h2>
   <a class="link-row" href="#/categorie">
-    <span>Categorie</span>
-    <span aria-hidden="true">›</span>
+    <span class="ic" aria-hidden="true"><Icon name="tag" size={18} /></span>
+    <span class="grow">Categorie</span>
+    <Icon name="chevron-right" size={18} />
   </a>
   <a class="link-row" href="#/ricorrenti">
-    <span>Movimenti ricorrenti</span>
-    <span aria-hidden="true">›</span>
+    <span class="ic" aria-hidden="true"><Icon name="repeat" size={18} /></span>
+    <span class="grow">Movimenti ricorrenti</span>
+    <Icon name="chevron-right" size={18} />
   </a>
 </Card>
 
@@ -73,35 +76,53 @@
     <dd>{sync.meta ? 'Solo Google (accesso e Drive)' : 'Nessuna'}</dd>
   </dl>
   <a class="link-row privacy" href="./privacy.html" target="_blank" rel="noopener">
-    <span>Informativa sulla privacy</span>
-    <span aria-hidden="true">›</span>
+    <span class="ic" aria-hidden="true"><Icon name="shield-check" size={18} /></span>
+    <span class="grow">Informativa sulla privacy</span>
+    <Icon name="chevron-right" size={18} />
   </a>
   <a class="link-row" href="./licenze.html" target="_blank" rel="noopener">
-    <span>Licenze del carattere e delle icone</span>
-    <span aria-hidden="true">›</span>
+    <span class="ic" aria-hidden="true"><Icon name="file-text" size={18} /></span>
+    <span class="grow">Licenze del carattere e delle icone</span>
+    <Icon name="chevron-right" size={18} />
   </a>
 </Card>
 
 <style>
   h2 {
-    font-size: var(--text-md);
-    font-weight: 650;
+    font-size: var(--text-lg);
     margin-bottom: var(--space-2);
   }
 
   .link-row {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    min-height: 44px;
+    gap: var(--space-3);
+    min-height: 52px;
     color: var(--color-text);
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 700;
+  }
+
+  .link-row :global(svg:last-child) {
+    color: var(--color-text-muted);
+  }
+
+  .grow {
+    flex: 1;
+  }
+
+  .ic {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    background: var(--color-accent-soft);
+    color: var(--color-accent);
   }
 
   .privacy {
     margin-top: var(--space-2);
-    font-size: var(--text-sm);
   }
 
   .muted {

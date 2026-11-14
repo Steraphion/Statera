@@ -85,7 +85,7 @@
 
   dd {
     margin: 0;
-    font-weight: 650;
+    font-weight: 700;
   }
 
   ul {

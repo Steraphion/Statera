@@ -1,6 +1,7 @@
 <script lang="ts">
   import Card from '../components/Card.svelte'
   import ScreenHeader from '../components/ScreenHeader.svelte'
+  import CategoryIcon from '../components/CategoryIcon.svelte'
   import CategoryForm from '../components/CategoryForm.svelte'
   import Segmented from '../components/Segmented.svelte'
   import Icon from '../components/Icon.svelte'
@@ -53,7 +54,7 @@
       {#each tops as c (c.id)}
         <li>
           <button class="list-row" onclick={() => (sheet = { category: c })}>
-            <span class="dot" style:background="var(--swatch-{c.color})"></span>
+            <CategoryIcon category={c} />
             <span class="main">
               <span class="name" class:archived={c.archived}>{c.name}</span>
             </span>
@@ -64,6 +65,7 @@
               {#each childrenOf(c.id) as child (child.id)}
                 <li>
                   <button class="list-row" onclick={() => (sheet = { category: child })}>
+                    <CategoryIcon category={child} size="s" />
                     <span class="main">
                       <span class="name child" class:archived={child.archived}>{child.name}</span>
                     </span>

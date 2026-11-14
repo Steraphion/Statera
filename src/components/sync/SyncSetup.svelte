@@ -289,7 +289,7 @@
     border-radius: var(--radius-sm);
     background: var(--color-surface-2);
     font-size: var(--text-lg);
-    font-weight: 650;
+    font-weight: 700;
     letter-spacing: 0.04em;
     text-align: center;
     word-break: break-all;

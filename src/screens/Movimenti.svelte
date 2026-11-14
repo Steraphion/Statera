@@ -104,22 +104,36 @@
   <FavoritesBar refs={refs.value} onopen={(t) => (sheet = { template: t })} />
 {/if}
 
-<Card>
-  <div class="totals">
-    <div>
-      <span class="label">Entrate</span>
-      <span class="num income">{formatEuro(totals.income)}</span>
-    </div>
-    <div>
-      <span class="label">Uscite</span>
-      <span class="num expense">{formatEuro(totals.expense)}</span>
-    </div>
-    <div>
-      <span class="label">Saldo</span>
-      <span class="num" class:amount-neg={totals.net < 0}>{formatEuro(totals.net)}</span>
-    </div>
+<!-- Saldo del mese al centro, azioni rapide, entrate e uscite (design system: stile Vivace) -->
+<section class="hero" aria-label="Saldo del mese">
+  <span class="hero-label">Saldo del mese</span>
+  <span class="hero-amount num">{totals.net > 0 ? '+' : ''}{formatEuro(totals.net)}</span>
+</section>
+
+{#if !noAccounts}
+  <div class="quick">
+    <button class="q" aria-label="Nuova spesa" onclick={() => (sheet = { type: 'uscita' })}>
+      <span class="circle"><Icon name="arrow-up-right" size={22} /></span>Spesa
+    </button>
+    <button class="q" aria-label="Nuova entrata" onclick={() => (sheet = { type: 'entrata' })}>
+      <span class="circle"><Icon name="arrow-down-left" size={22} /></span>Entrata
+    </button>
+    <button class="q" aria-label="Nuovo trasferimento" onclick={() => (sheet = { type: 'trasferimento' })}>
+      <span class="circle"><Icon name="arrow-left-right" size={22} /></span>Trasferisci
+    </button>
   </div>
-</Card>
+{/if}
+
+<div class="tiles2">
+  <div class="tile">
+    <span class="t-icon in"><Icon name="arrow-down-left" size={18} stroke={2.2} /></span>
+    <span class="t-text"><span class="label">Entrate</span><span class="num">{formatEuro(totals.income)}</span></span>
+  </div>
+  <div class="tile">
+    <span class="t-icon out"><Icon name="arrow-up-right" size={18} stroke={2.2} /></span>
+    <span class="t-text"><span class="label">Uscite</span><span class="num">{formatEuro(totals.expense)}</span></span>
+  </div>
+</div>
 
 {#if !noAccounts && loaded && rows.length > 0}
   <div class="view">
@@ -151,20 +165,21 @@
       <p class="hint">Tocca + per registrare una spesa o un'entrata.</p>
     </div>
   </Card>
-{:else}
-  {#each shownDays as g (g.date)}
-    <h2 class="day">
-      <span>{formatDay(g.date)}</span>
-      <span class="num" class:amount-neg={g.net < 0}>{g.net === 0 ? '' : formatEuro(g.net)}</span>
-    </h2>
-    <Card>
+{:else if shownDays.length}
+  <!-- Un'unica scheda con i giorni come intestazioni -->
+  <Card>
+    {#each shownDays as g (g.date)}
+      <h2 class="day">
+        <span>{formatDay(g.date)}</span>
+        <span class="num" class:amount-neg={g.net < 0}>{g.net === 0 ? '' : formatEuro(g.net)}</span>
+      </h2>
       <ul class="list">
         {#each g.items as t (t.id)}
           <li><MovementRow {t} refs={refs.value} onclick={() => (sheet = { movement: t })} /></li>
         {/each}
       </ul>
-    </Card>
-  {/each}
+    {/each}
+  </Card>
 {/if}
 
 {#if sheet}
@@ -195,10 +210,114 @@
   }
 
   .month h1 {
-    font-size: var(--text-xl);
-    font-weight: 650;
-    letter-spacing: -0.01em;
+    font-size: var(--text-2xl);
     white-space: nowrap;
+  }
+
+  .hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    margin: var(--space-2) 0 var(--space-5);
+  }
+
+  .hero-label {
+    font-size: var(--text-md);
+    font-weight: 500;
+    color: var(--color-text-muted);
+  }
+
+  .hero-amount {
+    font-size: var(--amount-l);
+    font-weight: 800;
+    letter-spacing: var(--tracking-tighter);
+    line-height: 1.1;
+  }
+
+  /* Azioni rapide (design system: AzioneRapida) */
+  .quick {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-5);
+  }
+
+  .q {
+    flex: 0 1 96px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .circle {
+    display: grid;
+    place-items: center;
+    width: var(--size-cat-l);
+    height: var(--size-cat-l);
+    border-radius: var(--radius-full);
+    background: var(--color-accent-soft);
+    color: var(--color-accent);
+    transition: transform var(--duration-fast) var(--ease-standard);
+  }
+
+  .q:active .circle {
+    transform: scale(0.94);
+  }
+
+  .tiles2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+
+  .tile {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    min-width: 0;
+  }
+
+  .t-icon {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+  }
+
+  .t-icon.in {
+    color: var(--color-income);
+    background: color-mix(in srgb, var(--color-income) 16%, transparent);
+  }
+
+  .t-icon.out {
+    color: var(--color-expense-icon);
+    background: color-mix(in srgb, var(--color-expense-icon) 16%, transparent);
+  }
+
+  .t-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .t-text .num {
+    font-size: var(--text-lg);
+    font-weight: 800;
   }
 
   .nav {
@@ -211,45 +330,29 @@
     flex: 1;
   }
 
-  .totals {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--space-3);
-    text-align: center;
-  }
 
-  .totals div {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-1);
-  }
 
   .label {
     font-size: var(--text-xs);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+    font-weight: 600;
     color: var(--color-text-muted);
   }
 
-  .totals .num {
-    font-weight: 600;
-  }
 
-  .income {
-    color: var(--color-income);
-  }
 
-  .expense {
-    color: var(--color-expense);
-  }
 
   .day {
     display: flex;
     justify-content: space-between;
-    margin: var(--space-5) 0 var(--space-2);
+    margin: var(--space-4) 0 var(--space-1);
     font-size: var(--text-sm);
     font-weight: 600;
+    letter-spacing: 0;
     color: var(--color-text-muted);
+  }
+
+  .day:first-child {
+    margin-top: var(--space-1);
   }
 
   .empty {

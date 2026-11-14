@@ -6,6 +6,8 @@
   import AlignSheet from '../components/AlignSheet.svelte'
   import MovementRow from '../components/MovementRow.svelte'
   import Icon from '../components/Icon.svelte'
+  import CategoryIcon from '../components/CategoryIcon.svelte'
+  import { ACCOUNT_ICONS } from '../lib/categoryIcon'
   import { db } from '../lib/data/db'
   import { router } from '../lib/router.svelte'
   import { live } from '../lib/data/live.svelte'
@@ -51,9 +53,8 @@
     <button class="btn btn-small" onclick={() => (editAccount = true)}>Modifica</button>
   </ScreenHeader>
 
-  <Card>
-    <div class="summary">
-      <span class="dot" style:background="var(--swatch-{account.color})"></span>
+  <section class="summary" aria-label="Saldo del conto">
+      <CategoryIcon icon={ACCOUNT_ICONS[account.type]} color={account.color} size="l" />
       <span class="type">{ACCOUNT_TYPE_LABELS[account.type]}{account.archived ? ' · archiviato' : ''}</span>
       <span class="num value" class:amount-neg={balance.amount < 0}>{formatEuro(balance.amount)}</span>
       {#if balance.vouchers !== null}
@@ -63,10 +64,11 @@
         <span class="sub">Carte: {cards.map((c) => c.name).join(', ')}</span>
       {/if}
       {#if !account.archived}
-        <button class="btn btn-ghost btn-small align" onclick={() => (aligning = true)}>Allinea al saldo reale</button>
+        <button class="btn btn-soft btn-small align" onclick={() => (aligning = true)}>
+          <Icon name="scale" size={16} /> Allinea al saldo reale
+        </button>
       {/if}
-    </div>
-  </Card>
+  </section>
 
   {#each months as g (g.month)}
     <h2 class="section-title">{formatMonth(parseDay(`${g.month}-01`))}</h2>
@@ -133,30 +135,32 @@
 
 <style>
   .align {
-    margin-top: var(--space-2);
-    padding: 0;
-    min-height: 32px;
+    margin-top: var(--space-3);
   }
 
 
+  /* Saldo grande al centro (stile Vivace) */
   .summary {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: var(--space-1);
-    padding: var(--space-2) 0;
+    padding: 0 0 var(--space-2);
+    text-align: center;
   }
 
   .type {
-    font-size: var(--text-xs);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+    margin-top: var(--space-2);
+    font-size: var(--text-md);
+    font-weight: 500;
     color: var(--color-text-muted);
   }
 
   .value {
-    font-size: var(--text-xl);
-    font-weight: 650;
+    font-size: var(--amount-m);
+    font-weight: 800;
+    letter-spacing: var(--tracking-tighter);
+    line-height: 1.15;
   }
 
   .sub {

@@ -4,6 +4,8 @@
   import AccountForm from '../components/AccountForm.svelte'
   import CardForm from '../components/CardForm.svelte'
   import Icon from '../components/Icon.svelte'
+  import CategoryIcon from '../components/CategoryIcon.svelte'
+  import { ACCOUNT_ICONS } from '../lib/categoryIcon'
   import GoalForm from '../components/GoalForm.svelte'
   import GoalAddSheet from '../components/GoalAddSheet.svelte'
   import { goalProgress } from '../lib/data/goals'
@@ -56,18 +58,17 @@
   </button>
 </ScreenHeader>
 
-<Card>
-  <div class="total">
-    <span class="label">Patrimonio</span>
-    <span class="num value" class:amount-neg={total < 0}>{formatEuro(total)}</span>
-  </div>
-</Card>
+<section class="total" aria-label="Patrimonio">
+  <span class="label">Patrimonio</span>
+  <span class="num value" class:amount-neg={total < 0}>{formatEuro(total)}</span>
+  <span class="count">{active.length === 1 ? '1 conto attivo' : `${active.length} conti attivi`}{archived.length ? ` · ${archived.length} archiviat${archived.length === 1 ? 'o' : 'i'}` : ''}</span>
+</section>
 
 {#snippet accountRow(a: Account)}
   {@const b = accountBalance(a, data.value.transactions)}
   <li>
     <a class="list-row" href="#/conto/{a.id}">
-      <span class="dot" style:background="var(--swatch-{a.color})"></span>
+      <CategoryIcon icon={ACCOUNT_ICONS[a.type]} color={a.color} />
       <span class="main">
         <span class="name">{a.name}</span>
         <span class="sub">{ACCOUNT_TYPE_LABELS[a.type]}</span>
@@ -98,7 +99,7 @@
       {#each active as a, i (a.id)}
         {#if sorting}
           <li class="sort-row">
-            <span class="dot" style:background="var(--swatch-{a.color})"></span>
+            <CategoryIcon icon={ACCOUNT_ICONS[a.type]} color={a.color} size="s" />
             <span class="name">{a.name}</span>
             <button class="btn btn-ghost btn-small" aria-label="Sposta su {a.name}" disabled={i === 0} onclick={() => moveAccount(a.id, -1)}>↑</button>
             <button class="btn btn-ghost btn-small" aria-label="Sposta giù {a.name}" disabled={i === active.length - 1} onclick={() => moveAccount(a.id, 1)}>↓</button>
@@ -125,6 +126,7 @@
       {#each data.value.cards as c (c.id)}
         <li>
           <button class="list-row" onclick={() => (cardSheet = { card: c })}>
+            <CategoryIcon icon="credit-card" />
             <span class="main">
               <span class="name">{c.name}</span>
               <span class="sub">Collegata a {accountName.get(c.accountId) ?? '—'}</span>
@@ -288,7 +290,7 @@
   }
 
   .goal .pct {
-    font-weight: 650;
+    font-weight: 700;
   }
 
   .goal .track {
@@ -318,24 +320,31 @@
     margin-top: 2px;
   }
 
+  /* Patrimonio grande al centro (stile Vivace) */
   .total {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: var(--space-1);
-    padding: var(--space-2) 0;
+    padding: var(--space-2) 0 var(--space-2);
   }
 
   .label {
-    font-size: var(--text-xs);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+    font-size: var(--text-md);
+    font-weight: 500;
     color: var(--color-text-muted);
   }
 
   .value {
-    font-size: var(--text-xl);
-    font-weight: 650;
+    font-size: var(--amount-l);
+    font-weight: 800;
+    letter-spacing: var(--tracking-tighter);
+    line-height: 1.1;
+  }
+
+  .count {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
   }
 
   .sort-row {
@@ -343,11 +352,6 @@
     align-items: center;
     gap: var(--space-2);
     min-height: 52px;
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .sort-row:last-child {
-    border-bottom: none;
   }
 
   .sort-row .name {

@@ -66,8 +66,8 @@
 
 <style>
   h2 {
-    font-size: var(--text-md);
-    font-weight: 650;
+    font-size: var(--text-lg);
+    font-weight: 800;
     margin-bottom: var(--space-2);
   }
 

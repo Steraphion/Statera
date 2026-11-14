@@ -1,4 +1,5 @@
 <script lang="ts">
+  import CategoryIcon from './CategoryIcon.svelte'
   import type { Category, CategoryKind } from '../lib/data/types'
   import { byName } from '../lib/data/util'
 
@@ -37,10 +38,6 @@
     if (el && list) list.scrollTop = el.offsetTop - list.clientHeight / 2 + el.clientHeight / 2
   })
 
-  function color(c: Category): string {
-    const top = c.parentId ? usable.find((x) => x.id === c.parentId) : c
-    return `var(--swatch-${(top ?? c).color})`
-  }
 </script>
 
 <fieldset class="field">
@@ -58,7 +55,7 @@
         class:active={value === c.id}
         onclick={() => (value = c.id)}
       >
-        {#if !child}<span class="dot" style:background={color(c)}></span>{/if}
+        <CategoryIcon category={c} size={child ? 's' : 'm'} />
         <span class="label">{c.name}</span>
         {#if value === c.id}<span class="check" aria-hidden="true">✓</span>{/if}
       </button>
@@ -74,47 +71,47 @@
     color: var(--color-text);
   }
 
+  /* Elenco verticale con le icone (design system: IconaCategoria), sottocategorie rientrate */
   .cat-list {
     display: flex;
     flex-direction: column;
-    max-height: 240px;
+    gap: 2px;
+    max-height: 288px;
     overflow-y: auto;
     overscroll-behavior: contain;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    background: var(--color-bg);
+    padding: var(--space-2);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
   }
 
   .cat {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
-    min-height: 44px;
-    padding: 0 var(--space-3);
+    gap: var(--space-3);
+    min-height: 52px;
+    padding: 0 var(--space-3) 0 var(--space-1);
     border: none;
-    border-bottom: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
     background: transparent;
     color: var(--color-text);
     text-align: left;
     font-size: var(--text-md);
+    font-weight: 600;
     flex: none;
   }
 
-  .cat:last-child {
-    border-bottom: none;
-  }
-
   .cat.child {
-    min-height: 40px;
-    padding-left: calc(var(--space-3) + 10px + var(--space-2));
+    min-height: 44px;
+    margin-left: calc(var(--size-cat) / 2 + var(--space-1));
+    padding-left: var(--space-3);
+    border-left: 2px solid var(--chart-track);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
     font-size: var(--text-sm);
-    color: var(--color-text-muted);
   }
 
   .cat.active {
     background: var(--color-accent-soft);
-    color: var(--color-text);
-    font-weight: 600;
+    font-weight: 800;
   }
 
   .label {
@@ -123,11 +120,6 @@
 
   .check {
     color: var(--color-accent);
-    font-weight: 700;
-  }
-
-  .dot {
-    width: 10px;
-    height: 10px;
+    font-weight: 800;
   }
 </style>

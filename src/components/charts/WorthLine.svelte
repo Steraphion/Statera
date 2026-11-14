@@ -220,7 +220,7 @@
 
   .tooltip b {
     color: var(--color-text);
-    font-weight: 650;
+    font-weight: 700;
     font-size: var(--text-sm);
   }
 

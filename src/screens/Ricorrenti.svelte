@@ -1,6 +1,7 @@
 <script lang="ts">
   import Card from '../components/Card.svelte'
   import ScreenHeader from '../components/ScreenHeader.svelte'
+  import CategoryIcon from '../components/CategoryIcon.svelte'
   import Icon from '../components/Icon.svelte'
   import MovementForm from '../components/MovementForm.svelte'
   import { db } from '../lib/data/db'
@@ -35,10 +36,8 @@
     return `Prossima: ${formatShortDay(next)}${r.auto ? '' : ' · da confermare'}`
   }
 
-  function color(r: Recurring): string {
-    const c = r.categoryId ? refs.value.categoryMap.get(r.categoryId) : null
-    const top = c?.parentId ? refs.value.categoryMap.get(c.parentId) : c
-    return top ? `var(--swatch-${top.color})` : 'var(--color-text-muted)'
+  function category(r: Recurring) {
+    return r.categoryId ? (refs.value.categoryMap.get(r.categoryId) ?? null) : null
   }
 </script>
 
@@ -63,9 +62,9 @@
         <li>
           <button class="list-row" class:paused={r.paused} onclick={() => (sheet = { recurring: r })}>
             {#if r.type === 'trasferimento'}
-              <span class="icon"><Icon name="arrow-left-right" size={16} /></span>
+              <CategoryIcon icon="arrow-left-right" />
             {:else}
-              <span class="dot" style:background={color(r)}></span>
+              <CategoryIcon category={category(r)} />
             {/if}
             <span class="main">
               <span class="name">{title(r)}</span>
@@ -106,13 +105,6 @@
     color: var(--color-text-muted);
   }
 
-  .icon {
-    flex: none;
-    display: grid;
-    place-items: center;
-    width: 12px;
-    color: var(--color-text-muted);
-  }
 
   .main .sub {
     font-size: var(--text-xs);

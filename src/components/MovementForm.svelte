@@ -887,7 +887,7 @@
   .amount {
     min-height: 56px;
     font-size: var(--text-xl);
-    font-weight: 650;
+    font-weight: 700;
   }
 
   .amount.income {
@@ -996,7 +996,7 @@
 
   .split-sum {
     font-size: var(--text-sm);
-    font-weight: 650;
+    font-weight: 700;
   }
 
   .split-sum.off {

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import CategoryIcon from './CategoryIcon.svelte'
   import { untrack } from 'svelte'
   import Sheet from './Sheet.svelte'
   import * as repo from '../lib/data/repo'
@@ -56,7 +57,7 @@
     </p>
     {#each tops as c (c.id)}
       <label class="row">
-        <span class="name"><span class="dot" style:background="var(--swatch-{c.color})"></span>{c.name}</span>
+        <span class="name"><CategoryIcon category={c} size="s" />{c.name}</span>
         <input class="input num" bind:value={values[c.id]} inputmode="decimal" placeholder="—" aria-label="Budget {c.name} (€)" />
       </label>
     {/each}

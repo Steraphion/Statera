@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte'
   import DeleteButton from './DeleteButton.svelte'
+  import Icon from './Icon.svelte'
   import { db } from '../lib/data/db'
   import { lock } from '../lib/lock.svelte'
   import { listProfiles, DEFAULT_DB } from '../lib/profiles'
@@ -58,8 +59,9 @@
   }}
 >
   <div class="box">
-    <img src="./favicon.svg" alt="" width="56" height="56" />
+    <span class="mark" aria-hidden="true"><Icon name="lock" size={32} /></span>
     <h1 id="lock-title">Statera è bloccata</h1>
+    <p class="hint">Inserisci il PIN{lock.config?.bio ? ' o usa l’impronta' : ''}</p>
     {#if !forgot}
       <form
         novalidate
@@ -86,10 +88,10 @@
           />
         </label>
         {#if error}<p class="error" role="alert">{error}</p>{/if}
-        <button type="submit" class="btn btn-primary" disabled={busy || !pin}>Sblocca</button>
+        <button type="submit" class="btn btn-primary btn-large" disabled={busy || !pin}>Sblocca</button>
       </form>
       {#if lock.config?.bio}
-        <button class="btn" onclick={bio}>Usa l'impronta</button>
+        <button class="btn btn-soft btn-large" onclick={bio}><Icon name="fingerprint" /> Usa l'impronta</button>
       {/if}
       <button class="btn btn-ghost btn-small" onclick={() => (forgot = true)}>Ho dimenticato il PIN</button>
     {:else}
@@ -145,13 +147,25 @@
     text-align: center;
   }
 
-  img {
+  .mark {
     align-self: center;
-    border-radius: var(--radius-md);
+    display: grid;
+    place-items: center;
+    width: 72px;
+    height: 72px;
+    margin-bottom: var(--space-2);
+    border-radius: var(--radius-full);
+    background: var(--color-accent-soft);
+    color: var(--color-accent);
   }
 
   h1 {
-    font-size: var(--text-xl);
+    font-size: var(--text-2xl);
+  }
+
+  .hint {
+    margin-top: calc(-1 * var(--space-2));
+    color: var(--color-text-muted);
   }
 
   form {
@@ -165,8 +179,9 @@
   }
 
   .pin {
-    min-height: 56px;
-    font-size: var(--text-xl);
+    min-height: var(--size-btn-l);
+    font-size: var(--amount-s);
+    font-weight: 800;
     letter-spacing: 0.4em;
     text-align: center;
   }

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Icon from './Icon.svelte'
+  import CategoryIcon from './CategoryIcon.svelte'
   import * as mv from '../lib/data/transactions'
   import type { Refs } from '../lib/data/refs.svelte'
   import type { Transaction } from '../lib/data/types'
@@ -56,11 +56,8 @@
 
   const vouchers = $derived(t.parts.reduce((s, p) => s + (p.vouchers ?? 0), 0))
 
-  const color = $derived.by(() => {
-    const c = t.categoryId ? refs.categoryMap.get(t.categoryId) : null
-    const top = c?.parentId ? refs.categoryMap.get(c.parentId) : c
-    return top ? `var(--swatch-${top.color})` : 'var(--color-text-muted)'
-  })
+  // Icona della categoria (per un movimento ripartito, quella della parte più grande)
+  const category = $derived(t.categoryId ? (refs.categoryMap.get(t.categoryId) ?? null) : null)
 
   const shown = $derived.by(() => {
     if (effect !== null) return { value: effect, sign: effect > 0 ? '+' : effect < 0 ? '−' : '' }
@@ -71,9 +68,11 @@
 
 <button class="list-row" class:muted {onclick}>
   {#if t.type === 'trasferimento'}
-    <span class="icon"><Icon name="arrow-left-right" size={16} /></span>
+    <CategoryIcon icon="arrow-left-right" />
+  {:else if t.splits?.length}
+    <CategoryIcon icon="split" color={category?.color ?? null} />
   {:else}
-    <span class="dot" style:background={color}></span>
+    <CategoryIcon {category} />
   {/if}
   <span class="main">
     <span class="name">{title}</span>
@@ -96,14 +95,6 @@
 </button>
 
 <style>
-  .icon {
-    flex: none;
-    display: grid;
-    place-items: center;
-    width: 12px;
-    color: var(--color-text-muted);
-  }
-
   .end {
     display: flex;
     flex-direction: column;
@@ -111,7 +102,7 @@
   }
 
   .amount {
-    font-weight: 600;
+    font-weight: 700;
   }
 
   .income {

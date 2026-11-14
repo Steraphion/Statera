@@ -147,6 +147,12 @@
 </Card>
 
 <style>
+  h2 {
+    font-size: var(--text-lg);
+    font-weight: 800;
+    margin-bottom: var(--space-2);
+  }
+
   .muted,
   .note {
     color: var(--color-text-muted);

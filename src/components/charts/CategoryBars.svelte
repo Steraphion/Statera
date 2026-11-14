@@ -2,9 +2,10 @@
   import type { CategoryTotal } from '../../lib/data/analytics'
   import type { Category } from '../../lib/data/types'
   import { formatEuro } from '../../lib/format'
+  import CategoryIcon from '../CategoryIcon.svelte'
 
   // Barre orizzontali: una sola serie (quanto per categoria), quindi un solo colore.
-  // L'identità della categoria è il pallino accanto al nome; i valori sono scritti in chiaro.
+  // L'identità della categoria è l'icona accanto al nome; i valori sono scritti in chiaro.
   let {
     groups,
     color,
@@ -30,7 +31,7 @@
           title="{g.category.name}: {formatEuro(g.total)} ({pct(g.share)})"
         >
           <span class="label">
-            <span class="dot" style:background="var(--swatch-{g.category.color})"></span>
+            <CategoryIcon category={g.category} size="s" />
             <span class="name">{g.category.name}</span>
             <span class="share">{pct(g.share)}</span>
           </span>

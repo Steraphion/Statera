@@ -230,7 +230,7 @@
 
   .tooltip b {
     color: var(--color-text);
-    font-weight: 650;
+    font-weight: 700;
   }
 
   .tooltip i {
@@ -272,6 +272,6 @@
   }
 
   tr.hl td {
-    font-weight: 650;
+    font-weight: 700;
   }
 </style>

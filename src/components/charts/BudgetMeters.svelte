@@ -1,4 +1,5 @@
 <script lang="ts">
+  import CategoryIcon from '../CategoryIcon.svelte'
   import { perDay, type BudgetStatus } from '../../lib/data/analytics'
   import { formatEuro } from '../../lib/format'
 
@@ -19,7 +20,7 @@
     {@const day = perDay(left, daysLeft)}
     <li class={b.state}>
       <div class="top">
-        <span class="name"><span class="dot" style:background="var(--swatch-{b.category.color})"></span>{b.category.name}</span>
+        <span class="name"><CategoryIcon category={b.category} size="s" />{b.category.name}</span>
         <span class="state">{b.state === 'ok' ? '' : b.state === 'superato' ? '▲ ' : '! '}{LABEL[b.state]}</span>
       </div>
       <div
@@ -77,7 +78,7 @@
 
   .state {
     font-size: var(--text-xs);
-    font-weight: 650;
+    font-weight: 700;
     color: var(--color-text-muted);
   }
 
