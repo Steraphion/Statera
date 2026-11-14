@@ -8,6 +8,8 @@
   import FavoritesBar from '../components/FavoritesBar.svelte'
   import SetupGuide from '../components/SetupGuide.svelte'
   import MonthRecapCard from '../components/MonthRecapCard.svelte'
+  import MonthCalendar from '../components/MonthCalendar.svelte'
+  import Segmented from '../components/Segmented.svelte'
   import { useRefs } from '../lib/data/refs.svelte'
   import * as mv from '../lib/data/transactions'
   import type { Template, Transaction, TransactionType } from '../lib/data/types'
@@ -37,6 +39,13 @@
   const totals = $derived(mv.totals(rows))
   const days = $derived(mv.groupByDay(rows))
   const isCurrentMonth = $derived(ui.month === monthOf(today()))
+
+  // Calendario: giorno scelto (oggi nel mese in corso, altrimenti l'ultimo con movimenti)
+  let picked = $state('')
+  const selectedDay = $derived(
+    picked.startsWith(ui.month) ? picked : isCurrentMonth ? today() : (days[0]?.date ?? `${ui.month}-01`),
+  )
+  const shownDays = $derived(ui.view === 'calendario' ? days.filter((g) => g.date === selectedDay) : days)
   const noAccounts = $derived(refs.ready && refs.value.accounts.length === 0)
 
   let sheet = $state<{ movement?: Transaction; type?: TransactionType; template?: Template } | null>(null)
@@ -121,6 +130,27 @@
   </div>
 </Card>
 
+{#if !noAccounts && loaded && rows.length > 0}
+  <div class="view">
+    <Segmented
+      label="Vista"
+      bind:value={ui.view}
+      options={[
+        { value: 'elenco', label: 'Elenco' },
+        { value: 'calendario', label: 'Calendario' },
+      ]}
+    />
+  </div>
+  {#if ui.view === 'calendario'}
+    <Card>
+      <MonthCalendar month={ui.month} {rows} bind:selected={() => selectedDay, (v) => (picked = v)} />
+    </Card>
+    {#if shownDays.length === 0}
+      <p class="empty-note">Nessun movimento il {formatDay(selectedDay).toLowerCase()}.</p>
+    {/if}
+  {/if}
+{/if}
+
 {#if noAccounts}
   <!-- La guida al primo avvio spiega come iniziare -->
 {:else if loaded && rows.length === 0}
@@ -131,7 +161,7 @@
     </div>
   </Card>
 {:else}
-  {#each days as g (g.date)}
+  {#each shownDays as g (g.date)}
     <h2 class="day">
       <span>{formatDay(g.date)}</span>
       <span class="num" class:amount-neg={g.net < 0}>{g.net === 0 ? '' : formatEuro(g.net)}</span>
@@ -167,6 +197,12 @@
 {/if}
 
 <style>
+  .view {
+    display: flex;
+    justify-content: flex-end;
+    margin: 0 0 var(--space-3);
+  }
+
   .month {
     display: flex;
     align-items: center;

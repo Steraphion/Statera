@@ -8,6 +8,8 @@ class UiState {
   month = $state(monthOf(today()))
   /** Periodo mostrato in Analisi. */
   analysis = $state<{ kind: 'mese' | 'anno'; month: string }>({ kind: 'mese', month: monthOf(today()) })
+  /** Movimenti come elenco o come calendario del mese. */
+  view = $state<'elenco' | 'calendario'>('elenco')
   /** Ricerca in corso. */
   filters = $state<Filters>({ ...EMPTY_FILTERS })
 }

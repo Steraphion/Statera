@@ -39,3 +39,6 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
 - `etichette.py` — Fase 5.2: ripartizione su più categorie (riga che prende il resto, categoria principale,
   analisi, CSV una riga per categoria, ritorno a una sola categoria, somma sbagliata) ed etichette (chip, scheda
   in Analisi, filtro in Cerca). Uso come `collaudo.py`.
+- `calendario-obiettivi.py` — Fase 5.3 con orologio fisso: calendario del mese (giorno scelto, movimenti del
+  giorno, entrate segnate anche a parole, tinta per il giorno più caro, cambio mese) e obiettivi di risparmio (a
+  mano con aggiunte, collegati al saldo di un conto, quanto al mese, eliminazione). Uso come `collaudo.py`.

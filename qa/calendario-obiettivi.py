@@ -1,0 +1,75 @@
+"""Collaudo Fase 5.3: vista calendario e obiettivi di risparmio (orologio fisso, dati di esempio)."""
+import asyncio, re, os, datetime, json
+from playwright.async_api import async_playwright
+BASE = "http://localhost:4173"
+SAMPLE = open(os.path.join(os.path.dirname(__file__), "anno-di-esempio.js")).read()
+results = []
+def check(name, ok, info=""):
+    results.append(ok); print(("PASS " if ok else "FAIL ") + name + (f"  [{info}]" if info and not ok else ""))
+async def new_account(pg, name, typ, saldo, date="2025-11-30"):
+    await pg.goto(BASE + "/#/conti"); await pg.wait_for_timeout(300)
+    await pg.get_by_role("button", name="Conto").first.click()
+    await pg.get_by_label("Nome").fill(name); await pg.get_by_label("Tipo").select_option(typ); await pg.get_by_label("Saldo iniziale (€)").fill(saldo)
+    await pg.locator("dialog input[type=date]").fill(date)
+    await pg.get_by_role("button", name="Salva").click(); await pg.wait_for_timeout(300)
+async def main():
+    async with async_playwright() as p:
+        b = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
+        for label, opts in [("Android", {**p.devices["Pixel 7"]}), ("PC", {"viewport": {"width": 1366, "height": 800}})]:
+            print(f"\n===== {label} =====")
+            ctx = await b.new_context(**opts, locale="it-IT"); pg = await ctx.new_page(); errs = []
+            await pg.clock.set_fixed_time(datetime.datetime(2026, 11, 14, 10, 0))
+            pg.on("pageerror", lambda e: errs.append(str(e))); pg.on("console", lambda m: errs.append(m.text) if m.type == "error" else None)
+            await pg.goto(BASE + "/#/conti"); await pg.wait_for_selector("nav"); await pg.wait_for_timeout(300)
+            await new_account(pg, "Conto", "conto_corrente", "2000")
+            await pg.evaluate(SAMPLE)
+            await pg.goto(BASE + "/#/movimenti"); await pg.reload(); await pg.wait_for_selector("nav"); await pg.wait_for_timeout(800)
+            # calendario
+            await pg.get_by_role("radio", name="Calendario").click(); await pg.wait_for_timeout(300)
+            days = pg.locator(".cal .day")
+            check(f"{label}: 30 giorni a novembre", await days.count() == 30)
+            check(f"{label}: oggi scelto, nessun movimento", await pg.locator(".cal .day.sel .n").inner_text() == "14" and await pg.get_by_text("Nessun movimento il").count() == 1)
+            await days.nth(9).click(); await pg.wait_for_timeout(200)
+            check(f"{label}: tocco su un giorno mostra i suoi movimenti", await pg.locator(".list li").count() == 1 and "Spesa settimana" in await pg.locator(".list").inner_text())
+            lbl1 = await days.nth(0).get_attribute("aria-label")
+            check(f"{label}: giorno con entrate segnato (anche a parole)", await days.nth(0).locator(".in").count() == 1 and "entrate" in lbl1, lbl1)
+            levels = await pg.evaluate("[...document.querySelectorAll('.cal .day')].map(d => [...d.classList].find(c => /^l\\d$/.test(c)))")
+            check(f"{label}: il giorno più caro ha la tinta più scura", levels[2] == "l4", str(levels[:5]))
+            await pg.get_by_role("button", name="Mese precedente").click(); await pg.wait_for_timeout(400)
+            check(f"{label}: altro mese: 31 giorni e un giorno con movimenti scelto", await days.count() == 31 and await pg.locator(".list li").count() >= 1)
+            await pg.get_by_role("radio", name="Elenco").click(); await pg.wait_for_timeout(200)
+            check(f"{label}: ritorno all'elenco", await pg.locator("h2.day").count() > 3)
+            # obiettivi
+            await pg.goto(BASE + "/#/conti"); await pg.wait_for_timeout(300)
+            await pg.get_by_role("button", name="Obiettivo").click(); await pg.wait_for_selector("dialog[open]")
+            await pg.get_by_label("Nome").fill("Fondo emergenze")
+            await pg.get_by_label("Da raggiungere (€)").fill("3000")
+            await pg.get_by_label("Già accantonato (€)").fill("500")
+            await pg.get_by_label("Entro il (facoltativo)").fill("2027-05-31")
+            await pg.get_by_role("button", name="Salva").click(); await pg.wait_for_timeout(400)
+            g = pg.locator(".goals li").first
+            t = await g.inner_text()
+            check(f"{label}: obiettivo con percentuale e mancante", "16%" in t and "mancano 2.500,00" in t, t.replace("\n", " | "))
+            check(f"{label}: quanto mettere da parte al mese", "416,67" in t and "6 mesi" in t, t.replace("\n", " | "))
+            await g.get_by_role("button", name="Aggiungi").click(); await pg.wait_for_selector("dialog[open]")
+            await pg.get_by_label("Importo (€)").fill("250")
+            await pg.get_by_role("button", name="Aggiungi", exact=True).last.click(); await pg.wait_for_timeout(400)
+            check(f"{label}: aggiunta registrata", "25%" in await g.inner_text())
+            await new_account(pg, "Risparmi", "altro", "1200")
+            await pg.get_by_role("button", name="Obiettivo").click(); await pg.wait_for_selector("dialog[open]")
+            await pg.get_by_label("Nome").fill("Bici")
+            await pg.get_by_label("Da raggiungere (€)").fill("1000")
+            await pg.get_by_label("Dove accantoni").select_option(label="Il saldo del conto Risparmi")
+            check(f"{label}: con conto niente importo a mano", await pg.get_by_label("Già accantonato (€)").count() == 0)
+            await pg.get_by_role("button", name="Salva").click(); await pg.wait_for_timeout(400)
+            bici = pg.locator(".goals li", has_text="Bici")
+            bt = await bici.inner_text()
+            check(f"{label}: obiettivo che segue il conto, raggiunto", "Raggiunto" in bt and "Segue il saldo di Risparmi" in bt and await bici.get_by_role("button", name="Aggiungi").count() == 0, bt.replace("\n", " | "))
+            await bici.get_by_role("button", name="Modifica Bici").click(); await pg.wait_for_selector("dialog[open]")
+            await pg.get_by_role("button", name="Elimina").click(); await pg.get_by_role("button", name="Conferma eliminazione").click(); await pg.wait_for_timeout(400)
+            check(f"{label}: obiettivo eliminato", await pg.locator(".goals li", has_text="Bici").count() == 0)
+            check(f"{label}: nessun errore in console", not errs, "; ".join(errs[:3]))
+            await ctx.close()
+        await b.close()
+    print(f"\n{sum(results)}/{len(results)} controlli superati")
+asyncio.run(main())

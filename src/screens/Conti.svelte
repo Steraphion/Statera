@@ -4,6 +4,11 @@
   import AccountForm from '../components/AccountForm.svelte'
   import CardForm from '../components/CardForm.svelte'
   import Icon from '../components/Icon.svelte'
+  import GoalForm from '../components/GoalForm.svelte'
+  import GoalAddSheet from '../components/GoalAddSheet.svelte'
+  import { goalProgress } from '../lib/data/goals'
+  import { today } from '../lib/data/util'
+  import type { Goal } from '../lib/data/types'
   import { db } from '../lib/data/db'
   import { moveAccount } from '../lib/data/repo'
   import { live } from '../lib/data/live.svelte'
@@ -14,14 +19,20 @@
 
   const data = live(
     async () => {
-      const [accounts, cards, transactions] = await Promise.all([
+      const [accounts, cards, transactions, goals] = await Promise.all([
         db.accounts.toArray(),
         db.cards.toArray(),
         db.transactions.toArray(),
+        db.goals.toArray(),
       ])
-      return { accounts: alive(accounts).sort(byOrder), cards: alive(cards).sort(byOrder), transactions }
+      return {
+        accounts: alive(accounts).sort(byOrder),
+        cards: alive(cards).sort(byOrder),
+        transactions,
+        goals: alive(goals).sort((a, b) => a.name.localeCompare(b.name, 'it')),
+      }
     },
-    { accounts: [] as Account[], cards: [] as CardT[], transactions: [] },
+    { accounts: [] as Account[], cards: [] as CardT[], transactions: [], goals: [] as Goal[] },
   )
 
   const active = $derived(data.value.accounts.filter((a) => !a.archived))
@@ -34,6 +45,9 @@
   let sorting = $state(false)
   let accountSheet = $state<{ account?: Account } | null>(null)
   let cardSheet = $state<{ card?: CardT } | null>(null)
+  let goalSheet = $state<{ goal?: Goal } | null>(null)
+  let goalAdd = $state<Goal | null>(null)
+  const now = today()
 </script>
 
 <ScreenHeader title="Conti">
@@ -123,6 +137,57 @@
   {/if}
 </Card>
 
+<h2 class="section-title">
+  Obiettivi di risparmio
+  <button class="btn btn-ghost btn-small" onclick={() => (goalSheet = {})}>
+    <Icon name="plus" size={16} /> Obiettivo
+  </button>
+</h2>
+<Card>
+  {#if data.value.goals.length === 0}
+    <p class="empty-note">
+      Nessun obiettivo. Un obiettivo (es. fondo emergenze, vacanza) ti dice quanto manca e quanto mettere da parte al
+      mese.
+    </p>
+  {:else}
+    <ul class="goals">
+      {#each data.value.goals as g (g.id)}
+        {@const p = goalProgress(g, data.value.accounts, data.value.transactions, now)}
+        <li>
+          <button class="goal" onclick={() => (goalSheet = { goal: g })} aria-label="Modifica {g.name}">
+            <span class="top">
+              <span class="name"><span class="dot" style:background="var(--swatch-{g.color})"></span>{g.name}</span>
+              <span class="num pct">{p.reached ? '✓ Raggiunto' : `${Math.floor(Math.min(1, p.ratio) * 100)}%`}</span>
+            </span>
+            <span
+              class="track"
+              role="meter"
+              aria-label="Avanzamento {g.name}"
+              aria-valuemin="0"
+              aria-valuemax={g.target}
+              aria-valuenow={Math.max(0, p.current)}
+            >
+              <span class="fill" style:width="{Math.max(0, Math.min(100, p.ratio * 100))}%" style:background="var(--swatch-{g.color})"></span>
+            </span>
+            <span class="sub num">{formatEuro(p.current)} di {formatEuro(g.target)}{p.reached ? '' : ` · mancano ${formatEuro(p.remaining)}`}</span>
+            {#if p.perMonth}
+              <span class="sub">Circa <strong class="num">{formatEuro(p.perMonth)}</strong> al mese per {p.monthsLeft === 1 ? "l'ultimo mese" : `${p.monthsLeft} mesi`}</span>
+            {:else if p.overdue}
+              <span class="sub">La data prevista è passata</span>
+            {/if}
+            {#if g.accountId}
+              <span class="sub">Segue il saldo di {accountName.get(g.accountId) ?? '—'}</span>
+            {/if}
+          </button>
+          {#if !g.accountId && !p.reached}
+            <button class="btn btn-small add" onclick={() => (goalAdd = g)}>Aggiungi</button>
+          {/if}
+        </li>
+      {/each}
+    </ul>
+  {/if}
+</Card>
+
 {#if archived.length > 0}
   <h2 class="section-title">
     Archiviati
@@ -149,6 +214,19 @@
   />
 {/if}
 
+{#if goalSheet}
+  <GoalForm
+    goal={goalSheet.goal}
+    accounts={data.value.accounts}
+    defaultColor={SWATCHES[(data.value.goals.length + 2) % SWATCHES.length]}
+    onclose={() => (goalSheet = null)}
+  />
+{/if}
+
+{#if goalAdd}
+  <GoalAddSheet goal={goalAdd} onclose={() => (goalAdd = null)} />
+{/if}
+
 {#if cardSheet}
   <CardForm
     card={cardSheet.card}
@@ -160,6 +238,86 @@
 {/if}
 
 <style>
+  .goals {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .goals li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-2);
+    align-items: start;
+  }
+
+  .goal {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .goal .top {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+
+  .goal .name {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-weight: 600;
+  }
+
+  .goal .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .goal .pct {
+    font-weight: 650;
+  }
+
+  .goal .track {
+    display: block;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--chart-track);
+    overflow: hidden;
+  }
+
+  .goal .fill {
+    display: block;
+    height: 100%;
+    border-radius: 4px;
+  }
+
+  .goal .sub {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+  }
+
+  .goal .sub strong {
+    color: var(--color-text);
+  }
+
+  .add {
+    margin-top: 2px;
+  }
+
   .total {
     display: flex;
     flex-direction: column;
