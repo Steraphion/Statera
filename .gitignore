@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# cache di Python (generatori di design)
+__pycache__/
+*.pyc
