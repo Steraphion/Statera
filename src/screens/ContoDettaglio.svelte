@@ -109,7 +109,7 @@
   {/if}
 
   <div class="fab-space" aria-hidden="true"></div>
-  <button class="fab" aria-label="Nuovo movimento" onclick={() => (movementSheet = {})}>
+  <button class="fab" data-no-autoauth aria-label="Nuovo movimento" onclick={() => (movementSheet = {})}>
     <Icon name="plus" size={28} />
   </button>
 

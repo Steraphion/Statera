@@ -42,9 +42,12 @@
     orig?.color ??
       untrack(() => categories.find((c) => c.id === defaultParentId)?.color ?? defaultColor),
   )
-  // Icona: si salva solo se cambiata, così le categorie iniziali seguono l'icona predefinita
-  const initIcon: CategoryIconKey | null = orig ? categoryIconKey(orig) : null
-  let icon = $state<CategoryIconKey | null>(initIcon)
+  // Icona: finché non la si sceglie è automatica (predefinita delle categorie iniziali o dal nome)
+  // e non si scrive nei dati; scelta, si salva come chiave (null = "Nessuna", si vede l'iniziale).
+  let picked = $state<CategoryIconKey | null | undefined>(
+    orig && orig.icon !== undefined ? categoryIconKey(orig) : undefined,
+  )
+  const autoIcon = $derived(categoryIconKey({ id: orig?.id ?? '', name }))
   let error = $state('')
   let busy = $state(false)
 
@@ -73,7 +76,8 @@
 
   function save(e: SubmitEvent) {
     e.preventDefault()
-    const input = { name, kind, parentId: parentId || null, color, ...(icon !== initIcon ? { icon } : {}) }
+    const changed = picked !== undefined && picked !== (orig?.icon ?? undefined)
+    const input = { name, kind, parentId: parentId || null, color, ...(changed ? { icon: picked } : {}) }
     run(() => (category ? repo.updateCategory(category.id, input) : repo.createCategory(input)))
   }
 </script>
@@ -113,7 +117,12 @@
       </label>
     {/if}
 
-    <IconPicker bind:value={icon} {color} {name} />
+    <IconPicker
+      bind:value={() => (picked === undefined ? autoIcon : picked), (v) => (picked = v)}
+      auto={picked === undefined}
+      {color}
+      {name}
+    />
 
     <ColorPicker bind:value={color} />
 

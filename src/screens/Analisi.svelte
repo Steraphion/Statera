@@ -376,6 +376,7 @@
   }
 
   .tile.save .value {
+    color: inherit;
     font-size: var(--amount-m);
     letter-spacing: var(--tracking-tighter);
   }

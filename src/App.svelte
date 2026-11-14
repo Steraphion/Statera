@@ -28,6 +28,16 @@
 
   // Scorciatoie da tastiera (PC), valide ovunque: N = nuovo movimento, / = cerca.
   // Non scattano mentre si scrive in un campo o con un pannello aperto.
+  // Permesso Google in scadenza: si rinnova al primo tocco su un pulsante o un link (serve un tocco
+  // perché Google apre per un attimo la sua finestra). Non sul blocco, nel tastierino o sui pulsanti
+  // che aprono il modulo del movimento, per non disturbare l'inserimento.
+  function onTap(e: MouseEvent) {
+    if (!sync.tokenDue || lock.locked) return
+    const el = (e.target as Element | null)?.closest('a, button')
+    if (!el || el.closest('.keypad, dialog.lock, [data-no-autoauth]')) return
+    sync.autoReconnect()
+  }
+
   function onKey(e: KeyboardEvent) {
     if (lock.locked || e.ctrlKey || e.metaKey || e.altKey) return
     if ((e.target as HTMLElement).closest('input, textarea, select, [contenteditable]')) return
@@ -43,6 +53,7 @@
 </script>
 
 <svelte:window onkeydown={onKey} />
+<svelte:document onclickcapture={onTap} />
 
 <!-- Con l'app bloccata il contenuto resta montato (nessun inserimento perso) ma invisibile e inattivo -->
 <div class="app-root" class:locked={lock.locked} inert={lock.locked} aria-hidden={lock.locked}>
@@ -57,17 +68,16 @@
       <span>Statera</span>
     </div>
     <!-- PC: comando principale in cima alla barra laterale -->
-    <button class="new-pc btn btn-primary" aria-label="Nuovo movimento" aria-keyshortcuts="N" onclick={newMovement}>
+    <button class="new-pc btn btn-primary" data-no-autoauth aria-keyshortcuts="N" title="Scorciatoia: tasto N" onclick={newMovement}>
       <Icon name="plus" stroke={2.4} />
-      <span class="grow" aria-hidden="true">Nuovo movimento</span>
-      <kbd aria-hidden="true">N</kbd>
+      <span class="grow">Nuovo movimento</span>
     </button>
     <ul>
       {#each ROUTES as r, i (r.id)}
         {#if i === 2}
           <!-- Telefono: il + al centro della barra -->
           <li class="plus">
-            <button class="fab" aria-label="Nuovo movimento" onclick={newMovement}>
+            <button class="fab" data-no-autoauth aria-label="Nuovo movimento" onclick={newMovement}>
               <Icon name="plus" size={26} stroke={2.4} />
             </button>
           </li>
@@ -84,10 +94,9 @@
         </li>
       {/each}
       <li class="pc-only">
-        <a href="#/cerca" class:active={router.current === 'cerca'} aria-current={router.current === 'cerca' ? 'page' : undefined}>
+        <a href="#/cerca" class:active={router.current === 'cerca'} aria-current={router.current === 'cerca' ? 'page' : undefined} aria-keyshortcuts="/" title="Scorciatoia: tasto /">
           <Icon name="search" size={22} />
           <span>Cerca</span>
-          <kbd aria-hidden="true">/</kbd>
         </a>
       </li>
     </ul>
@@ -168,21 +177,6 @@
   /* Schermate aperte da un'altra: niente barra in basso sul telefono */
   .sub .content {
     padding-bottom: calc(var(--space-8) + env(safe-area-inset-bottom));
-  }
-
-  kbd {
-    min-width: 24px;
-    height: 24px;
-    padding: 0 6px;
-    border-radius: var(--radius-xs);
-    display: inline-grid;
-    place-items: center;
-    font: inherit;
-    font-size: var(--text-xs);
-    font-weight: 700;
-    background: var(--color-surface-2);
-    color: var(--color-text-muted);
-    border: 1px solid var(--color-border);
   }
 
   /* --- Telefono: barra flottante con il + al centro (design system: BarraNavigazione) --- */
@@ -303,18 +297,12 @@
     .new-pc {
       display: flex;
       justify-content: flex-start;
-      padding: 0 var(--space-2) 0 var(--space-4);
+      padding: 0 var(--space-4);
     }
 
     .new-pc .grow {
       flex: 1;
       text-align: left;
-    }
-
-    .new-pc kbd {
-      background: color-mix(in srgb, var(--color-on-primary) 18%, transparent);
-      color: var(--color-on-primary);
-      border-color: transparent;
     }
 
     ul {

@@ -5,7 +5,7 @@ import { processRecurring } from '../data/recurring'
 import { upsertProfile } from '../profiles'
 import * as core from './core'
 import * as cr from './crypto'
-import { AuthExpiredError, Drive, OfflineError, requestToken, revokeToken, type DriveFile, type Token } from './google'
+import { AuthExpiredError, Drive, OfflineError, loadGis, requestToken, revokeToken, type DriveFile, type Token } from './google'
 import { hasUserData, TABLES } from './merge'
 
 /**
@@ -66,6 +66,11 @@ class SyncEngine {
   #timer: ReturnType<typeof setTimeout> | null = null
   #watching = false
   #lastStamp = 0
+  /** Rinnovo automatico del permesso già tentato (si riprova dopo il prossimo accesso riuscito). */
+  #autoTried = false
+  #reconnecting = false
+  /** Il rinnovo automatico non è riuscito: si mostra l'avviso con "Riconnetti". */
+  askReconnect = $state(false)
 
   // ---------- avvio ----------
 
@@ -79,6 +84,8 @@ class SyncEngine {
       return
     }
     this.#watch()
+    // La libreria di Google pronta in anticipo: il rinnovo del permesso deve partire subito al tocco
+    void loadGis().catch(() => {})
     if (!this.#key) this.status = 'locked'
     else this.syncSoon(0)
   }
@@ -96,6 +103,10 @@ class SyncEngine {
 
   #saveToken(t: Token | null) {
     this.#token = t
+    if (t) {
+      this.#autoTried = false
+      this.askReconnect = false
+    }
     try {
       if (t) localStorage.setItem(TOKEN_KEY(), JSON.stringify(t))
       else localStorage.removeItem(TOKEN_KEY())
@@ -109,8 +120,28 @@ class SyncEngine {
     return null
   }
 
+  /** Il permesso manca o scade entro 5 minuti: al prossimo tocco conviene rinnovarlo. */
+  get tokenDue(): boolean {
+    if (!this.meta || !this.#key) return false
+    return !(this.#token && this.#token.expiresAt > Date.now() + 5 * 60_000)
+  }
+
+  /**
+   * Rinnovo automatico del permesso, da chiamare dentro un tocco dell'utente: Google apre la sua
+   * finestra e, se l'accesso è già stato dato, la richiude da sola. Un solo tentativo per scadenza;
+   * se non riesce compare l'avviso con "Riconnetti".
+   */
+  autoReconnect() {
+    if (!this.tokenDue || this.#autoTried || this.#reconnecting) return
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return
+    this.#autoTried = true
+    void this.reconnect(true)
+  }
+
   /** Riconnessione a Google dopo la scadenza del permesso (va chiamata da un tocco). */
-  async reconnect() {
+  async reconnect(auto = false) {
+    if (this.#reconnecting) return
+    this.#reconnecting = true
     this.error = ''
     try {
       const t = await requestToken({ silent: true, hint: this.meta?.email })
@@ -122,7 +153,10 @@ class SyncEngine {
       this.#saveToken(t)
       await this.syncNow()
     } catch (e) {
-      this.error = msg(e)
+      this.askReconnect = true
+      if (!auto) this.error = msg(e)
+    } finally {
+      this.#reconnecting = false
     }
   }
 

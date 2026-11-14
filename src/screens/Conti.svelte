@@ -58,10 +58,10 @@
   </button>
 </ScreenHeader>
 
-<section class="total" aria-label="Patrimonio">
-  <span class="label">Patrimonio</span>
-  <span class="num value" class:amount-neg={total < 0}>{formatEuro(total)}</span>
-  <span class="count">{active.length === 1 ? '1 conto attivo' : `${active.length} conti attivi`}{archived.length ? ` · ${archived.length} archiviat${archived.length === 1 ? 'o' : 'i'}` : ''}</span>
+<section class="total balance-box" aria-label="Patrimonio">
+  <span class="bb-label">Patrimonio</span>
+  <span class="num bb-amount">{formatEuro(total)}</span>
+  <span class="bb-pill">{active.length === 1 ? '1 conto attivo' : `${active.length} conti attivi`}{archived.length ? ` · ${archived.length} archiviat${archived.length === 1 ? 'o' : 'i'}` : ''}</span>
 </section>
 
 {#snippet accountRow(a: Account)}
@@ -322,29 +322,7 @@
 
   /* Patrimonio grande al centro (stile Vivace) */
   .total {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-1);
-    padding: var(--space-2) 0 var(--space-2);
-  }
-
-  .label {
-    font-size: var(--text-md);
-    font-weight: 500;
-    color: var(--color-text-muted);
-  }
-
-  .value {
-    font-size: var(--amount-l);
-    font-weight: 800;
-    letter-spacing: var(--tracking-tighter);
-    line-height: 1.1;
-  }
-
-  .count {
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
+    margin: var(--space-2) 0 var(--space-2);
   }
 
   .sort-row {

@@ -77,7 +77,7 @@ async def run_flow(b, label, ctx_opts, m):
     await new_account(pg, m, "Buoni", "buoni_pasto", val="8", n="10", date="2026-11-01")
     await tap(pg.get_by_role("button", name="Carta"), m)
     await pg.get_by_label("Nome").fill("Bancomat"); await tap(pg.get_by_role("button", name="Salva"), m); await pg.wait_for_timeout(250)
-    tot = await pg.locator(".total .value").text_content()
+    tot = await pg.locator(".total .bb-amount").text_content()
     check(f"{label}: conti creati, patrimonio 1.130,00", tot.replace("\xa0"," ").strip() == "1.130,00 €", tot)
 
     # buoni con valore non intero -> errore visibile

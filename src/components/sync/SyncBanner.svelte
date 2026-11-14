@@ -1,10 +1,12 @@
 <script lang="ts">
   import { sync } from '../../lib/sync/sync.svelte'
 
-  // Avviso in cima a ogni schermata solo quando serve un intervento dell'utente
+  // Avviso in cima a ogni schermata solo quando serve un intervento dell'utente.
+  // Permesso Google scaduto: prima si prova il rinnovo automatico al primo tocco (App.svelte),
+  // l'avviso compare solo se non è riuscito.
 </script>
 
-{#if sync.meta && sync.status === 'needs-auth'}
+{#if sync.meta && sync.status === 'needs-auth' && sync.askReconnect}
   <div class="banner" role="status">
     <span>Sincronizzazione in pausa: l'accesso a Google è scaduto.</span>
     <button class="btn btn-primary btn-small" onclick={() => sync.reconnect()}>Riconnetti</button>

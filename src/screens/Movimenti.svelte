@@ -104,21 +104,21 @@
   <FavoritesBar refs={refs.value} onopen={(t) => (sheet = { template: t })} />
 {/if}
 
-<!-- Saldo del mese al centro, azioni rapide, entrate e uscite (design system: stile Vivace) -->
-<section class="hero" aria-label="Saldo del mese">
-  <span class="hero-label">Saldo del mese</span>
-  <span class="hero-amount num">{totals.net > 0 ? '+' : ''}{formatEuro(totals.net)}</span>
+<!-- Saldo del mese nel riquadro indaco, poi azioni rapide, entrate e uscite (design system: stile Vivace) -->
+<section class="hero balance-box" aria-label="Saldo del mese">
+  <span class="bb-label">Saldo del mese</span>
+  <span class="bb-amount num">{totals.net > 0 ? '+' : ''}{formatEuro(totals.net)}</span>
 </section>
 
 {#if !noAccounts}
   <div class="quick">
-    <button class="q" aria-label="Nuova spesa" onclick={() => (sheet = { type: 'uscita' })}>
+    <button class="q" data-no-autoauth aria-label="Nuova spesa" onclick={() => (sheet = { type: 'uscita' })}>
       <span class="circle"><Icon name="arrow-up-right" size={22} /></span>Spesa
     </button>
-    <button class="q" aria-label="Nuova entrata" onclick={() => (sheet = { type: 'entrata' })}>
+    <button class="q" data-no-autoauth aria-label="Nuova entrata" onclick={() => (sheet = { type: 'entrata' })}>
       <span class="circle"><Icon name="arrow-down-left" size={22} /></span>Entrata
     </button>
-    <button class="q" aria-label="Nuovo trasferimento" onclick={() => (sheet = { type: 'trasferimento' })}>
+    <button class="q" data-no-autoauth aria-label="Nuovo trasferimento" onclick={() => (sheet = { type: 'trasferimento' })}>
       <span class="circle"><Icon name="arrow-left-right" size={22} /></span>Trasferisci
     </button>
   </div>
@@ -215,24 +215,7 @@
   }
 
   .hero {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-1);
-    margin: var(--space-2) 0 var(--space-5);
-  }
-
-  .hero-label {
-    font-size: var(--text-md);
-    font-weight: 500;
-    color: var(--color-text-muted);
-  }
-
-  .hero-amount {
-    font-size: var(--amount-l);
-    font-weight: 800;
-    letter-spacing: var(--tracking-tighter);
-    line-height: 1.1;
+    margin: var(--space-2) 0 var(--space-4);
   }
 
   /* Azioni rapide (design system: AzioneRapida) */

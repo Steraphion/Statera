@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { StateraDB } from './data/db'
 import * as repo from './data/repo'
-import { categoryIconKey, categoryIconName, initial, SEED_ICONS } from './categoryIcon'
+import { categoryIconKey, categoryIconName, iconFromName, initial, SEED_ICONS } from './categoryIcon'
 import { CATEGORY_ICONS, CATEGORY_ICON_GROUPS, CATEGORY_ICON_LABELS } from './icons'
 
 let d: StateraDB
@@ -41,6 +41,29 @@ describe('icone delle categorie', () => {
     expect(new Set(grouped).size).toBe(grouped.length)
     expect(new Set(grouped)).toEqual(new Set(Object.keys(CATEGORY_ICONS)))
     for (const k of grouped) expect(CATEGORY_ICON_LABELS[k]).toBeTruthy()
+  })
+})
+
+describe('icona in base al nome', () => {
+  it('categorie iniziali create da versioni precedenti (id diversi da quelli fissi)', async () => {
+    await repo.ensureSeeded(d)
+    for (const c of await d.categories.toArray()) {
+      const old = { ...c, id: crypto.randomUUID() }
+      expect(categoryIconKey(old), c.name).toBe(categoryIconKey(c))
+    }
+  })
+
+  it('parole comuni, accenti e plurali', () => {
+    expect(iconFromName('Palestra')).toBe('sport')
+    expect(iconFromName('Caffè e colazioni')).toBe('caffe')
+    expect(iconFromName('Assicurazione auto')).toBe('assicurazioni')
+    expect(iconFromName('Affitto/mutuo')).toBe('affitto')
+    expect(iconFromName('Buoni pasto')).toBe('buoni')
+    expect(iconFromName('Regali ricevuti')).toBe('regali')
+    expect(iconFromName('Farmacia')).toBe('farmaci')
+    expect(iconFromName('Xyz')).toBeNull()
+    expect(categoryIconKey({ id: 'x', name: 'Svago', icon: null })).toBeNull()
+    expect(categoryIconKey({ id: 'x', name: 'Svago', icon: 'cinema' })).toBe('cinema')
   })
 })
 

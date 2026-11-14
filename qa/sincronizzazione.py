@@ -13,6 +13,7 @@ FAKE_GIS = """
 window.google = { accounts: { oauth2: {
   initTokenClient(cfg) { return { requestAccessToken(o) {
     window.__gisCalls = (window.__gisCalls||0) + 1;
+    if (window.__gisFail) { setTimeout(() => cfg.error_callback({ type: 'popup_failed_to_open' }), 50); return }
     setTimeout(() => cfg.callback({ access_token: 'tok-' + Date.now(), expires_in: 3600, scope: cfg.scope }), 50);
   } } },
   hasGrantedAllScopes() { return true },
@@ -190,10 +191,26 @@ async def main():
 
         # ---------- permesso scaduto ----------
         await tel.evaluate("""() => { for (const k of Object.keys(localStorage)) if (k.startsWith('statera.token')) localStorage.setItem(k, JSON.stringify({value:'tok-old', expiresAt: 1})) }""")
+        expire = """() => { for (const k of Object.keys(localStorage)) if (k.startsWith('statera.token')) localStorage.setItem(k, JSON.stringify({value:'tok-old', expiresAt: 1})) }"""
         await tel.reload(); await tel.wait_for_selector("nav"); await tel.wait_for_timeout(1500)
-        check("Permesso scaduto: avviso 'Riconnetti'", await tel.get_by_role("button", name="Riconnetti").count() == 1)
-        await tel.get_by_role("button", name="Riconnetti").click(); await tel.wait_for_timeout(2500)
-        check("Dopo 'Riconnetti' torna sincronizzato", await tel.get_by_role("button", name="Riconnetti").count() == 0 and "Sincronizzato" in await sync_status(tel))
+        banner = tel.get_by_role("button", name="Riconnetti", exact=True)
+        check("Permesso scaduto: nessun avviso finché non si tocca nulla", await banner.count() == 0)
+        calls = await tel.evaluate("() => window.__gisCalls || 0")
+        await tel.get_by_role("button", name="Nuovo movimento").first.click(); await tel.wait_for_timeout(600)
+        check("Il + non fa partire il rinnovo (non disturba l'inserimento)", await tel.evaluate("() => window.__gisCalls || 0") == calls)
+        await tel.get_by_role("button", name="Chiudi").first.click(); await tel.wait_for_timeout(300)
+        await tel.get_by_role("link", name="Movimenti").first.click(); await tel.wait_for_timeout(2500)
+        check("Al primo tocco il permesso si rinnova da solo", await tel.evaluate("() => window.__gisCalls || 0") == calls + 1 and await banner.count() == 0 and "Sincronizzato" in await sync_status(tel), await sync_status(tel))
+        # rinnovo automatico non riuscito (es. finestra bloccata): compare l'avviso
+        await tel.evaluate(expire); await tel.reload(); await tel.wait_for_selector("nav"); await tel.wait_for_timeout(1500)
+        await tel.evaluate("() => { window.__gisFail = true }")
+        await tel.get_by_role("link", name="Conti").first.click(); await tel.wait_for_timeout(1000)
+        check("Rinnovo automatico non riuscito: avviso 'Riconnetti'", await banner.count() == 1)
+        await tel.get_by_role("link", name="Analisi").first.click(); await tel.wait_for_timeout(600)
+        check("Un solo tentativo automatico per scadenza", await tel.evaluate("() => window.__gisCalls || 0") == 1)
+        await tel.evaluate("() => { window.__gisFail = false }")
+        await banner.click(); await tel.wait_for_timeout(2500)
+        check("Dopo 'Riconnetti' torna sincronizzato", await banner.count() == 0 and "Sincronizzato" in await sync_status(tel))
 
         # ---------- cambio password e terzo dispositivo con chiave di recupero ----------
         await tel.goto(BASE + "/#/altro"); await tel.wait_for_timeout(300)

@@ -79,10 +79,10 @@
   --color-on-primary: #ffffff;
   --color-accent: #535aa6; /* link, icone d'accento, voce attiva */
   --color-accent-soft: #e3e8ff;
-  --color-income: #027c56;
+  --color-income: #037e52;
   /* Importi in uscita: col colore del testo, mai in rosso */
   --color-expense: var(--color-text);
-  --color-expense-icon: #b95019;
+  --color-expense-icon: #ca4c03;
   /* Pericolo: solo errori e azioni che cancellano */
   --color-danger: #b33736;
   --color-on-danger: #ffffff;
@@ -109,16 +109,16 @@
   --status-critical: var(--color-danger);
 
   /* Tinte per conti e categorie (i dati salvano solo il nome: s1…s8), uguali nei due temi */
-  --swatch-s1: #108846;
-  --swatch-s2: #c55f1d;
-  --swatch-s3: #2273c3;
-  --swatch-s4: #895e40;
-  --swatch-s5: #8358b9;
-  --swatch-s6: #068890;
-  --swatch-s7: #b84574;
-  --swatch-s8: #74841b;
+  --swatch-s1: #048c40;
+  --swatch-s2: #d85901;
+  --swatch-s3: #0172dc;
+  --swatch-s4: #975b34;
+  --swatch-s5: #864ad2;
+  --swatch-s6: #048b91;
+  --swatch-s7: #cd2e73;
+  --swatch-s8: #768c02;
   /* Cerchio dell'icona di categoria: tinta al 15% con icona colorata */
-  --cat-tint: 15%;
+  --cat-tint: 18%;
 
   color-scheme: light;
 }
@@ -134,9 +134,9 @@
   --color-primary: #a9b3ee;
   --color-on-primary: #0e0f16;
   --color-accent: #b0baf2;
-  --color-accent-soft: #2b2f53;
-  --color-income: #4cd094;
-  --color-expense-icon: #f69462;
+  --color-accent-soft: #2c305e;
+  --color-income: #31d78c;
+  --color-expense-icon: #ff8f5a;
   --color-danger: #f58b84;
   --color-on-danger: #0e0f16;
   --shadow-1: 0 1px 3px rgb(0 0 0 / 0.5);
@@ -153,7 +153,7 @@
   --status-warning: #f2b13c;
 
   /* In scuro il cerchio è più pieno e l'icona bianca */
-  --cat-tint: 40%;
+  --cat-tint: 45%;
   --cat-icon-dark: #fff;
 
   color-scheme: dark;

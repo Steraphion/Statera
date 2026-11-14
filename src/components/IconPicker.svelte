@@ -7,10 +7,13 @@
 
   let {
     value = $bindable(),
+    auto = false,
     color,
     name,
   }: {
     value: CategoryIconKey | null
+    /** L'icona non è stata scelta: è quella proposta in base al nome. */
+    auto?: boolean
     color: SwatchKey
     /** Nome della categoria, per l'iniziale quando non c'è un'icona. */
     name: string
@@ -25,7 +28,9 @@
   <legend>Icona</legend>
   <div class="current">
     <CategoryIcon category={preview} size="l" />
-    <span class="what">{value ? CATEGORY_ICON_LABELS[value] : 'Nessuna, si vede l’iniziale'}</span>
+    <span class="what">
+      {value ? CATEGORY_ICON_LABELS[value] : 'Nessuna, si vede l’iniziale'}{#if auto && value}<small> · in base al nome</small>{/if}
+    </span>
     <button
       type="button"
       class="btn btn-small btn-soft"
