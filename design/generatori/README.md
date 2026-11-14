@@ -22,6 +22,7 @@ I file vengono scritti in `out/project/`, oppure nella cartella indicata dalla v
 | `icone.py` | Pagina "Icone delle categorie": Lucide, Tabler e Phosphor a confronto, in contesto, e scelta dell'icona nel modulo della categoria (voci in `voci-icone.json`) |
 | `icone_set.json` | Le ~100 icone usate, nei tre set (solo forme geometriche). Licenze in `LICENZE-ICONE.md` |
 | `voglio.json`, `risolvi.py`, `estrai.py` | Da quale icona di ogni set viene ogni chiave, e come rigenerare `icone_set.json` dai pacchetti npm (`npm pack lucide-static @tabler/icons @phosphor-icons/core`, poi estrarre e passare le cartelle agli script) |
+| `design_system.py` | Design system "Statera" (tipo Design System di claude.ai, https://claude.ai/artifact/HYogYA8sLDbtWMS277c1CF): `tokens.json` con i nomi di `src/styles/tokens.css`, `bundle.css` con i componenti `st-*`, anteprime, manuale, icone Lucide da caricare come asset. Argomenti: cartella di uscita, pacchetto `lucide-static`, woff2 di Plus Jakarta Sans (`@fontsource-variable/plus-jakarta-sans`, sottoinsieme latino) e la sua licenza |
 
 Per le schermate nuove, parti da `scelta.py`: usa `IND_L` / `IND_D` / `IND_SW` con
 `gen.page()` e le funzioni di `coolors.py` e `scelta.py`.
