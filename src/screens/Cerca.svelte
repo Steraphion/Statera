@@ -54,8 +54,7 @@
   })
 </script>
 
-<ScreenHeader title="Cerca" />
-<a class="back" href="#/movimenti">‹ Movimenti</a>
+<ScreenHeader title="Cerca" back={{ href: '#/movimenti', label: 'Movimenti' }} />
 
 <div class="search">
   <!-- svelte-ignore a11y_autofocus -->
@@ -189,12 +188,6 @@
 {/if}
 
 <style>
-  .back {
-    display: inline-block;
-    margin: calc(-1 * var(--space-2)) 0 var(--space-3);
-    font-size: var(--text-sm);
-    text-decoration: none;
-  }
 
   .search {
     display: flex;

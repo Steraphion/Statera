@@ -33,7 +33,7 @@ async def new_account(pg, m, name, typ, saldo=None, val=None, n=None, date=None)
     await pg.wait_for_timeout(250)
 
 async def open_new_movement(pg, m):
-    btn = pg.get_by_role("button", name="Nuovo movimento") if m else pg.get_by_role("button", name=re.compile("^Movimento$"))
+    btn = pg.get_by_role("button", name="Nuovo movimento")
     await tap(btn.first, m)
     await pg.wait_for_selector("dialog[open]")
     await pg.wait_for_timeout(150)

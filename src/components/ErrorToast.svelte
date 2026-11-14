@@ -17,7 +17,7 @@
     position: fixed;
     left: var(--space-3);
     right: var(--space-3);
-    bottom: calc(var(--nav-height) + var(--space-3) + env(safe-area-inset-bottom));
+    bottom: calc(var(--nav-height) + var(--space-3) + var(--space-4) + env(safe-area-inset-bottom));
     z-index: 50;
     max-width: 560px;
     margin: 0 auto;

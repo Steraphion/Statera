@@ -42,12 +42,11 @@
   }
 </script>
 
-<ScreenHeader title="Ricorrenti">
+<ScreenHeader title="Ricorrenti" back={{ href: '#/altro', label: 'Altro' }}>
   <button class="btn btn-primary btn-small" onclick={() => (sheet = {})}>
     <Icon name="plus" size={18} /> Ripetizione
   </button>
 </ScreenHeader>
-<a class="back" href="#/altro">‹ Altro</a>
 
 <p class="tip">
   Stipendio, affitto, abbonamenti, buoni pasto: Statera li registra da sola alla data prevista, oppure te li chiede se
@@ -100,12 +99,6 @@
 {/if}
 
 <style>
-  .back {
-    display: inline-block;
-    margin: calc(-1 * var(--space-2)) 0 var(--space-3);
-    font-size: var(--text-sm);
-    text-decoration: none;
-  }
 
   .tip {
     margin-bottom: var(--space-3);

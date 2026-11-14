@@ -47,10 +47,9 @@
 </script>
 
 {#if account && balance}
-  <ScreenHeader title={account.name}>
+  <ScreenHeader title={account.name} back={{ href: '#/conti', label: 'Conti' }}>
     <button class="btn btn-small" onclick={() => (editAccount = true)}>Modifica</button>
   </ScreenHeader>
-  <a class="back" href="#/conti">‹ Conti</a>
 
   <Card>
     <div class="summary">
@@ -139,12 +138,6 @@
     min-height: 32px;
   }
 
-  .back {
-    display: inline-block;
-    margin: calc(-1 * var(--space-2)) 0 var(--space-3);
-    font-size: var(--text-sm);
-    text-decoration: none;
-  }
 
   .summary {
     display: flex;
@@ -196,20 +189,21 @@
     height: 80px;
   }
 
+  /* Qui non c'è la barra in basso: il + del conto sta nell'angolo */
   .fab {
     position: fixed;
-    right: var(--space-4);
-    bottom: calc(var(--nav-height) + var(--space-4) + env(safe-area-inset-bottom));
+    right: var(--space-5);
+    bottom: calc(var(--space-5) + env(safe-area-inset-bottom));
     z-index: 11;
     display: grid;
     place-items: center;
-    width: 60px;
-    height: 60px;
+    width: var(--size-fab);
+    height: var(--size-fab);
     border: none;
-    border-radius: 50%;
+    border-radius: var(--radius-full);
     background: var(--color-primary);
     color: var(--color-on-primary);
-    box-shadow: var(--shadow-2);
+    box-shadow: var(--shadow-fab);
     cursor: pointer;
   }
 

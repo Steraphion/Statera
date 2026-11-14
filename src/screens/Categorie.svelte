@@ -25,13 +25,12 @@
   }
 </script>
 
-<ScreenHeader title="Categorie">
+<ScreenHeader title="Categorie" back={{ href: '#/altro', label: 'Altro' }}>
   <button class="btn btn-primary btn-small" onclick={() => (sheet = {})}>
     <Icon name="plus" size={18} /> Categoria
   </button>
 </ScreenHeader>
 
-<a class="back" href="#/altro">‹ Altro</a>
 
 <div class="switch">
   <Segmented
@@ -103,12 +102,6 @@
 {/if}
 
 <style>
-  .back {
-    display: inline-block;
-    margin: calc(-1 * var(--space-2)) 0 var(--space-3);
-    font-size: var(--text-sm);
-    text-decoration: none;
-  }
 
   .switch {
     margin-bottom: var(--space-3);

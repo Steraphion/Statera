@@ -50,28 +50,22 @@
 
   let sheet = $state<{ movement?: Transaction; type?: TransactionType; template?: Template } | null>(null)
 
-  // Scorciatoie dall'icona dell'app: #/movimenti/nuova-uscita, #/movimenti/nuova-entrata
+  // Il + della barra (#/movimenti/nuovo) e le scorciatoie dall'icona dell'app (#/movimenti/nuova-uscita, nuova-entrata)
   $effect(() => {
     const p = router.param
-    if (!p.startsWith('nuova-') || !refs.ready) return
-    const t = p === 'nuova-entrata' ? 'entrata' : p === 'nuova-trasferimento' ? 'trasferimento' : 'uscita'
+    if (!(p === 'nuovo' || p.startsWith('nuova-')) || !refs.ready) return
+    const t = p === 'nuova-entrata' ? 'entrata' : p === 'nuova-trasferimento' ? 'trasferimento' : p === 'nuovo' ? undefined : 'uscita'
     if (!noAccounts) sheet = { type: t }
     // Si torna a #/movimenti senza lasciare la scorciatoia nella cronologia
     location.replace('#/movimenti')
   })
 
-  // Scorciatoie da tastiera (PC): N = nuovo movimento, / = cerca, frecce = mese
+  // Scorciatoie da tastiera (PC): frecce = mese (N e / valgono ovunque: App.svelte)
   function onKey(e: KeyboardEvent) {
     if (sheet || e.ctrlKey || e.metaKey || e.altKey) return
     const el = e.target as HTMLElement
     if (el.closest('input, textarea, select, [contenteditable]')) return
-    if (e.key === 'n' || e.key === 'N') {
-      e.preventDefault()
-      if (!noAccounts) sheet = {}
-    } else if (e.key === '/') {
-      e.preventDefault()
-      location.hash = '/cerca'
-    } else if (e.key === 'ArrowLeft') ui.month = shiftMonth(ui.month, -1)
+    if (e.key === 'ArrowLeft') ui.month = shiftMonth(ui.month, -1)
     else if (e.key === 'ArrowRight') ui.month = shiftMonth(ui.month, 1)
   }
 
@@ -91,12 +85,9 @@
   {#if !isCurrentMonth}
     <button class="btn btn-small" onclick={() => (ui.month = monthOf(today()))}>Oggi</button>
   {/if}
-  <a class="btn btn-ghost nav" href="#/cerca" aria-label="Cerca">
+  <a class="btn btn-ghost nav" href="#/cerca" aria-label="Cerca" title="Cerca (/)">
     <Icon name="search" />
   </a>
-  <button class="btn btn-primary btn-small desktop-add" title="Scorciatoia: N" onclick={() => (sheet = {})}>
-    <Icon name="plus" size={18} /> Movimento
-  </button>
 </header>
 
 {#if refs.ready}
@@ -174,13 +165,6 @@
       </ul>
     </Card>
   {/each}
-{/if}
-
-{#if !noAccounts}
-  <div class="fab-space" aria-hidden="true"></div>
-  <button class="fab" aria-label="Nuovo movimento" onclick={() => (sheet = {})}>
-    <Icon name="plus" size={28} />
-  </button>
 {/if}
 
 {#if sheet}
@@ -284,41 +268,5 @@
   .hint {
     color: var(--color-text-muted);
     font-size: var(--text-sm);
-  }
-
-  .fab {
-    position: fixed;
-    right: var(--space-4);
-    bottom: calc(var(--nav-height) + var(--space-4) + env(safe-area-inset-bottom));
-    z-index: 11;
-    display: grid;
-    place-items: center;
-    width: 60px;
-    height: 60px;
-    border: none;
-    border-radius: 50%;
-    background: var(--color-primary);
-    color: var(--color-on-primary);
-    box-shadow: var(--shadow-2);
-    cursor: pointer;
-  }
-
-  .fab-space {
-    height: 72px;
-  }
-
-  .desktop-add {
-    display: none;
-  }
-
-  @media (min-width: 900px) {
-    .fab,
-    .fab-space {
-      display: none;
-    }
-
-    .desktop-add {
-      display: inline-flex;
-    }
   }
 </style>
