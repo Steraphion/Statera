@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { amountKeys } from '../lib/keypad.svelte'
   import Card from '../components/Card.svelte'
   import ScreenHeader from '../components/ScreenHeader.svelte'
   import MovementForm from '../components/MovementForm.svelte'
@@ -97,11 +98,11 @@
       <div class="row-2">
         <label class="field">
           <span>Importo da (€)</span>
-          <input class="input num" bind:value={f.min} inputmode="decimal" placeholder="0,00" autocomplete="off" />
+          <input class="input num" bind:value={f.min} use:amountKeys inputmode="decimal" placeholder="0,00" autocomplete="off" />
         </label>
         <label class="field">
           <span>Importo a (€)</span>
-          <input class="input num" bind:value={f.max} inputmode="decimal" placeholder="0,00" autocomplete="off" />
+          <input class="input num" bind:value={f.max} use:amountKeys inputmode="decimal" placeholder="0,00" autocomplete="off" />
         </label>
       </div>
       {#if badAmount}<p class="bad" role="alert">Importo non valido: scrivi ad esempio 50 o 12,50.</p>{/if}

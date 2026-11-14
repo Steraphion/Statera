@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { amountKeys } from '../lib/keypad.svelte'
   import { untrack } from 'svelte'
   import Sheet from './Sheet.svelte'
   import ColorPicker from './ColorPicker.svelte'
@@ -97,17 +98,17 @@
       <div class="row-2">
         <label class="field">
           <span>Valore di un buono (€)</span>
-          <input class="input num" bind:value={voucherValue} inputmode="decimal" placeholder="8,00" />
+          <input class="input num" bind:value={voucherValue} use:amountKeys inputmode="decimal" placeholder="8,00" />
         </label>
         <label class="field">
           <span>Buoni disponibili</span>
-          <input class="input num" bind:value={initialVouchers} inputmode="numeric" />
+          <input class="input num" bind:value={initialVouchers} use:amountKeys={'integer'} inputmode="numeric" />
         </label>
       </div>
     {:else}
       <label class="field">
         <span>Saldo iniziale (€)</span>
-        <input class="input num" bind:value={initial} inputmode="decimal" />
+        <input class="input num" bind:value={initial} use:amountKeys inputmode="decimal" />
         <span class="hint">Quanto c'è sul conto alla data qui sotto. Può essere negativo.</span>
       </label>
     {/if}

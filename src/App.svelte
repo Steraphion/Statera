@@ -14,6 +14,7 @@
   import Recovery from './components/Recovery.svelte'
   import ErrorToast from './components/ErrorToast.svelte'
   import Toast from './components/Toast.svelte'
+  import Keypad from './components/Keypad.svelte'
   import LockScreen from './components/LockScreen.svelte'
   import { lock } from './lib/lock.svelte'
   import { startup } from './lib/startup.svelte'
@@ -134,6 +135,7 @@
   </main>
 </div>
 <Toast />
+<Keypad />
 <ErrorToast />
 {/if}
 </div>

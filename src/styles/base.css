@@ -364,10 +364,8 @@ a.list-row {
   height: var(--size-cat-l);
 }
 
-@media (prefers-color-scheme: dark) {
-  .cat-icon {
-    color: #fff;
-  }
+:root[data-theme='dark'] .cat-icon {
+  color: var(--cat-icon-dark);
 }
 
 @media (prefers-reduced-motion: reduce) {

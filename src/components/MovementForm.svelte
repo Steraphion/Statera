@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { amountKeys, HAS_KEYPAD } from '../lib/keypad.svelte'
   import { onMount, untrack } from 'svelte'
   import Sheet from './Sheet.svelte'
   import Segmented from './Segmented.svelte'
@@ -520,6 +521,7 @@
             <input
               class="input amount num"
               bind:value={parts[0].vouchersText}
+              use:amountKeys={'integer'}
               inputmode="numeric"
               placeholder="0"
             />
@@ -538,19 +540,22 @@
                 class:income={type === 'entrata'}
                 class:expense={type === 'uscita'}
                 bind:value={parts[0].amountText}
+                use:amountKeys
                 inputmode="decimal"
                 placeholder="0,00"
                 autocomplete="off"
                 autofocus={!orig}
               />
-              <button
-                type="button"
-                class="btn plus"
-                aria-label="Aggiungi un importo (somma)"
-                title="Somma più importi, es. 12,50+3,20"
-                onmousedown={(e) => e.preventDefault()}
-                onclick={appendPlus}>+</button
-              >
+              {#if !HAS_KEYPAD}
+                <button
+                  type="button"
+                  class="btn plus"
+                  aria-label="Aggiungi un importo (somma)"
+                  title="Somma più importi, es. 12,50+3,20"
+                  onmousedown={(e) => e.preventDefault()}
+                  onclick={appendPlus}>+</button
+                >
+              {/if}
             </div>
             {#if isExpression(parts[0].amountText)}
               <span class="hint num" role="status">{calc !== null ? `= ${formatEuro(calc)}` : 'Calcolo non valido'}</span>
@@ -606,6 +611,7 @@
                     class="input num small-input"
                     aria-label="Buoni {i + 1}"
                     bind:value={r.vouchersText}
+                    use:amountKeys={'integer'}
                     inputmode="numeric"
                     placeholder="n. buoni"
                   />
@@ -615,6 +621,7 @@
                     aria-label="Importo {i + 1}"
                     bind:value={r.amountText}
                     onblur={() => settleAmount(r)}
+                    use:amountKeys
                     inputmode="decimal"
                     placeholder="0,00"
                     autocomplete="off"
@@ -697,6 +704,7 @@
                   class="input num small-input"
                   aria-label="Importo categoria {i + 1}"
                   bind:value={r.amountText}
+                  use:amountKeys
                   inputmode="decimal"
                   placeholder={i === splitRows.length - 1 ? 'il resto' : '0,00'}
                   autocomplete="off"
@@ -900,7 +908,8 @@
 
   .amount-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-auto-flow: column;
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--space-2);
   }
 

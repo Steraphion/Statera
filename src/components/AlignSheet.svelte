@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { amountKeys } from '../lib/keypad.svelte'
   import Sheet from './Sheet.svelte'
   import DateField from './DateField.svelte'
   import { accountBalance } from '../lib/data/balances'
@@ -66,6 +67,7 @@
       <input
         class="input num big"
         bind:value={realText}
+        use:amountKeys={isVoucher ? 'integer' : 'decimal'}
         inputmode={isVoucher ? 'numeric' : 'decimal'}
         placeholder={isVoucher ? '0' : '0,00'}
         autocomplete="off"

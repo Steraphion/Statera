@@ -390,11 +390,9 @@
     font-weight: 700;
   }
 
-  @media (prefers-color-scheme: dark) {
-    .tile.save {
-      background: var(--color-accent-soft);
-      color: var(--color-text);
-    }
+  :global(:root[data-theme='dark']) .tile.save {
+    background: var(--color-accent-soft);
+    color: var(--color-text);
   }
 
   .card-head {

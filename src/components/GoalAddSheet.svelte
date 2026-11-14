@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { amountKeys } from '../lib/keypad.svelte'
   import Sheet from './Sheet.svelte'
   import { addToGoal } from '../lib/data/goals'
   import type { Goal } from '../lib/data/types'
@@ -32,7 +33,7 @@
     <label class="field">
       <span>Importo (€)</span>
       <!-- svelte-ignore a11y_autofocus -->
-      <input class="input num" bind:value={text} inputmode="decimal" placeholder="0,00" autocomplete="off" autofocus />
+      <input class="input num" bind:value={text} use:amountKeys inputmode="decimal" placeholder="0,00" autocomplete="off" autofocus />
       <span class="hint">Per togliere scrivi un importo negativo, es. -20.</span>
     </label>
   </form>

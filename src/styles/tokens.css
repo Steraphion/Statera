@@ -46,6 +46,8 @@
   /* Dimensioni */
   --size-touch: 44px;
   --size-field: 52px;
+  /* Tasto del tastierino degli importi */
+  --size-key: 52px;
   --size-btn-l: 58px;
   --size-btn-s: 36px;
   --size-cat-s: 32px;
@@ -77,10 +79,10 @@
   --color-on-primary: #ffffff;
   --color-accent: #535aa6; /* link, icone d'accento, voce attiva */
   --color-accent-soft: #e3e8ff;
-  --color-income: #1d7a5a;
+  --color-income: #027c56;
   /* Importi in uscita: col colore del testo, mai in rosso */
   --color-expense: var(--color-text);
-  --color-expense-icon: #b4562a;
+  --color-expense-icon: #b95019;
   /* Pericolo: solo errori e azioni che cancellano */
   --color-danger: #b33736;
   --color-on-danger: #ffffff;
@@ -107,53 +109,52 @@
   --status-critical: var(--color-danger);
 
   /* Tinte per conti e categorie (i dati salvano solo il nome: s1…s8), uguali nei due temi */
-  --swatch-s1: #318454;
-  --swatch-s2: #b86838;
-  --swatch-s3: #3a75af;
-  --swatch-s4: #7f624c;
-  --swatch-s5: #8160a5;
-  --swatch-s6: #1d878c;
-  --swatch-s7: #aa5478;
-  --swatch-s8: #798136;
+  --swatch-s1: #108846;
+  --swatch-s2: #c55f1d;
+  --swatch-s3: #2273c3;
+  --swatch-s4: #895e40;
+  --swatch-s5: #8358b9;
+  --swatch-s6: #068890;
+  --swatch-s7: #b84574;
+  --swatch-s8: #74841b;
   /* Cerchio dell'icona di categoria: tinta al 15% con icona colorata */
   --cat-tint: 15%;
 
   color-scheme: light;
 }
 
-/* Tema scuro: automatico, segue l'impostazione del dispositivo */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-bg: #0e0f16;
-    --color-surface: #171923;
-    --color-surface-2: #212330;
-    --color-border: #2a2d3a;
-    --color-text: #eef0f6;
-    --color-text-muted: #a6aabb;
-    --color-primary: #a9b3ee;
-    --color-on-primary: #0e0f16;
-    --color-accent: #b0baf2;
-    --color-accent-soft: #2c304c;
-    --color-income: #5ccb98;
-    --color-expense-icon: #ee9a70;
-    --color-danger: #f58b84;
-    --color-on-danger: #0e0f16;
-    --shadow-1: 0 1px 3px rgb(0 0 0 / 0.5);
-    --shadow-2: 0 6px 24px rgb(0 0 0 / 0.45);
-    --shadow-3: 0 24px 64px rgb(0 0 0 / 0.6);
-    --shadow-fab: 0 8px 20px rgb(0 0 0 / 0.5);
-    --color-backdrop: rgb(0 0 0 / 0.6);
-    --toast-bg: #eef0f6;
-    --toast-text: #0e0f16;
-    --toast-action: #535aa6;
+/* Tema scuro: attivo con data-theme="dark" su <html> (scelta in Altro → Aspetto, o automatico come il sistema) */
+:root[data-theme='dark'] {
+  --color-bg: #0e0f16;
+  --color-surface: #171923;
+  --color-surface-2: #212330;
+  --color-border: #2a2d3a;
+  --color-text: #eef0f6;
+  --color-text-muted: #a6aabb;
+  --color-primary: #a9b3ee;
+  --color-on-primary: #0e0f16;
+  --color-accent: #b0baf2;
+  --color-accent-soft: #2b2f53;
+  --color-income: #4cd094;
+  --color-expense-icon: #f69462;
+  --color-danger: #f58b84;
+  --color-on-danger: #0e0f16;
+  --shadow-1: 0 1px 3px rgb(0 0 0 / 0.5);
+  --shadow-2: 0 6px 24px rgb(0 0 0 / 0.45);
+  --shadow-3: 0 24px 64px rgb(0 0 0 / 0.6);
+  --shadow-fab: 0 8px 20px rgb(0 0 0 / 0.5);
+  --color-backdrop: rgb(0 0 0 / 0.6);
+  --toast-bg: #eef0f6;
+  --toast-text: #0e0f16;
+  --toast-action: #535aa6;
 
-    --chart-income: #3987e5;
-    --chart-expense: #d95926;
-    --status-warning: #f2b13c;
+  --chart-income: #3987e5;
+  --chart-expense: #d95926;
+  --status-warning: #f2b13c;
 
-    /* In scuro il cerchio è più pieno e l'icona bianca */
-    --cat-tint: 30%;
+  /* In scuro il cerchio è più pieno e l'icona bianca */
+  --cat-tint: 40%;
+  --cat-icon-dark: #fff;
 
-    color-scheme: dark;
-  }
+  color-scheme: dark;
 }

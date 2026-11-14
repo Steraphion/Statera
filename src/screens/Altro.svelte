@@ -8,6 +8,14 @@
   import { device } from '../lib/device.svelte'
   import { sync } from '../lib/sync/sync.svelte'
   import { statusLabel } from '../lib/sync/labels'
+  import Segmented from '../components/Segmented.svelte'
+  import { theme } from '../lib/theme.svelte'
+  import type { ThemePref } from '../lib/theme'
+
+  let themePref = $state<ThemePref>(theme.pref)
+  $effect(() => {
+    if (themePref !== theme.pref) theme.set(themePref)
+  })
 </script>
 
 <ScreenHeader title="Altro" />
@@ -28,6 +36,20 @@
     <span class="grow">Movimenti ricorrenti</span>
     <Icon name="chevron-right" size={18} />
   </a>
+</Card>
+
+<Card>
+  <h2>Aspetto</h2>
+  <p class="muted theme-hint">Colori chiari o scuri. "Automatico" segue l'impostazione del telefono o del PC. La scelta vale per questo dispositivo.</p>
+  <Segmented
+    label="Tema"
+    bind:value={themePref}
+    options={[
+      { value: 'auto', label: 'Automatico' },
+      { value: 'light', label: 'Chiaro' },
+      { value: 'dark', label: 'Scuro' },
+    ]}
+  />
 </Card>
 
 <Card>
@@ -149,5 +171,9 @@
   dd {
     margin: 0;
     text-align: right;
+  }
+
+  .theme-hint {
+    margin-bottom: var(--space-3);
   }
 </style>

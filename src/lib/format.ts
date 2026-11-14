@@ -21,7 +21,7 @@ export function centsToInput(cents: number): string {
 
 /**
  * Legge un importo scritto dall'utente e restituisce i centesimi, o null se non valido.
- * Accetta: "12", "12,5", "12,50", "1.234,56", "1234.56", "€ 12", "-3,20".
+ * Accetta: "12", "12,5", "12,50", "12," (virgola senza decimali, dal tastierino), "1.234,56", "1234.56", "€ 12", "-3,20".
  */
 export function parseEuro(text: string): number | null {
   let s = text.replace(/[€\s]/g, '')
@@ -38,7 +38,7 @@ export function parseEuro(text: string): number | null {
     // "1.234" senza virgola: punti come separatore delle migliaia
     s = s.replace(/\./g, '')
   }
-  if (!/^\d+(\.\d{1,2})?$/.test(s)) return null
+  if (!/^\d+(\.\d{0,2})?$/.test(s)) return null
   const [int, dec = ''] = s.split('.')
   return sign * (Number(int) * 100 + Number(dec.padEnd(2, '0')))
 }

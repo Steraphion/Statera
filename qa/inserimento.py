@@ -31,7 +31,9 @@ async def main():
             await open_new(pg)
             amt = pg.get_by_label("Importo (€)")
             await amt.fill("12,50")
-            await pg.get_by_role("button", name="Aggiungi un importo (somma)").click()
+            # su telefono il + è nel tastierino dell'app, su PC accanto al campo
+            plus = pg.get_by_role("button", name="Aggiungi un importo (somma)")
+            await (plus if await plus.count() else pg.locator(".keypad").get_by_role("button", name="Più")).click()
             check(f"{label}: il + aggiunge l'operatore e lascia il cursore nel campo", await amt.input_value() == "12,50+" and await amt.evaluate("e => e === document.activeElement"))
             await amt.press_sequentially("3,20")
             check(f"{label}: anteprima del risultato", await pg.get_by_text("= 15,70 €").count() == 1)

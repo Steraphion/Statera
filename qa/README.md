@@ -48,3 +48,7 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
 - `icone.py` — v0.25: icona delle categorie (predefinita per le categorie iniziali, scelta nel modulo con
   anteprima, "Nessuna" mostra l'iniziale, salvata come chiave e solo se cambiata, visibile nell'elenco e nella
   scelta della categoria, conservata dopo il riavvio), su Android chiaro e PC scuro. Uso come `collaudo.py`.
+- `tema-tastierino.py` — v0.26: scelta del tema in Altro → Aspetto (automatico, chiaro, scuro, conservata dopo il
+  riavvio, colore della barra di sistema) e tastierino degli importi su telefono (cifre, virgola, somme, "=",
+  cancella, "Fatto", Salva visibile, buoni solo cifre, tastierino in fondo alla pagina in Cerca; su PC tastiera
+  normale). Uso come `collaudo.py`.

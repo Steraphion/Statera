@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { amountKeys } from '../lib/keypad.svelte'
   import Sheet from './Sheet.svelte'
   import ColorPicker from './ColorPicker.svelte'
   import DeleteButton from './DeleteButton.svelte'
@@ -68,7 +69,7 @@
     </label>
     <label class="field">
       <span>Da raggiungere (€)</span>
-      <input class="input num" bind:value={targetText} inputmode="decimal" placeholder="0,00" autocomplete="off" />
+      <input class="input num" bind:value={targetText} use:amountKeys inputmode="decimal" placeholder="0,00" autocomplete="off" />
     </label>
     <label class="field">
       <span>Dove accantoni</span>
@@ -85,7 +86,7 @@
     {#if !accountId}
       <label class="field">
         <span>Già accantonato (€)</span>
-        <input class="input num" bind:value={savedText} inputmode="decimal" placeholder="0,00" autocomplete="off" />
+        <input class="input num" bind:value={savedText} use:amountKeys inputmode="decimal" placeholder="0,00" autocomplete="off" />
       </label>
     {/if}
     <label class="field">

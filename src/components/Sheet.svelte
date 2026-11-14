@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
+  import Keypad from './Keypad.svelte'
 
   // Finestra di modifica: pannello dal basso su smartphone, finestra centrata su PC.
   let {
@@ -10,11 +11,11 @@
     error = '',
   }: { title: string; onclose: () => void; children: Snippet; footer?: Snippet; error?: string } = $props()
 
-  let dialog: HTMLDialogElement
+  let dialog = $state<HTMLDialogElement>()
 
   $effect(() => {
-    dialog.showModal()
-    return () => dialog.close()
+    dialog!.showModal()
+    return () => dialog!.close()
   })
 </script>
 
@@ -40,6 +41,7 @@
     {#if error}
       <p class="error-box sheet-error" role="alert">{error}</p>
     {/if}
+    <Keypad owner={dialog} />
     {#if footer}
       <footer>{@render footer()}</footer>
     {/if}

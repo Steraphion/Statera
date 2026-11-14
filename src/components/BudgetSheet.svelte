@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { amountKeys } from '../lib/keypad.svelte'
   import CategoryIcon from './CategoryIcon.svelte'
   import { untrack } from 'svelte'
   import Sheet from './Sheet.svelte'
@@ -58,7 +59,7 @@
     {#each tops as c (c.id)}
       <label class="row">
         <span class="name"><CategoryIcon category={c} size="s" />{c.name}</span>
-        <input class="input num" bind:value={values[c.id]} inputmode="decimal" placeholder="—" aria-label="Budget {c.name} (€)" />
+        <input class="input num" bind:value={values[c.id]} use:amountKeys inputmode="decimal" placeholder="—" aria-label="Budget {c.name} (€)" />
       </label>
     {/each}
     <button type="submit" hidden aria-hidden="true" tabindex="-1"></button>
