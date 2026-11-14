@@ -23,6 +23,7 @@ I file vengono scritti in `out/project/`, oppure nella cartella indicata dalla v
 | `icone_set.json` | Le ~100 icone usate, nei tre set (solo forme geometriche). Licenze in `LICENZE-ICONE.md` |
 | `voglio.json`, `risolvi.py`, `estrai.py` | Da quale icona di ogni set viene ogni chiave, e come rigenerare `icone_set.json` dai pacchetti npm (`npm pack lucide-static @tabler/icons @phosphor-icons/core`, poi estrarre e passare le cartelle agli script) |
 | `design_system.py` | Design system "Statera" (tipo Design System di claude.ai, https://claude.ai/artifact/HYogYA8sLDbtWMS277c1CF): `tokens.json` con i nomi di `src/styles/tokens.css`, `bundle.css` con i componenti `st-*`, anteprime, manuale, icone Lucide da caricare come asset. Argomenti: cartella di uscita, pacchetto `lucide-static`, woff2 di Plus Jakarta Sans (`@fontsource-variable/plus-jakarta-sans`, sottoinsieme latino) e la sua licenza |
+| `logo_simboli.py`, `logo_tavole.py` | Pagina "Logo e icona" (14/11): i simboli A–G in una griglia di 100 unità (variante piccola fino a 32 px) e le tavole confronto / simbolo e marchio / sui dispositivi. Scelta la **E, bilancia a tratto**: il disegno definitivo è in `scripts/icona-app.mjs` sul ramo `main`. Questi due script usano Pillow e `rsvg-convert` per misurare e rasterizzare; le PNG a 16/32 px vanno caricate come asset della tela (identificativi in `PX`) |
 
 Per le schermate nuove, parti da `scelta.py`: usa `IND_L` / `IND_D` / `IND_SW` con
 `gen.page()` e le funzioni di `coolors.py` e `scelta.py`.
