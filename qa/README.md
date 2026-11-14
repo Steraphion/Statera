@@ -29,3 +29,7 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
 - `guida-saldo.py` — Fase 4.3: guida al primo avvio (tre passi, non nascondibile senza conti, sparisce a fine),
   budget con "circa X € al giorno" (solo mese in corso), Allinea saldo con anteprima, rettifica e caso "già
   giusto". Uso come `collaudo.py`.
+- `blocco.py` — Fase 4.4: blocco con PIN e impronta (autenticatore virtuale WebAuthn di Chrome): attivazione con
+  controllo dei PIN prevedibili, blocco/sblocco, impronta all'avvio ma non dopo "Blocca ora", tempi di blocco,
+  copertura dei pannelli aperti ed Esc, inserimento a metà conservato, cambio PIN, attese dopo 5 errori, PIN
+  dimenticato (eliminazione dei dati del dispositivo), disattivazione. Uso come `collaudo.py`.

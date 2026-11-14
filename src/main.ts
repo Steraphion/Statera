@@ -4,6 +4,7 @@ import './styles/base.css'
 import App from './App.svelte'
 import { pwa } from './lib/pwa.svelte'
 import { startup } from './lib/startup.svelte'
+import { lock } from './lib/lock.svelte'
 
 // Protezione: Statera non funziona se un altro sito la mostra dentro una sua pagina
 // (tecnica usata per far toccare pulsanti all'utente a sua insaputa).
@@ -12,6 +13,7 @@ if (window.top !== window.self) {
 } else {
   startup.installHandlers()
   pwa.start()
+  lock.start()
   // L'interfaccia parte subito; il database si prepara in parallelo
   mount(App, { target: document.getElementById('app')! })
   startup.run()

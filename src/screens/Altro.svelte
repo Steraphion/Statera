@@ -3,6 +3,7 @@
   import ScreenHeader from '../components/ScreenHeader.svelte'
   import DataCard from '../components/DataCard.svelte'
   import SyncCard from '../components/sync/SyncCard.svelte'
+  import LockCard from '../components/LockCard.svelte'
   import { device } from '../lib/device.svelte'
   import { sync } from '../lib/sync/sync.svelte'
   import { statusLabel } from '../lib/sync/labels'
@@ -11,6 +12,8 @@
 <ScreenHeader title="Altro" />
 
 <SyncCard />
+
+<LockCard />
 
 <Card>
   <h2>Gestione</h2>

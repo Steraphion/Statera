@@ -14,9 +14,13 @@
   import Recovery from './components/Recovery.svelte'
   import ErrorToast from './components/ErrorToast.svelte'
   import Toast from './components/Toast.svelte'
+  import LockScreen from './components/LockScreen.svelte'
+  import { lock } from './lib/lock.svelte'
   import { startup } from './lib/startup.svelte'
 </script>
 
+<!-- Con l'app bloccata il contenuto resta montato (nessun inserimento perso) ma invisibile e inattivo -->
+<div class="app-root" class:locked={lock.locked} inert={lock.locked} aria-hidden={lock.locked}>
 {#if startup.state === 'failed'}
   <Recovery message={startup.failure} />
 {:else}
@@ -80,8 +84,16 @@
 <Toast />
 <ErrorToast />
 {/if}
+</div>
+{#if lock.locked}
+  <LockScreen />
+{/if}
 
 <style>
+  .app-root.locked {
+    visibility: hidden;
+  }
+
   .shell {
     min-height: 100dvh;
   }
