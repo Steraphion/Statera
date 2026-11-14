@@ -120,8 +120,8 @@
     justify-self: center;
     display: grid;
     place-items: center;
-    width: calc(var(--size-cat) + 6px);
-    height: calc(var(--size-cat) + 6px);
+    width: calc(var(--size-cat) + var(--space-2));
+    height: calc(var(--size-cat) + var(--space-2));
     padding: 0;
     border: 0;
     border-radius: var(--radius-full);
@@ -130,12 +130,12 @@
   }
 
   .opt.selected {
-    box-shadow: 0 0 0 2px var(--color-text);
+    box-shadow: 0 0 0 var(--focus-width) var(--color-text);
   }
 
   @media (hover: hover) {
     .opt:not(.selected):hover {
-      box-shadow: 0 0 0 2px var(--color-border);
+      box-shadow: 0 0 0 var(--focus-width) var(--color-border);
     }
   }
 </style>

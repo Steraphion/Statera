@@ -7,6 +7,7 @@ Le specifiche complete sono nel Progetto claude.ai "Statera" (`claude/specifiche
 - **Nessuna risorsa esterna**: niente CDN, font remoti, analytics. Uniche origini permesse: `accounts.google.com/gsi` (accesso) e `www.googleapis.com` (Drive), dichiarate nella CSP in `vite.config.ts`.
 - **Aspetto separato dalla logica**: colori, font e misure solo come variabili in `src/styles/tokens.css`; i componenti usano le variabili, mai valori fissi.
 - **Stile Vivace** dal design system "Statera" (https://claude.ai/artifact/HYogYA8sLDbtWMS277c1CF): i nomi dei token coincidono. Carattere Plus Jakarta Sans incluso in `src/assets/fonts/` (OFL). Icone solo con il componente `Icon` e `src/lib/icons.ts` (Lucide, ISC), generato da `scripts/icone.mjs`: mai SVG presi dai dati. Licenze in `public/licenze.html`.
+- Spaziatura e tipografia solo coi token: spazi `--space-hair`…`--space-8` (griglia di 4 px), interlinea `--leading-*`, spaziatura lettere `--tracking-*`, dimensioni `--size-*`. Importo principale di una schermata nel riquadro `.balance-box`; elenchi voce/valore con `.facts`; segno meno vero (−) negli importi, da `formatEuro`.
 - Importi in uscita col colore del testo (`--color-expense`), entrate in `--color-income`; `--color-danger` solo per errori e azioni che cancellano.
 - Ogni record dati ha `id`, `createdAt`, `updatedAt`, `deletedAt` (cancellazione logica, serve alla sync).
 - Mai dati reali in chat, nei test o nei commit: solo dati di esempio.

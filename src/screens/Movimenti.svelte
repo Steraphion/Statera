@@ -104,7 +104,8 @@
   <FavoritesBar refs={refs.value} onopen={(t) => (sheet = { template: t })} />
 {/if}
 
-<!-- Saldo del mese nel riquadro indaco, poi azioni rapide, entrate e uscite (design system: stile Vivace) -->
+<!-- Saldo del mese nel riquadro indaco, poi azioni rapide (accanto, su schermi larghi), entrate e uscite -->
+<div class="top">
 <section class="hero balance-box" aria-label="Saldo del mese">
   <span class="bb-label">Saldo del mese</span>
   <span class="bb-amount num">{totals.net > 0 ? '+' : ''}{formatEuro(totals.net)}</span>
@@ -123,6 +124,7 @@
     </button>
   </div>
 {/if}
+</div>
 
 <div class="tiles2">
   <div class="tile">
@@ -214,8 +216,21 @@
     white-space: nowrap;
   }
 
-  .hero {
-    margin: var(--space-2) 0 var(--space-4);
+  .top {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin: var(--space-4) 0 var(--space-5);
+  }
+
+  /* Su schermi larghi le azioni rapide stanno accanto al riquadro, non centrate sotto */
+  @media (min-width: 600px) {
+    .top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: var(--space-5);
+    }
   }
 
   /* Azioni rapide (design system: AzioneRapida) */
@@ -223,11 +238,10 @@
     display: flex;
     justify-content: center;
     gap: var(--space-2);
-    margin-bottom: var(--space-5);
   }
 
   .q {
-    flex: 0 1 96px;
+    flex: 0 1 calc(var(--size-cat-l) + var(--space-7));
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -277,8 +291,8 @@
     flex: none;
     display: grid;
     place-items: center;
-    width: 32px;
-    height: 32px;
+    width: var(--size-cat-s);
+    height: var(--size-cat-s);
     border-radius: var(--radius-full);
   }
 

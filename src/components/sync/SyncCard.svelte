@@ -22,7 +22,7 @@
       <button class="btn btn-primary" onclick={() => (sheet = 'setup')}>Attiva la sincronizzazione</button>
     </div>
   {:else}
-    <dl>
+    <dl class="facts">
       <dt>Account Google</dt>
       <dd>{sync.meta.email || '—'}</dd>
       <dt>Stato</dt>
@@ -76,24 +76,6 @@
     font-size: var(--text-sm);
   }
 
-  dl {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: var(--space-2) var(--space-4);
-    margin: 0 0 var(--space-2);
-    font-size: var(--text-sm);
-  }
-
-  dt {
-    color: var(--color-text-muted);
-  }
-
-  dd {
-    margin: 0;
-    text-align: right;
-    word-break: break-word;
-  }
-
   dd.warn {
     color: var(--color-danger);
     font-weight: 600;
@@ -115,6 +97,6 @@
   .link {
     margin-top: var(--space-3);
     padding: 0;
-    min-height: 32px;
+    min-height: var(--size-cat-s);
   }
 </style>

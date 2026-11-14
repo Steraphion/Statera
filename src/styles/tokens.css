@@ -10,6 +10,7 @@
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   /* Cifre tabulari con lo stesso carattere (classe .num) */
   --font-num: var(--font-sans);
+  --text-2xs: 0.6875rem; /* 11 px: assi dei grafici */
   --text-xs: 0.75rem; /* 12 px: tasti, didascalie piccole */
   --text-sm: 0.8125rem; /* 13 px: seconde righe, etichette dei campi */
   --text-md: 0.9375rem; /* 15 px: testo */
@@ -24,8 +25,16 @@
   --tracking-tight: -0.02em;
   --tracking-tighter: -0.03em;
   --tracking-caps: 0.06em;
+  --tracking-code: 0.04em; /* chiave di recupero */
+  --tracking-pin: 0.4em; /* cifre nascoste del PIN */
+  /* Interlinea: titoli e importi stretti, testo corrente arioso */
+  --leading-tight: 1.1;
+  --leading-snug: 1.2;
+  --leading-compact: 1.35; /* seconde righe che vanno a capo */
+  --leading-normal: 1.5;
 
-  /* Spazi: griglia di 4 px */
+  /* Spazi: griglia di 4 px (più un mezzo passo per le distanze minime tra due righe) */
+  --space-hair: 2px;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -36,6 +45,7 @@
   --space-8: 48px;
 
   /* Forme */
+  --radius-2xs: 4px; /* barre dei grafici */
   --radius-xs: 8px;
   --radius-sm: 12px;
   --radius-md: 16px;
@@ -46,14 +56,17 @@
   /* Dimensioni */
   --size-touch: 44px;
   --size-field: 52px;
+  --size-row: 56px; /* riga di un elenco */
   /* Tasto del tastierino degli importi */
   --size-key: 52px;
   --size-btn-l: 58px;
   --size-btn-s: 36px;
+  --size-step: 28px; /* numeri dei passi, pulsantini dentro i campi */
   --size-cat-s: 32px;
   --size-cat: 44px;
   --size-cat-l: 52px;
   --size-fab: 56px;
+  --size-hero-icon: 72px; /* icona grande della schermata di blocco */
   --nav-height: 66px; /* barra flottante del telefono */
   --size-sidebar: 248px;
   --content-max: 760px;

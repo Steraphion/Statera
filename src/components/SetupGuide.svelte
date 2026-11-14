@@ -114,15 +114,15 @@
 
   li {
     display: grid;
-    grid-template-columns: 28px minmax(0, 1fr);
+    grid-template-columns: var(--size-step) minmax(0, 1fr);
     gap: var(--space-3);
   }
 
   .mark {
     display: grid;
     place-items: center;
-    width: 28px;
-    height: 28px;
+    width: var(--size-step);
+    height: var(--size-step);
     border-radius: 50%;
     border: 1px solid var(--color-border);
     font-size: var(--text-sm);
@@ -141,7 +141,7 @@
 
   .title {
     font-weight: 600;
-    min-height: 28px;
+    min-height: var(--size-step);
     display: flex;
     align-items: center;
   }
@@ -160,6 +160,6 @@
   .hide {
     margin-top: var(--space-3);
     padding: 0;
-    min-height: 32px;
+    min-height: var(--size-cat-s);
   }
 </style>

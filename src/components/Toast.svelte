@@ -34,7 +34,7 @@
     justify-content: space-between;
     gap: var(--space-3);
     padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
-    min-height: 52px;
+    min-height: var(--size-field);
     border-radius: var(--radius-md);
     background: var(--toast-bg);
     color: var(--toast-text);

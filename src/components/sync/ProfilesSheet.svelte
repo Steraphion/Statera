@@ -53,7 +53,7 @@
     align-items: center;
     gap: var(--space-3);
     width: 100%;
-    min-height: 56px;
+    min-height: var(--size-row);
     padding: 0;
     border: none;
     border-bottom: 1px solid var(--color-border);

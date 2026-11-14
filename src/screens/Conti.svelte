@@ -284,8 +284,8 @@
   }
 
   .goal .dot {
-    width: 10px;
-    height: 10px;
+    width: var(--space-3);
+    height: var(--space-3);
     border-radius: 50%;
   }
 
@@ -295,8 +295,8 @@
 
   .goal .track {
     display: block;
-    height: 8px;
-    border-radius: 4px;
+    height: var(--space-2);
+    border-radius: var(--radius-2xs);
     background: var(--chart-track);
     overflow: hidden;
   }
@@ -304,7 +304,7 @@
   .goal .fill {
     display: block;
     height: 100%;
-    border-radius: 4px;
+    border-radius: var(--radius-2xs);
   }
 
   .goal .sub {
@@ -317,7 +317,7 @@
   }
 
   .add {
-    margin-top: 2px;
+    margin-top: var(--space-hair);
   }
 
   /* Patrimonio grande al centro (stile Vivace) */
@@ -329,7 +329,7 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    min-height: 52px;
+    min-height: var(--size-field);
   }
 
   .sort-row .name {

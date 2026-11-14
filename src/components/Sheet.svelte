@@ -79,7 +79,7 @@
     content: '';
     align-self: center;
     width: 40px;
-    height: 4px;
+    height: var(--space-1);
     margin-top: var(--space-2);
     border-radius: var(--radius-full);
     background: var(--color-border);

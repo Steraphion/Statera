@@ -116,11 +116,11 @@
   }
 
   .children {
-    padding-left: calc(12px + var(--space-3));
+    padding-left: var(--space-6);
   }
 
   .children .list-row {
-    min-height: 44px;
+    min-height: var(--size-touch);
   }
 
   .child {

@@ -153,7 +153,7 @@
   }
 
   .tick {
-    font-size: 11px;
+    font-size: var(--text-2xs);
     fill: var(--color-text-muted);
   }
 
@@ -196,7 +196,7 @@
     transform: translateX(12px);
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--space-hair);
     padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-sm);
     background: var(--color-surface);

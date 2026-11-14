@@ -75,7 +75,7 @@
   .link {
     align-self: flex-start;
     padding: 0;
-    min-height: 32px;
+    min-height: var(--size-cat-s);
   }
 
   .muted {

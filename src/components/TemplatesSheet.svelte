@@ -115,12 +115,12 @@
 
   .tools {
     display: flex;
-    gap: 2px;
+    gap: var(--space-hair);
   }
 
   .icon {
     min-width: 40px;
-    min-height: 44px;
+    min-height: var(--size-touch);
     padding: 0 var(--space-2);
   }
 

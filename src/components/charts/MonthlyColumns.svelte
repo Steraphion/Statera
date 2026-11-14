@@ -143,13 +143,13 @@
   .tooltip span {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--space-2);
   }
 
   .legend i {
     width: 10px;
     height: 10px;
-    border-radius: 2px;
+    border-radius: var(--radius-2xs);
   }
 
   .plot {
@@ -168,7 +168,7 @@
   }
 
   .tick {
-    font-size: 11px;
+    font-size: var(--text-2xs);
     fill: var(--color-text-muted);
   }
 
@@ -206,7 +206,7 @@
     transform: translateX(12px);
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--space-hair);
     padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-sm);
     background: var(--color-surface);
@@ -235,12 +235,12 @@
 
   .tooltip i {
     width: 10px;
-    height: 2px;
+    height: var(--space-hair);
   }
 
   .tooltip .net {
-    margin-top: 2px;
-    padding-left: 16px;
+    margin-top: var(--space-hair);
+    padding-left: var(--space-4);
   }
 
   table {

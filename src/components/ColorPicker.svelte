@@ -29,12 +29,12 @@
   }
 
   button {
-    width: 36px;
-    height: 36px;
+    width: var(--size-btn-s);
+    height: var(--size-btn-s);
     border-radius: 50%;
     border: 3px solid transparent;
     cursor: pointer;
-    box-shadow: inset 0 0 0 2px var(--color-surface);
+    box-shadow: inset 0 0 0 var(--focus-width) var(--color-surface);
   }
 
   button.selected {

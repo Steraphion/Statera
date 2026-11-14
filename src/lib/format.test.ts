@@ -32,3 +32,12 @@ describe('centsToInput', () => {
     for (const c of [0, 1, 99, 100, 123456, -4321]) expect(parseEuro(centsToInput(c))).toBe(c)
   })
 })
+
+describe('formatEuro', () => {
+  it('punto delle migliaia, spazio unificatore e vero segno meno', async () => {
+    const { formatEuro } = await import('./format')
+    expect(formatEuro(123456)).toBe('1.234,56 €')
+    expect(formatEuro(-12000)).toBe('−120,00 €')
+    expect(parseEuro(formatEuro(-12000))).toBe(-12000)
+  })
+})

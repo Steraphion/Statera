@@ -23,11 +23,16 @@ body {
 body {
   font-family: var(--font-sans);
   font-size: var(--text-md);
-  line-height: 1.45;
+  line-height: var(--leading-normal);
   color: var(--color-text);
   background: var(--color-bg);
   font-variant-numeric: tabular-nums;
+  font-kerning: normal;
+  font-optical-sizing: auto;
+  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
   /* Come un'app, non un documento: puntatore normale sul testo e nessuna
      barretta lampeggiante cliccando tra le lettere. Il testo resta selezionabile. */
@@ -61,13 +66,17 @@ h1,
 h2,
 h3 {
   margin: 0;
-  line-height: 1.2;
+  line-height: var(--leading-snug);
   font-weight: 800;
   letter-spacing: var(--tracking-tight);
+  /* Righe dei titoli bilanciate: niente parola sola sull'ultima riga */
+  text-wrap: balance;
 }
 
 p {
   margin: 0;
+  /* Testo a capo senza righe finali di una parola */
+  text-wrap: pretty;
 }
 
 button {
@@ -161,6 +170,18 @@ a {
 
 .btn-danger {
   color: var(--color-danger);
+}
+
+/* In una scheda il pulsante "Elimina" è una pillola rosata: si vede che è un pulsante e sta allineato al testo */
+.card .btn-danger:not(.confirm) {
+  background: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface));
+}
+
+/* Pulsanti-collegamento in fondo a una riga di intestazione: allineato al bordo è il testo, non la pillola */
+.section-title > .btn-ghost:last-child,
+.card-head > .btn-ghost:last-child,
+.chart > .head > .btn-ghost:last-child {
+  margin-right: calc(-1 * var(--space-3));
 }
 
 .btn-danger.confirm {
@@ -268,7 +289,7 @@ fieldset.field {
   align-items: center;
   gap: var(--space-3);
   width: 100%;
-  min-height: 56px;
+  min-height: var(--size-row);
   padding: var(--space-2) 0;
   background: none;
   border: none;
@@ -298,6 +319,7 @@ a.list-row {
 
 .list-row .sub {
   font-size: var(--text-sm);
+  line-height: var(--leading-compact);
   color: var(--color-text-muted);
 }
 
@@ -333,6 +355,43 @@ a.list-row {
 }
 
 /* Importi negativi: col colore del testo (il segno − basta) */
+/* Elenco di voci e valori (I tuoi dati, Informazioni, Sincronizzazione): sul telefono la voce sta sopra
+   il valore, così nessuno dei due va a capo a metà; su schermi larghi stanno affiancati */
+.facts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-compact);
+}
+
+.facts dt {
+  color: var(--color-text-muted);
+}
+
+.facts dd {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-md);
+  overflow-wrap: anywhere;
+}
+
+.facts dd:last-child {
+  margin-bottom: 0;
+}
+
+@media (min-width: 600px) {
+  .facts {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    gap: var(--space-2) var(--space-4);
+  }
+
+  .facts dd {
+    margin: 0;
+    font-size: var(--text-sm);
+    text-align: right;
+  }
+}
+
 /* Riquadro dell'importo principale (saldo del mese, patrimonio, risparmio): indaco pieno con cifre
    chiare in tema chiaro, accento tenue in scuro per non abbagliare */
 .balance-box {
@@ -361,7 +420,7 @@ a.list-row {
   font-size: var(--amount-l);
   font-weight: 800;
   letter-spacing: var(--tracking-tighter);
-  line-height: 1.1;
+  line-height: var(--leading-tight);
   overflow-wrap: anywhere;
   color: inherit;
 }
@@ -391,14 +450,14 @@ a.list-row {
   background: color-mix(in srgb, var(--cat) var(--cat-tint), transparent);
   color: var(--cat);
   font-weight: 800;
-  font-size: 1.125rem;
+  font-size: var(--text-lg);
   line-height: 1;
 }
 
 .cat-icon.small {
   width: var(--size-cat-s);
   height: var(--size-cat-s);
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
 }
 
 .cat-icon.large {

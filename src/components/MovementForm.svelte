@@ -893,7 +893,7 @@
 
 <style>
   .amount {
-    min-height: 56px;
+    min-height: var(--size-row);
     font-size: var(--text-xl);
     font-weight: 700;
   }
@@ -914,8 +914,8 @@
   }
 
   .plus {
-    min-width: 56px;
-    min-height: 56px;
+    min-width: var(--size-row);
+    min-height: var(--size-row);
     font-size: var(--text-xl);
     padding: 0;
   }
@@ -945,7 +945,7 @@
     flex-direction: column;
     align-items: flex-start;
     width: 100%;
-    min-height: 44px;
+    min-height: var(--size-touch);
     padding: var(--space-2) var(--space-3);
     border: 0;
     border-radius: var(--radius-sm);
@@ -973,7 +973,7 @@
   .link {
     align-self: flex-start;
     padding: 0;
-    min-height: 32px;
+    min-height: var(--size-cat-s);
   }
 
   .parts {
@@ -990,7 +990,7 @@
   }
 
   .remove {
-    min-height: 36px;
+    min-height: var(--size-btn-s);
     padding: 0;
     font-size: var(--text-lg);
     color: var(--color-text-muted);
@@ -1021,16 +1021,16 @@
   .tag {
     display: inline-flex;
     align-items: center;
-    gap: 2px;
-    padding: 2px 2px 2px var(--space-2);
+    gap: var(--space-hair);
+    padding: var(--space-hair) var(--space-hair) var(--space-hair) var(--space-2);
     border-radius: var(--radius-sm);
     background: var(--color-accent-soft);
     font-size: var(--text-sm);
   }
 
   .tag button {
-    min-width: 28px;
-    min-height: 28px;
+    min-width: var(--size-step);
+    min-height: var(--size-step);
     border: 0;
     background: none;
     color: var(--color-text-muted);

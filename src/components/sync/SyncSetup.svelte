@@ -290,7 +290,7 @@
     background: var(--color-surface-2);
     font-size: var(--text-lg);
     font-weight: 700;
-    letter-spacing: 0.04em;
+    letter-spacing: var(--tracking-code);
     text-align: center;
     word-break: break-all;
     user-select: all;
@@ -312,13 +312,13 @@
     width: 20px;
     height: 20px;
     flex: none;
-    margin-top: 2px;
+    margin-top: var(--space-hair);
   }
 
   .link {
     align-self: flex-start;
     padding: 0;
-    min-height: 32px;
+    min-height: var(--size-cat-s);
     text-align: left;
   }
 

@@ -19,4 +19,11 @@
   .card + :global(.card) {
     margin-top: var(--space-4);
   }
+
+  /* Su PC le schede sono larghe: un po' più d'aria ai lati */
+  @media (min-width: 900px) {
+    .card {
+      padding: var(--space-5) var(--space-6);
+    }
+  }
 </style>

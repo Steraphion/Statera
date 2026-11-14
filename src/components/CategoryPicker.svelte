@@ -75,7 +75,7 @@
   .cat-list {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--space-hair);
     max-height: 288px;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -88,7 +88,7 @@
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    min-height: 52px;
+    min-height: var(--size-field);
     padding: 0 var(--space-3) 0 var(--space-1);
     border: none;
     border-radius: var(--radius-md);
@@ -101,10 +101,10 @@
   }
 
   .cat.child {
-    min-height: 44px;
+    min-height: var(--size-touch);
     margin-left: calc(var(--size-cat) / 2 + var(--space-1));
     padding-left: var(--space-3);
-    border-left: 2px solid var(--chart-track);
+    border-left: var(--space-hair) solid var(--chart-track);
     border-radius: 0 var(--radius-md) var(--radius-md) 0;
     font-size: var(--text-sm);
   }

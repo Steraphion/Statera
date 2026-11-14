@@ -69,7 +69,7 @@
 
 <Card>
   <h2>I tuoi dati</h2>
-  <dl>
+  <dl class="facts">
     <dt>Dove sono salvati</dt>
     <dd>{sync.meta ? 'Su questo dispositivo e, cifrati, sul tuo Google Drive' : 'Solo su questo dispositivo'}</dd>
     <dt>Protezione dalla pulizia automatica</dt>
@@ -91,7 +91,7 @@
 
 <Card>
   <h2>Informazioni</h2>
-  <dl>
+  <dl class="facts">
     <dt>Versione</dt>
     <dd class="num">{__APP_VERSION__}</dd>
     <dt>Connessioni esterne</dt>
@@ -119,7 +119,7 @@
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    min-height: 52px;
+    min-height: var(--size-field);
     color: var(--color-text);
     text-decoration: none;
     font-weight: 700;
@@ -136,8 +136,8 @@
   .ic {
     display: grid;
     place-items: center;
-    width: 36px;
-    height: 36px;
+    width: var(--size-btn-s);
+    height: var(--size-btn-s);
     border-radius: var(--radius-full);
     background: var(--color-accent-soft);
     color: var(--color-accent);
@@ -154,23 +154,6 @@
 
   .install {
     margin-top: var(--space-3);
-  }
-
-  dl {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: var(--space-2) var(--space-4);
-    margin: 0;
-    font-size: var(--text-sm);
-  }
-
-  dt {
-    color: var(--color-text-muted);
-  }
-
-  dd {
-    margin: 0;
-    text-align: right;
   }
 
   .theme-hint {

@@ -234,7 +234,7 @@
 
   .preview li {
     display: grid;
-    grid-template-columns: 56px minmax(0, 1fr) auto;
+    grid-template-columns: var(--size-row) minmax(0, 1fr) auto;
     gap: var(--space-2);
     padding: var(--space-2) 0;
     border-top: 1px solid var(--color-border);

@@ -95,6 +95,13 @@
 </button>
 
 <style>
+  /* Categoria e conto su una riga sola: l'elenco resta regolare anche sul telefono */
+  .main > .sub {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .end {
     display: flex;
     flex-direction: column;

@@ -8,8 +8,9 @@ const euro = new Intl.NumberFormat('it-IT', {
   useGrouping: 'always' as unknown as boolean,
 })
 
+/** Importo da mostrare: "1.234,56 €", con il vero segno meno (−) come nelle righe dei movimenti. */
 export function formatEuro(cents: number): string {
-  return euro.format(cents / 100)
+  return euro.format(cents / 100).replace('-', '\u2212')
 }
 
 /** Importo per i campi di modifica, senza simbolo: 123456 → "1234,56" */
@@ -24,7 +25,7 @@ export function centsToInput(cents: number): string {
  * Accetta: "12", "12,5", "12,50", "12," (virgola senza decimali, dal tastierino), "1.234,56", "1234.56", "€ 12", "-3,20".
  */
 export function parseEuro(text: string): number | null {
-  let s = text.replace(/[€\s]/g, '')
+  let s = text.replace(/[€\s]/g, '').replace(/\u2212/g, '-')
   if (!s) return null
   let sign = 1
   if (s.startsWith('-')) {

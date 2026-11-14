@@ -73,7 +73,7 @@
   .grid {
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 4px;
+    gap: var(--space-1);
   }
 
   .week span {
@@ -89,9 +89,9 @@
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    gap: 2px;
-    min-height: 52px;
-    padding: var(--space-1) 2px;
+    gap: var(--space-hair);
+    min-height: var(--size-field);
+    padding: var(--space-1) var(--space-hair);
     border: 1px solid transparent;
     border-radius: var(--radius-sm);
     background: var(--color-surface-2);
@@ -130,8 +130,8 @@
 
   .in {
     position: absolute;
-    top: 2px;
-    right: 4px;
+    top: var(--space-hair);
+    right: var(--space-1);
     font-size: var(--text-xs);
     font-weight: 700;
     color: var(--color-income);

@@ -102,10 +102,10 @@
     <span class="label">Uscite</span>
     <span class="value num">{formatEuro(sums.expense)}</span>
   </div>
-  <div class="tile save">
-    <span class="label">Risparmio</span>
-    <span class="value num" class:amount-neg={sums.net < 0}>{formatEuro(sums.net)}</span>
-    {#if savingRate !== null}<span class="delta">{Math.round(savingRate * 100)}% delle entrate</span>{/if}
+  <div class="save balance-box">
+    <span class="bb-label">Risparmio</span>
+    <span class="bb-amount num">{formatEuro(sums.net)}</span>
+    {#if savingRate !== null}<span class="bb-pill">{Math.round(savingRate * 100)}% delle entrate</span>{/if}
   </div>
 </div>
 
@@ -255,9 +255,10 @@
   .change {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 2px var(--space-3);
+    gap: var(--space-hair) var(--space-3);
+    align-items: center;
     width: 100%;
-    padding: var(--space-2) 0;
+    padding: var(--space-3) 0;
     border: 0;
     background: none;
     color: inherit;
@@ -273,9 +274,9 @@
     font-weight: 600;
   }
 
-
   .change .what {
     font-weight: 700;
+    white-space: nowrap;
   }
 
   .change .dir {
@@ -284,8 +285,10 @@
     font-weight: 400;
   }
 
+  /* Allineata al nome, non all'icona */
   .change .detail {
     grid-column: 1 / -1;
+    padding-left: calc(var(--size-cat-s) + var(--space-2));
     font-size: var(--text-xs);
     color: var(--color-text-muted);
   }
@@ -333,7 +336,7 @@
   .tile {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--space-hair);
     padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-lg);
     background: var(--color-surface);
@@ -355,45 +358,10 @@
     white-space: nowrap;
   }
 
-  .tile .delta {
-    font-size: var(--text-xs);
-    color: var(--color-text-muted);
-  }
-
-  /* Il risparmio è il riquadro protagonista: pieno in chiaro, tenue in scuro per non abbagliare */
-  .tile.save {
+  /* Il risparmio è il riquadro protagonista (stesso riquadro di saldo e patrimonio, base.css) */
+  .save {
     grid-column: 1 / -1;
     order: -1;
-    gap: var(--space-1);
-    padding: var(--space-5);
-    background: var(--color-primary);
-    color: var(--color-on-primary);
-  }
-
-  .tile.save .label,
-  .tile.save .delta {
-    color: inherit;
-  }
-
-  .tile.save .value {
-    color: inherit;
-    font-size: var(--amount-m);
-    letter-spacing: var(--tracking-tighter);
-  }
-
-  .tile.save .delta {
-    align-self: flex-start;
-    margin-top: var(--space-1);
-    padding: var(--space-1) var(--space-3);
-    border-radius: var(--radius-full);
-    background: color-mix(in srgb, currentColor 16%, transparent);
-    font-size: var(--text-sm);
-    font-weight: 700;
-  }
-
-  :global(:root[data-theme='dark']) .tile.save {
-    background: var(--color-accent-soft);
-    color: var(--color-text);
   }
 
   .card-head {

@@ -151,8 +151,8 @@
     align-self: center;
     display: grid;
     place-items: center;
-    width: 72px;
-    height: 72px;
+    width: var(--size-hero-icon);
+    height: var(--size-hero-icon);
     margin-bottom: var(--space-2);
     border-radius: var(--radius-full);
     background: var(--color-accent-soft);
@@ -182,7 +182,7 @@
     min-height: var(--size-btn-l);
     font-size: var(--amount-s);
     font-weight: 800;
-    letter-spacing: 0.4em;
+    letter-spacing: var(--tracking-pin);
     text-align: center;
   }
 

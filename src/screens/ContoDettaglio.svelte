@@ -160,7 +160,7 @@
     font-size: var(--amount-m);
     font-weight: 800;
     letter-spacing: var(--tracking-tighter);
-    line-height: 1.15;
+    line-height: var(--leading-tight);
   }
 
   .sub {

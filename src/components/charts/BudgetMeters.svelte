@@ -93,7 +93,7 @@
   .track {
     margin: var(--space-2) 0 var(--space-1);
     height: 10px;
-    border-radius: 4px;
+    border-radius: var(--radius-2xs);
     background: var(--chart-track);
     overflow: hidden;
   }
@@ -101,7 +101,7 @@
   .fill {
     display: block;
     height: 100%;
-    border-radius: 0 4px 4px 0;
+    border-radius: 0 var(--radius-2xs) var(--radius-2xs) 0;
     background: var(--chart-income);
   }
 

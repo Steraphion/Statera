@@ -92,8 +92,8 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 2px;
-    min-height: 48px;
+    gap: var(--space-hair);
+    min-height: var(--size-touch);
     max-width: 180px;
     padding: var(--space-2) var(--space-3);
     border: 1px solid var(--color-border);

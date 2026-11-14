@@ -106,13 +106,14 @@
 
   .value {
     grid-area: value;
+    align-self: center;
     font-weight: 600;
   }
 
   .track {
     grid-area: track;
-    height: 12px;
-    border-radius: 4px;
+    height: var(--space-3);
+    border-radius: var(--space-1);
     background: var(--chart-track);
     overflow: hidden;
   }
@@ -120,12 +121,12 @@
   .bar {
     display: block;
     height: 100%;
-    min-width: 2px;
-    border-radius: 0 4px 4px 0;
+    min-width: var(--space-hair);
+    border-radius: 0 var(--space-1) var(--space-1) 0;
   }
 
   .detail {
-    margin: 0 0 var(--space-2) calc(10px + var(--space-2));
+    margin: 0 0 var(--space-2) calc(var(--size-cat-s) + var(--space-2));
     padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-sm);
     background: var(--color-surface-2);
@@ -145,6 +146,6 @@
 
   .show {
     padding: 0;
-    min-height: 32px;
+    min-height: var(--size-cat-s);
   }
 </style>

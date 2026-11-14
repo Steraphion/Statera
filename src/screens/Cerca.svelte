@@ -197,7 +197,7 @@
   }
 
   .search .btn {
-    min-height: 44px;
+    min-height: var(--size-touch);
     flex: none;
   }
 
@@ -213,7 +213,7 @@
   .reset {
     align-self: flex-start;
     padding: 0;
-    min-height: 32px;
+    min-height: var(--size-cat-s);
   }
 
   .summary {

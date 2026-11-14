@@ -111,7 +111,7 @@
   }
 
   .big {
-    min-height: 52px;
+    min-height: var(--size-field);
     font-size: var(--text-lg);
     font-weight: 700;
   }
