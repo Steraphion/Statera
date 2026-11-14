@@ -36,3 +36,6 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
 - `approfondimenti.py` — Fase 5.1 con orologio fisso e un anno di dati di esempio: riepilogo del mese precedente
   nei primi 7 giorni (e poi non più), ritmo di spesa e stima di fine mese, confronto con la media dei 3 mesi
   prima, patrimonio nel tempo (grafico e tabella). Uso come `collaudo.py`.
+- `etichette.py` — Fase 5.2: ripartizione su più categorie (riga che prende il resto, categoria principale,
+  analisi, CSV una riga per categoria, ritorno a una sola categoria, somma sbagliata) ed etichette (chip, scheda
+  in Analisi, filtro in Cerca). Uso come `collaudo.py`.

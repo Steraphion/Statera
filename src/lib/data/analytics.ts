@@ -1,11 +1,12 @@
 import type { Account, Category, CategoryKind, Transaction } from './types'
-import { total } from './transactions'
+import { categoryShares, total } from './transactions'
 import { accountBalance } from './balances'
 
 /**
  * Calcoli per la sezione Analisi. Regole:
  * - i trasferimenti non sono né entrate né uscite;
  * - un pagamento misto conta per intero nella sua categoria;
+ * - un movimento ripartito conta in ogni categoria per la sua parte;
  * - le spese con buoni pasto sono spese a tutti gli effetti.
  */
 
@@ -41,16 +42,19 @@ export function byCategory(rows: Transaction[], kind: CategoryKind, categories: 
   const tops = new Map<string, { total: number; parts: Map<string, number> }>()
   let sum = 0
   for (const t of rows) {
-    if (t.deletedAt !== null || t.type !== kind || !t.categoryId) continue
-    const c = map.get(t.categoryId)
-    if (!c) continue
-    const topId = c.parentId ?? c.id
-    const amount = total(t)
-    sum += amount
-    const g = tops.get(topId) ?? { total: 0, parts: new Map() }
-    g.total += amount
-    g.parts.set(c.id, (g.parts.get(c.id) ?? 0) + amount)
-    tops.set(topId, g)
+    if (t.deletedAt !== null || t.type !== kind) continue
+    // Un movimento ripartito conta nelle sue categorie, ognuna per la sua parte
+    for (const share of categoryShares(t)) {
+      const c = map.get(share.categoryId)
+      if (!c) continue
+      const topId = c.parentId ?? c.id
+      const amount = share.amount
+      sum += amount
+      const g = tops.get(topId) ?? { total: 0, parts: new Map() }
+      g.total += amount
+      g.parts.set(c.id, (g.parts.get(c.id) ?? 0) + amount)
+      tops.set(topId, g)
+    }
   }
   const out: CategoryTotal[] = []
   for (const [topId, g] of tops) {
@@ -307,4 +311,28 @@ export function monthRecap(rows: Transaction[], month: string, categories: Categ
     top: first ? { category: first.category, total: first.total } : null,
     count: cur.filter((t) => t.type !== 'trasferimento').length,
   }
+}
+
+export interface TagTotal {
+  tag: string
+  expense: number
+  income: number
+  count: number
+}
+
+/** Totali per etichetta nei movimenti indicati (trasferimenti esclusi), dalla spesa più alta. */
+export function byTag(rows: Transaction[]): TagTotal[] {
+  const map = new Map<string, TagTotal>()
+  for (const t of rows) {
+    if (t.deletedAt !== null || t.type === 'trasferimento') continue
+    for (const tag of t.tags ?? []) {
+      const k = tag.toLocaleLowerCase('it')
+      const g = map.get(k) ?? { tag, expense: 0, income: 0, count: 0 }
+      if (t.type === 'uscita') g.expense += total(t)
+      else g.income += total(t)
+      g.count++
+      map.set(k, g)
+    }
+  }
+  return [...map.values()].sort((a, b) => b.expense - a.expense || b.income - a.income || a.tag.localeCompare(b.tag, 'it'))
 }

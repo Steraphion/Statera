@@ -82,6 +82,18 @@ export interface Transaction extends Base {
   toAccountId: string | null
   /** Indice derivato: tutti i conti coinvolti (per le ricerche veloci). */
   accountIds: string[]
+  /** Etichette libere (es. "Vacanze estate"). Dalla v0.19; può mancare. */
+  tags?: string[]
+  /**
+   * Ripartizione su più categorie (almeno 2, somma = totale). Dalla v0.19; può mancare.
+   * `categoryId` resta valorizzato con la categoria della parte più grande.
+   */
+  splits?: Split[]
+}
+
+export interface Split {
+  categoryId: string
+  amount: number
 }
 
 export type Frequency = 'settimanale' | 'mensile' | 'annuale'

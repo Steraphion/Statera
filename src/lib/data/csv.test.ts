@@ -30,15 +30,15 @@ describe('CSV per Excel', () => {
   const lines = csv.split('\r\n')
 
   it('BOM, intestazione, ordine per data, cancellati esclusi', () => {
-    expect(csv.startsWith('﻿Data;Tipo;Categoria;Sottocategoria;Descrizione;Importo;Conto o carta;Verso;Buoni;Note')).toBe(true)
+    expect(csv.startsWith('﻿Data;Tipo;Categoria;Sottocategoria;Descrizione;Importo;Conto o carta;Verso;Buoni;Note;Etichette')).toBe(true)
     expect(csv).not.toContain('Cancellato')
     expect(lines[1].startsWith('05/11/2026')).toBe(true)
   })
 
   it('importi con la virgola e il segno; categorie separate', () => {
     expect(csv).toContain('05/11/2026;Uscita;Casa;Bollette;')
-    expect(csv).toContain(';-23,40;Buoni + Bancomat;;2;')
-    expect(csv).toContain('05/11/2026;Trasferimento;;;Prelievo;50,00;Conto;Contanti;;')
+    expect(csv).toContain(';-23,40;Buoni + Bancomat;;2;;')
+    expect(csv).toContain('05/11/2026;Trasferimento;;;Prelievo;50,00;Conto;Contanti;;;')
   })
 
   it('testo con ; " e a capo correttamente racchiuso', () => {
@@ -53,5 +53,18 @@ describe('CSV per Excel', () => {
 
   it('nome file', () => {
     expect(csvFileName('2026-11-01', '2026-11-30')).toBe('statera-movimenti-2026-11-01_2026-11-30.csv')
+  })
+})
+
+describe('CSV: ripartizioni ed etichette', () => {
+  it('una riga per categoria, buoni e note solo sulla prima; etichette in fondo', () => {
+    const csv = movementsToCsv(
+      [tx({ description: 'Spesa', notes: 'nota', tags: ['Casa nuova', 'Regali'], splits: [{ categoryId: 'boll', amount: 1000 }, { categoryId: 'casa', amount: 234567 - 1000 }], parts: [{ accountId: 'a', cardId: null, amount: 234567, vouchers: null, voucherValue: null }] })],
+      refs,
+    )
+    const lines = csv.split('\r\n').filter(Boolean)
+    expect(lines).toHaveLength(3)
+    expect(lines[1]).toContain(';Casa;Bollette;Spesa (parte 1 di 2);-10,00;Conto;;;nota;Casa nuova, Regali')
+    expect(lines[2]).toContain(';Casa;;Spesa (parte 2 di 2);-2335,67;Conto;;;;Casa nuova, Regali')
   })
 })

@@ -92,6 +92,22 @@
   let mode = $state<'auto' | 'conferma'>(rec0 && !rec0.auto ? 'conferma' : 'auto')
   let endDate = $state(rec0?.endDate ?? '')
   const dateLabel = rec0 ? 'Prossima data' : 'Data'
+  // Etichette
+  let tags = $state<string[]>(orig?.tags ?? [])
+  let tagText = $state('')
+  let showTags = $state((orig?.tags?.length ?? 0) > 0)
+
+  // Ripartizione su più categorie
+  interface SplitRow {
+    categoryId: string
+    amountText: string
+  }
+  const canSplit = !rec0 && !conf0
+  let splitMode = $state((orig?.splits?.length ?? 0) >= 2)
+  let splitRows = $state<SplitRow[]>(
+    (orig?.splits ?? []).map((sp) => ({ categoryId: sp.categoryId, amountText: centsToInput(sp.amount) })),
+  )
+
   // Salva anche tra i preferiti
   const canFavorite = !rec0 && !conf0 && !fav0
   let favorite = $state(false)
@@ -164,6 +180,11 @@
   $effect(() => {
     const cat = categories.find((c) => c.id === categoryId)
     if (cat && cat.kind !== type) categoryId = null
+    if (type === 'trasferimento' && splitMode) splitMode = false
+    for (const r of splitRows) {
+      const c = categories.find((x) => x.id === r.categoryId)
+      if (c && c.kind !== type) r.categoryId = ''
+    }
   })
 
   /** Importo di una riga in centesimi, o null se non valido. */
@@ -273,6 +294,62 @@
   }
 
   const mixedTotal = $derived(parts.reduce((s, r) => s + (rowAmount(r) ?? 0), 0))
+  const grandTotal = $derived(mixed ? mixedTotal : (rowAmount(parts[0]) ?? 0))
+
+  // ---------- Etichette ----------
+  const knownTags = $derived(mv.allTags(history))
+  function addTag() {
+    const t = tagText.trim()
+    if (!t) return
+    try {
+      tags = mv.cleanTags([...tags, t])
+      tagText = ''
+    } catch (e) {
+      error = errorMessage(e)
+    }
+  }
+
+  // ---------- Ripartizione ----------
+  /** Categorie del tipo scelto: le principali in ordine alfabetico, ognuna seguita dalle sue sottocategorie. */
+  const catOptions = $derived.by(() => {
+    const list = categories.filter((c) => c.kind === type && c.deletedAt === null && (!c.archived || splitRows.some((r) => r.categoryId === c.id)))
+    const tops = list.filter((c) => c.parentId === null).sort((a, b) => a.name.localeCompare(b.name, 'it'))
+    return tops.flatMap((t) => [
+      { id: t.id, label: t.name },
+      ...list
+        .filter((c) => c.parentId === t.id)
+        .sort((a, b) => a.name.localeCompare(b.name, 'it'))
+        .map((c) => ({ id: c.id, label: `${t.name} › ${c.name}` })),
+    ])
+  })
+  const splitSum = $derived(splitRows.reduce((s, r) => s + (evalAmount(r.amountText) ?? 0), 0))
+
+  function startSplit() {
+    splitRows = [
+      { categoryId: categoryId ?? '', amountText: grandTotal ? centsToInput(grandTotal) : '' },
+      { categoryId: '', amountText: '' },
+    ]
+    splitMode = true
+  }
+  function stopSplit() {
+    const first = splitRows.find((r) => r.categoryId)
+    if (first) categoryId = first.categoryId
+    splitMode = false
+    splitRows = []
+  }
+
+  /** Righe della ripartizione pronte da salvare; una sola riga senza importo prende il resto. */
+  function splitsForSave(): { categoryId: string; amount: number }[] {
+    const rows = splitRows.map((r) => ({ categoryId: r.categoryId, amount: r.amountText.trim() ? evalAmount(r.amountText) : null }))
+    const empty = rows.filter((r) => r.amount === null)
+    if (empty.length === 1) {
+      const rest = grandTotal - rows.reduce((s, r) => s + (r.amount ?? 0), 0)
+      if (rest > 0) empty[0].amount = rest
+    }
+    if (rows.some((r) => !r.categoryId)) throw new Error('Scegli la categoria di ogni parte della ripartizione')
+    if (rows.some((r) => r.amount === null || r.amount <= 0)) throw new Error('Scrivi l\'importo di ogni parte della ripartizione')
+    return rows.map((r) => ({ categoryId: r.categoryId, amount: r.amount! }))
+  }
 
   /** Nuova riga del pagamento misto: propone la fonte più probabile. */
   function addPart() {
@@ -317,6 +394,16 @@
         return
       }
     }
+    if (tagText.trim()) addTag()
+    let splits: { categoryId: string; amount: number }[] | undefined
+    if (splitMode && type !== 'trasferimento') {
+      try {
+        splits = splitsForSave()
+      } catch (e) {
+        error = errorMessage(e)
+        return
+      }
+    }
     const input: mv.MovementInput = {
       type,
       date,
@@ -325,10 +412,12 @@
         amount: isVoucher(r.source) ? 0 : (evalAmount(r.amountText) ?? 0),
         vouchers: isVoucher(r.source) ? intOf(r.vouchersText) : null,
       })),
-      categoryId: type === 'trasferimento' ? null : categoryId,
+      categoryId: type === 'trasferimento' ? null : splits ? splits[0].categoryId : categoryId,
       toAccountId: type === 'trasferimento' ? toAccountId : null,
       description,
       notes,
+      tags,
+      splits,
     }
     busy = true
     try {
@@ -354,6 +443,10 @@
         endDate = ''
         favorite = false
         favName = ''
+        tags = []
+        showTags = false
+        splitMode = false
+        splitRows = []
         savedCount++
         amountInput?.focus()
       } else {
@@ -588,8 +681,88 @@
 
       {#if type === 'trasferimento'}
         <DateField bind:value={date} label={dateLabel} />
+      {:else if splitMode}
+        <fieldset class="field">
+          <legend>Categorie (ripartizione)</legend>
+          <div class="parts">
+            {#each splitRows as r, i (i)}
+              <div class="part">
+                <select class="input" aria-label="Categoria {i + 1}" bind:value={r.categoryId}>
+                  <option value="" disabled>Scegli…</option>
+                  {#each catOptions as o (o.id)}
+                    <option value={o.id} disabled={o.id !== r.categoryId && splitRows.some((x) => x.categoryId === o.id)}>{o.label}</option>
+                  {/each}
+                </select>
+                <input
+                  class="input num small-input"
+                  aria-label="Importo categoria {i + 1}"
+                  bind:value={r.amountText}
+                  inputmode="decimal"
+                  placeholder={i === splitRows.length - 1 ? 'il resto' : '0,00'}
+                  autocomplete="off"
+                />
+                {#if splitRows.length > 2}
+                  <button type="button" class="btn btn-ghost remove" aria-label="Togli categoria {i + 1}" onclick={() => splitRows.splice(i, 1)}>×</button>
+                {:else}
+                  <span></span>
+                {/if}
+              </div>
+            {/each}
+          </div>
+          <div class="parts-foot">
+            <button type="button" class="btn btn-ghost link" onclick={() => splitRows.push({ categoryId: '', amountText: '' })}>+ Aggiungi categoria</button>
+            <span
+              class="num split-sum"
+              class:off={grandTotal > 0 && (splitSum > grandTotal || (splitSum < grandTotal && splitRows.filter((r) => !r.amountText.trim()).length !== 1))}
+            >
+              {formatEuro(splitSum)} di {formatEuro(grandTotal)}
+            </span>
+          </div>
+          {#if grandTotal > 0 && splitSum < grandTotal && splitRows.filter((r) => !r.amountText.trim()).length === 1}
+            <span class="hint">La riga senza importo prende il resto: {formatEuro(grandTotal - splitSum)}.</span>
+          {/if}
+          <button type="button" class="btn btn-ghost link" onclick={stopSplit}>Una sola categoria</button>
+        </fieldset>
       {:else}
         <CategoryPicker {categories} kind={type} bind:value={categoryId} keepId={orig?.categoryId ?? tpl?.categoryId ?? null} />
+        {#if canSplit}
+          <button type="button" class="btn btn-ghost link" onclick={startSplit}>Dividi tra più categorie</button>
+        {/if}
+      {/if}
+
+      {#if showTags}
+        <div class="field">
+          <label for="tag-input">Etichette</label>
+          {#if tags.length}
+            <div class="tags">
+              {#each tags as tg, i (tg)}
+                <span class="tag">#{tg}<button type="button" aria-label="Togli l'etichetta {tg}" onclick={() => tags.splice(i, 1)}>×</button></span>
+              {/each}
+            </div>
+          {/if}
+          <input
+            id="tag-input"
+            class="input"
+            list="tag-options"
+            bind:value={tagText}
+            maxlength="24"
+            autocomplete="off"
+            placeholder="Es. Vacanze estate, poi Invio"
+            onkeydown={(e) => {
+              if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault()
+                addTag()
+              }
+            }}
+            onblur={addTag}
+          />
+          <datalist id="tag-options">
+            {#each knownTags.filter((k) => !tags.includes(k)) as k (k)}<option value={k}></option>{/each}
+          </datalist>
+          <span class="hint">Servono a ritrovare e sommare le spese di un viaggio, un evento, un progetto.</span>
+        </div>
+      {:else}
+        <button type="button" class="btn btn-ghost link" onclick={() => (showTags = true)}>+ Aggiungi etichette</button>
       {/if}
 
       {#if showNotes}
@@ -819,6 +992,41 @@
     align-items: center;
     justify-content: space-between;
     margin-top: var(--space-1);
+  }
+
+  .split-sum {
+    font-size: var(--text-sm);
+    font-weight: 650;
+  }
+
+  .split-sum.off {
+    color: var(--color-expense);
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 2px 2px var(--space-2);
+    border-radius: var(--radius-sm);
+    background: var(--color-accent-soft);
+    font-size: var(--text-sm);
+  }
+
+  .tag button {
+    min-width: 28px;
+    min-height: 28px;
+    border: 0;
+    background: none;
+    color: var(--color-text-muted);
+    font-size: var(--text-lg);
+    cursor: pointer;
   }
 
   .total {

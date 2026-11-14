@@ -18,7 +18,7 @@
 
   // I filtri restano impostati se si cambia schermata e poi si torna qui
   const f = ui.filters
-  let showFilters = $state(!!(f.from || f.to || f.type || f.source || f.categoryId || f.min || f.max))
+  let showFilters = $state(!!(f.from || f.to || f.type || f.source || f.categoryId || f.min || f.max || f.tag))
   let limit = $state(100)
   let sheet = $state<{ movement: Transaction } | null>(null)
 
@@ -33,7 +33,8 @@
     ),
   )
   const tops = $derived(refs.value.categories.filter((c) => c.parentId === null))
-  const activeCount = $derived([f.from || f.to, f.type, f.source, f.categoryId, f.min || f.max].filter(Boolean).length)
+  const activeCount = $derived([f.from || f.to, f.type, f.source, f.categoryId, f.min || f.max, f.tag].filter(Boolean).length)
+  const tagList = $derived(mv.allTags(all.value))
   const badAmount = $derived(
     (!!f.min.trim() && parseEuro(f.min) === null) || (!!f.max.trim() && parseEuro(f.max) === null),
   )
@@ -48,7 +49,7 @@
 
   $effect(() => {
     // Nuova ricerca: si riparte dai primi risultati
-    void [f.text, f.from, f.to, f.type, f.source, f.categoryId, f.min, f.max]
+    void [f.text, f.from, f.to, f.type, f.source, f.categoryId, f.min, f.max, f.tag]
     limit = 100
   })
 </script>
@@ -130,6 +131,15 @@
           {/each}
         </select>
       </label>
+      {#if tagList.length || f.tag}
+        <label class="field">
+          <span>Etichetta</span>
+          <select class="input" bind:value={f.tag}>
+            <option value="">Tutte</option>
+            {#each tagList as t (t)}<option value={t}>#{t}</option>{/each}
+          </select>
+        </label>
+      {/if}
       {#if activeCount > 0 || f.text}
         <button class="btn btn-ghost reset" onclick={reset}>Azzera ricerca</button>
       {/if}

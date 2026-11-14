@@ -38,6 +38,7 @@
   const changes = $derived(
     a.kind === 'mese' ? an.categoryChanges(all.value, a.month, 'uscita', refs.value.categories).slice(0, 5) : [],
   )
+  const tagTotals = $derived(an.byTag(rows))
   const worth = $derived(an.netWorthSeries(refs.value.accounts, all.value, endMonth, today(), 12))
   const budgets = $derived(a.kind === 'mese' ? an.budgetStatus(all.value, a.month, refs.value.categories) : [])
   const isCurrent = $derived(
@@ -53,6 +54,13 @@
   function exportCsv() {
     const r = an.periodRange(period)
     downloadText(movementsToCsv(rows, refs.value), csvFileName(r.from, r.to))
+  }
+
+  /** Apre la ricerca con i movimenti di quell'etichetta nel periodo. */
+  function showTag(tag: string) {
+    const r = an.periodRange(period)
+    Object.assign(ui.filters, EMPTY_FILTERS, { tag, from: r.from, to: r.to })
+    location.hash = '/cerca'
   }
 
   /** Apre la ricerca con i movimenti di quella categoria nel periodo. */
@@ -150,6 +158,27 @@
             <span class="detail"
               ><span class="num">{formatEuro(c.current)}</span> contro una media di <span class="num">{formatEuro(c.average)}</span></span
             >
+          </button>
+        </li>
+      {/each}
+    </ul>
+  </Card>
+{/if}
+
+{#if tagTotals.length}
+  <Card>
+    <div class="card-head">
+      <h2>Etichette</h2>
+    </div>
+    <ul class="changes">
+      {#each tagTotals as g (g.tag)}
+        <li>
+          <button class="change" onclick={() => showTag(g.tag)}>
+            <span class="name">#{g.tag}</span>
+            <span class="what num">{formatEuro(g.expense)}</span>
+            <span class="detail">
+              {g.count === 1 ? '1 movimento' : `${g.count} movimenti`}{#if g.income}{' · '}entrate <span class="num">{formatEuro(g.income)}</span>{/if}
+            </span>
           </button>
         </li>
       {/each}

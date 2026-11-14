@@ -1,4 +1,4 @@
-import { partLabel, sortMovements, total } from './transactions'
+import { categoryShares, partLabel, sortMovements, total } from './transactions'
 import type { Account, Card, Category, Transaction } from './types'
 
 /**
@@ -9,7 +9,7 @@ import type { Account, Card, Category, Transaction } from './types'
  * (altrimenti Excel potrebbe eseguirlo come formula).
  */
 
-const HEADER = ['Data', 'Tipo', 'Categoria', 'Sottocategoria', 'Descrizione', 'Importo', 'Conto o carta', 'Verso', 'Buoni', 'Note']
+const HEADER = ['Data', 'Tipo', 'Categoria', 'Sottocategoria', 'Descrizione', 'Importo', 'Conto o carta', 'Verso', 'Buoni', 'Note', 'Etichette']
 
 const TYPE: Record<Transaction['type'], string> = { entrata: 'Entrata', uscita: 'Uscita', trasferimento: 'Trasferimento' }
 
@@ -40,26 +40,33 @@ export function movementsToCsv(
 ): string {
   const lines = [HEADER.join(';')]
   for (const t of sortMovements(rows.filter((r) => r.deletedAt === null)).reverse()) {
-    const c = t.categoryId ? refs.categoryMap.get(t.categoryId) : undefined
-    const parent = c?.parentId ? refs.categoryMap.get(c.parentId) : undefined
-    const value = t.type === 'uscita' ? -total(t) : total(t)
+    const sign = t.type === 'uscita' ? -1 : 1
     const vouchers = t.parts.reduce((s, p) => s + (p.vouchers ?? 0), 0)
-    lines.push(
-      [
-        date(t.date),
-        TYPE[t.type],
-        text(parent ? parent.name : (c?.name ?? '')),
-        text(parent ? (c?.name ?? '') : ''),
-        text(t.description),
-        amount(value),
-        text(t.parts.map((p) => partLabel(p, refs.accountMap, refs.cardMap)).join(' + ')),
-        text(t.toAccountId ? (refs.accountMap.get(t.toAccountId)?.name ?? '') : ''),
-        vouchers ? String(vouchers) : '',
-        text(t.notes),
-      ].join(';'),
-    )
+    const shares = categoryShares(t)
+    // Movimento ripartito: una riga per categoria, così in Excel i totali per categoria tornano
+    const pieces = shares.length >= 2 ? shares : [{ categoryId: t.categoryId, amount: total(t) }]
+    pieces.forEach((piece, i) => {
+      const c = piece.categoryId ? refs.categoryMap.get(piece.categoryId) : undefined
+      const parent = c?.parentId ? refs.categoryMap.get(c.parentId) : undefined
+      const desc = pieces.length > 1 ? `${t.description}${t.description ? ' ' : ''}(parte ${i + 1} di ${pieces.length})` : t.description
+      lines.push(
+        [
+          date(t.date),
+          TYPE[t.type],
+          text(parent ? parent.name : (c?.name ?? '')),
+          text(parent ? (c?.name ?? '') : ''),
+          text(desc),
+          amount(sign * piece.amount),
+          text(t.parts.map((p) => partLabel(p, refs.accountMap, refs.cardMap)).join(' + ')),
+          text(t.toAccountId ? (refs.accountMap.get(t.toAccountId)?.name ?? '') : ''),
+          vouchers && i === 0 ? String(vouchers) : '',
+          text(i === 0 ? t.notes : ''),
+          text((t.tags ?? []).join(', ')),
+        ].join(';'),
+      )
+    })
   }
-  return '﻿' + lines.join('\r\n') + '\r\n'
+  return '\uFEFF' + lines.join('\r\n') + '\r\n'
 }
 
 export function csvFileName(from: string, to: string): string {

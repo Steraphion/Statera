@@ -1,6 +1,6 @@
 import { formatEuro, parseEuro } from '../format'
 import { db, type StateraDB } from './db'
-import type { Account, Card, Category, Transaction, TransactionPart, TransactionType } from './types'
+import type { Account, Card, Category, Split, Transaction, TransactionPart, TransactionType } from './types'
 import { baseFields, today } from './util'
 import { accountBalance } from './balances'
 import { ensureAdjustCategory } from './repo'
@@ -34,6 +34,27 @@ export interface MovementInput {
   toAccountId: string | null
   description: string
   notes: string
+  /** Etichette libere. */
+  tags?: string[]
+  /** Ripartizione su più categorie (entrate e uscite): somma uguale al totale. */
+  splits?: Split[]
+}
+
+export const MAX_TAGS = 5
+
+/** Etichette pulite: spazi compattati, max 24 caratteri, senza doppioni (maiuscole comprese), max 5. */
+export function cleanTags(tags: string[] | undefined): string[] {
+  const out: string[] = []
+  const seen = new Set<string>()
+  for (const raw of tags ?? []) {
+    const t = raw.replace(/\s+/g, ' ').trim().replace(/^#\s*/, '').slice(0, 24)
+    const k = normalize(t)
+    if (!t || seen.has(k)) continue
+    seen.add(k)
+    out.push(t)
+  }
+  if (out.length > MAX_TAGS) throw new Error(`Al massimo ${MAX_TAGS} etichette per movimento`)
+  return out
 }
 
 async function buildPart(input: PartInput, d: StateraDB, prev?: Transaction): Promise<TransactionPart> {
@@ -98,6 +119,29 @@ async function validate(input: MovementInput, d: StateraDB, prev?: Transaction) 
     categoryId = cat.id
   }
 
+  // Ripartizione su più categorie
+  let splits: Split[] = []
+  if (input.type !== 'trasferimento' && input.splits && input.splits.length >= 2) {
+    const tot = parts.reduce((s, p) => s + p.amount, 0)
+    const seen = new Set<string>()
+    for (const sp of input.splits) {
+      if (!Number.isInteger(sp.amount) || sp.amount <= 0) throw new Error('Ogni categoria della ripartizione deve avere un importo')
+      const c = await d.categories.get(sp.categoryId)
+      if (!c || c.deletedAt !== null) throw new Error('Categoria della ripartizione non trovata')
+      if (c.kind !== input.type) throw new Error('Una categoria della ripartizione non corrisponde al tipo di movimento')
+      if (seen.has(c.id)) throw new Error('La stessa categoria compare due volte nella ripartizione')
+      seen.add(c.id)
+    }
+    const sum = input.splits.reduce((s, sp) => s + sp.amount, 0)
+    if (sum !== tot) {
+      throw new Error(`La ripartizione (${formatEuro(sum)}) deve essere uguale al totale (${formatEuro(tot)})`)
+    }
+    splits = input.splits.map((sp) => ({ categoryId: sp.categoryId, amount: sp.amount }))
+    // La categoria "principale" è quella della parte più grande
+    categoryId = [...splits].sort((a, b) => b.amount - a.amount)[0].categoryId
+  }
+  const tags = cleanTags(input.tags)
+
   const accountIds = [...new Set([...parts.map((p) => p.accountId), ...(toAccountId ? [toAccountId] : [])])]
 
   return {
@@ -109,7 +153,30 @@ async function validate(input: MovementInput, d: StateraDB, prev?: Transaction) 
     accountIds,
     description: input.description.trim().slice(0, 80),
     notes: input.notes.trim().slice(0, 500),
+    tags,
+    splits,
   }
+}
+
+/** Quote per categoria di un movimento: la ripartizione, oppure tutto sulla sua categoria. */
+export function categoryShares(t: Pick<Transaction, 'categoryId' | 'splits' | 'parts'>): Split[] {
+  if (t.splits && t.splits.length >= 2) return t.splits
+  return t.categoryId ? [{ categoryId: t.categoryId, amount: t.parts.reduce((s, p) => s + p.amount, 0) }] : []
+}
+
+/** Tutte le etichette usate, dalla più usata. */
+export function allTags(rows: Transaction[]): string[] {
+  const count = new Map<string, { tag: string; n: number }>()
+  for (const t of rows) {
+    if (t.deletedAt !== null) continue
+    for (const tag of t.tags ?? []) {
+      const k = normalize(tag)
+      const c = count.get(k)
+      if (c) c.n++
+      else count.set(k, { tag, n: 1 })
+    }
+  }
+  return [...count.values()].sort((a, b) => b.n - a.n || a.tag.localeCompare(b.tag, 'it')).map((c) => c.tag)
 }
 
 /** Controlla che un movimento sia valido senza salvarlo (es. per un modello ricorrente). */
@@ -279,9 +346,11 @@ export interface Filters {
   /** Importo minimo e massimo (testo in euro, es. "50" o "12,50"), o '' */
   min: string
   max: string
+  /** Etichetta, o '' */
+  tag: string
 }
 
-export const EMPTY_FILTERS: Filters = { text: '', from: '', to: '', type: '', source: '', categoryId: '', min: '', max: '' }
+export const EMPTY_FILTERS: Filters = { text: '', from: '', to: '', type: '', source: '', categoryId: '', min: '', max: '', tag: '' }
 
 /** Minuscolo e senza accenti: "Caffè" trova "caffe". */
 export function normalize(s: string): string {
@@ -316,13 +385,15 @@ export function filterMovements(
     if (f.type && t.type !== f.type) return false
     if (srcKind === 'a' && !t.accountIds.includes(srcId)) return false
     if (srcKind === 'c' && !t.parts.some((p) => p.cardId === srcId)) return false
-    if (catIds.size && !(t.categoryId && catIds.has(t.categoryId))) return false
+    if (catIds.size && !categoryShares(t).some((sp) => catIds.has(sp.categoryId))) return false
+    if (f.tag && !(t.tags ?? []).some((x) => normalize(x) === normalize(f.tag))) return false
     if (words.length) {
       const hay = normalize(
         [
           t.description,
           t.notes,
-          categoryLabel(t.categoryId, refs.categoryMap),
+          ...categoryShares(t).map((sp) => categoryLabel(sp.categoryId, refs.categoryMap)),
+          ...(t.tags ?? []),
           ...t.parts.map((p) => partLabel(p, refs.accountMap, refs.cardMap)),
           t.toAccountId ? (refs.accountMap.get(t.toAccountId)?.name ?? '') : '',
         ].join(' '),

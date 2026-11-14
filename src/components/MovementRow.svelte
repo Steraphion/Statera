@@ -26,10 +26,18 @@
     onclick: () => void
   } = $props()
 
+  /** Categoria, o le categorie di un movimento ripartito ("Spesa alimentare + Casa"). */
+  const catText = $derived(
+    mv
+      .categoryShares(t)
+      .map((sp) => mv.categoryLabel(sp.categoryId, refs.categoryMap))
+      .join(' + '),
+  )
+
   const title = $derived.by(() => {
     if (t.description) return t.description
     if (t.type === 'trasferimento') return 'Trasferimento'
-    return mv.categoryLabel(t.categoryId, refs.categoryMap)
+    return catText
   })
 
   const subtitle = $derived.by(() => {
@@ -39,9 +47,10 @@
     if (showDate) pieces.push(formatShortDay(t.date))
     if (t.type === 'trasferimento') pieces.push(`${from} → ${refs.accountMap.get(t.toAccountId ?? '')?.name ?? '—'}`)
     else {
-      if (t.description) pieces.push(mv.categoryLabel(t.categoryId, refs.categoryMap))
+      if (t.description) pieces.push(catText)
       pieces.push(from)
     }
+    for (const tag of t.tags ?? []) pieces.push(`#${tag}`)
     return pieces.join(' · ')
   })
 
