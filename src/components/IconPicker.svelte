@@ -90,7 +90,7 @@
   .what {
     flex: 1;
     min-width: 0;
-    color: var(--color-muted);
+    color: var(--color-text-muted);
     font-size: var(--text-sm);
   }
 
@@ -107,7 +107,7 @@
     font-weight: 800;
     letter-spacing: var(--tracking-caps);
     text-transform: uppercase;
-    color: var(--color-muted);
+    color: var(--color-text-muted);
   }
 
   .grid {
