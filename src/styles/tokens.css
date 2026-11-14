@@ -77,7 +77,7 @@
   --focus-offset: 2px;
   --duration-fast: 120ms;
   --duration-base: 200ms;
-  --duration-slow: 280ms;
+  --duration-slow: 360ms; /* pannelli e finestre in entrata (da 280 nella v0.30.1: sul telefono era troppo svelto) */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
 

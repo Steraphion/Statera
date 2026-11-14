@@ -21,6 +21,20 @@
   import { startup } from './lib/startup.svelte'
   import { sync } from './lib/sync/sync.svelte'
   import { statusLabel } from './lib/sync/labels'
+  import { screen, revealKind } from './lib/screen.svelte'
+  import type { RouteId } from './lib/router.svelte'
+
+  // Comparsa delle schermate: a ogni cambio di schermata (non per il modulo aperto sopra Movimenti) la
+  // nuova resta nascosta finché i suoi dati non sono pronti, poi compare tutta insieme (screen.svelte.ts)
+  let shownRoute: { id: RouteId; key: string } | null = null
+  $effect.pre(() => {
+    if (startup.state !== 'ready') return
+    const id = router.current
+    const key = id === 'conto' ? `conto/${router.param}` : id
+    if (shownRoute?.key === key) return
+    screen.start(revealKind(shownRoute?.id ?? null, id, shownRoute?.id === id))
+    shownRoute = { id, key }
+  })
 
   // Nuovo movimento da qualsiasi schermata: Movimenti apre il modulo (#/movimenti/nuovo)
   function newMovement() {
@@ -118,6 +132,7 @@
     {:else}
     <!-- Se una schermata va in errore, si mostra il recupero invece di bloccare tutto -->
     <svelte:boundary onerror={(e) => console.error(e)}>
+    <div class="screen" data-reveal={screen.shown ? screen.kind : 'wait'}>
     {#if router.current === 'movimenti'}
       <Movimenti />
     {:else if router.current === 'conti'}
@@ -137,6 +152,7 @@
     {:else}
       <Altro />
     {/if}
+    </div>
       {#snippet failed(error, reset)}
         <Recovery message={error instanceof Error ? error.message : String(error)} onretry={reset} />
       {/snippet}
@@ -173,6 +189,46 @@
     margin: 0 auto;
     padding: var(--space-5) var(--space-5)
       calc(var(--nav-height) + var(--space-4) + var(--space-8) + env(safe-area-inset-bottom));
+  }
+
+  /* Comparsa delle schermate (design system: Movimento): invisibile finché i dati non sono pronti,
+     poi dissolvenza tra le sezioni, dissolvenza e spostamento verso una schermata secondaria e al ritorno.
+     Si animano i figli e non il contenitore: uno spostamento sul contenitore staccherebbe dallo schermo
+     gli elementi fissi della schermata (il + del dettaglio conto) */
+  .screen[data-reveal='wait'] {
+    visibility: hidden;
+  }
+
+  .screen[data-reveal='fade'] > :global(*) {
+    animation: screen-fade var(--duration-base) var(--ease-standard);
+  }
+
+  .screen[data-reveal='forward'] > :global(*) {
+    animation: screen-forward var(--duration-base) var(--ease-standard);
+  }
+
+  .screen[data-reveal='back'] > :global(*) {
+    animation: screen-back var(--duration-base) var(--ease-standard);
+  }
+
+  @keyframes screen-fade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes screen-forward {
+    from {
+      opacity: 0;
+      translate: var(--space-6) 0;
+    }
+  }
+
+  @keyframes screen-back {
+    from {
+      opacity: 0;
+      translate: calc(-1 * var(--space-6)) 0;
+    }
   }
 
   /* Schermate aperte da un'altra: niente barra in basso sul telefono */

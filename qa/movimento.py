@@ -1,9 +1,13 @@
-"""Collaudo v0.30: movimento di pannelli e finestre (dati di esempio).
+"""Collaudo v0.30: movimento di pannelli, finestre e schermate (dati di esempio).
 
 Su Android (pannello dal basso) e PC (finestra centrata): durate e curve uguali ai token, uscita in
 --ease-exit con la <dialog> ancora aperta finché non finisce, apertura e chiusura da tastiera, Esc e
 «Chiudi», focus che resta nel pannello e torna al pulsante, riapertura durante l'uscita, schermata di
-blocco sopra un pannello che si sta chiudendo. Poi le stesse prove con «riduci animazioni».
+blocco sopra un pannello che si sta chiudendo. Sul telefono il pannello sale senza scatti: la
+posizione, fotogramma per fotogramma, scende sempre e la finestra non scorre (v0.30.1).
+Cambio di schermata (v0.30.1) con un anno di movimenti e processore rallentato: la nuova schermata compare
+intera (nessun importo che cambia e nessun riquadro che si sposta dopo la comparsa), in dissolvenza tra le
+sezioni, con spostamento verso il dettaglio conto e al ritorno. Poi le stesse prove con «riduci animazioni».
 """
 import asyncio, re, json
 from playwright.async_api import async_playwright
@@ -23,6 +27,12 @@ TOKENS = """() => { const s = getComputedStyle(document.documentElement); const 
   return { slow: ms(g('--duration-slow')), base: ms(g('--duration-base')), std: g('--ease-standard'), exit: g('--ease-exit') } }"""
 SHEETS = "() => [...document.querySelectorAll('dialog:not(.lock)')].map(d => ({ open: d.open, leaving: d.hasAttribute('data-leaving') }))"
 FOCUS = "() => { const a = document.activeElement; return { inDialog: !!a?.closest('dialog[open]:not(.lock)'), tag: a?.tagName, label: a?.getAttribute('aria-label') || a?.textContent?.trim().slice(0, 30) } }"
+RISE = """() => new Promise(res => { const out = []; let t0 = null;
+  function f() { const d = document.querySelector('dialog[open]:not(.lock)');
+    if (d) { if (t0 === null) t0 = performance.now(); const p = d.querySelector('.panel');
+      out.push([Math.round(performance.now() - t0), Math.round(p.getBoundingClientRect().top), d.scrollTop, Math.round(document.scrollingElement.scrollTop) === Math.round(window.__sy ?? document.scrollingElement.scrollTop) ? 0 : 1]) }
+    if (t0 === null || performance.now() - t0 < 700) requestAnimationFrame(f); else res(out) }
+  window.__sy = document.scrollingElement.scrollTop; requestAnimationFrame(f) })"""
 norm = lambda s: [float(x) for x in re.findall(r"-?\d*\.?\d+", s)]
 
 async def hide_show(pg):
@@ -54,6 +64,25 @@ async def run(b, p, label, opts, phone):
     await setup(pg)
     tok = await pg.evaluate(TOKENS)
     entry, leave_ = ("sheet-in", "sheet-out") if phone else ("window-in", "window-out")
+
+    # sul telefono: il pannello sale in modo continuo, senza che la finestra scorra (era il «rimbalzo»)
+    if phone:
+        for name, opener in [("Conto", lambda: pg.get_by_role("button", name="Conto").first.tap()), ("Nuovo movimento", None)]:
+            if opener:
+                await pg.goto(BASE + "/#/conti"); await pg.wait_for_timeout(600)
+            else:
+                await pg.goto(BASE + "/#/movimenti"); await pg.wait_for_timeout(600)
+            prom = pg.evaluate(RISE)
+            await (opener() if opener else (await new_button(pg)).tap())
+            fr = await prom
+            tops = [f[1] for f in fr]
+            mono = all(b2 <= a2 + 1 for a2, b2 in zip(tops, tops[1:]))
+            moving = [f[0] for f, nx in zip(fr, fr[1:]) if nx[1] < f[1] - 1]
+            span = (moving[-1] - moving[0]) if len(moving) > 1 else 0
+            check(f"{label}: «{name}»: il pannello sale senza tornare indietro e la finestra non scorre", mono and all(f[2] == 0 and f[3] == 0 for f in fr), json.dumps(fr[:12]))
+            check(f"{label}: «{name}»: la salita dura quasi tutto --duration-slow", span >= tok["slow"] * 0.7, f"{span} ms su {tok['slow']}")
+            await pg.keyboard.press("Escape"); await pg.wait_for_timeout(500)
+        await pg.goto(BASE + "/#/movimenti"); await pg.wait_for_timeout(500)
 
     # entrata, rallentata 10 volte per poterla osservare
     await slow(0.1)
@@ -159,6 +188,56 @@ async def run_reduced(b, p, label, opts):
     check(f"{label}: nessun errore", not errs, " | ".join(errs[:3]))
     await ctx.close()
 
+# Per ogni fotogramma dopo il tocco: schermata visibile?, importo del riquadro principale, sua posizione
+FRAMES = """() => { const r = window.__fr = []; const t0 = performance.now();
+  const f = () => { const sc = document.querySelector('.screen'); const box = sc?.querySelector('.balance-box');
+    r.push({ t: Math.round(performance.now() - t0), state: sc?.dataset.reveal, h1: sc?.querySelector('h1, h2')?.textContent.trim(),
+      amount: box?.textContent.replace(/\\s+/g, ' ').trim() ?? '', y: box ? Math.round(box.getBoundingClientRect().top) : null });
+    if (performance.now() - t0 < 1500) requestAnimationFrame(f) }; requestAnimationFrame(f) }"""
+
+async def run_screens(b, p, label, opts, reduced=False):
+    print(f"\n===== {label}: cambio di schermata{', riduci animazioni' if reduced else ''} =====")
+    ctx = await b.new_context(**opts, locale="it-IT", **({"reduced_motion": "reduce"} if reduced else {})); pg = await ctx.new_page(); errs = []
+    pg.on("pageerror", lambda e: errs.append(str(e))); pg.on("console", lambda m: errs.append(m.text) if m.type == "error" else None)
+    await pg.goto(BASE + "/#/conti"); await pg.wait_for_selector("nav"); await pg.wait_for_timeout(500)
+    await pg.get_by_role("button", name="Conto").first.click()
+    await pg.get_by_label("Nome").fill("Conto"); await pg.get_by_label("Saldo iniziale (€)").fill("3000")
+    await pg.locator("dialog input[type=date]").fill("2025-12-01")
+    await pg.get_by_role("button", name="Salva").click(); await pg.wait_for_timeout(500)
+    await pg.evaluate(open(__import__("os").path.join(__import__("os").path.dirname(__file__), "anno-di-esempio.js")).read())
+    await pg.goto(BASE + "/#/movimenti"); await pg.wait_for_timeout(1500)
+    cdp = await ctx.new_cdp_session(pg); await cdp.send("Emulation.setCPUThrottlingRate", {"rate": 6})
+    async def go(do, name, kind):
+        await pg.evaluate(FRAMES); await do(); await pg.wait_for_timeout(1600)
+        fr = await pg.evaluate("window.__fr")
+        vis = [f for f in fr if f["state"] not in ("wait", None)]
+        an = await pg.evaluate("() => [...document.querySelectorAll('.screen > *')].map(e => getComputedStyle(e).animationName)")
+        final = fr[-1]
+        steady = [f for f in vis if f["h1"] == final["h1"]]
+        same = all(f["amount"] == final["amount"] and f["y"] == final["y"] for f in steady)
+        check(f"{label}: {name}: compare intera (importo e posizione non cambiano dopo la comparsa)", bool(steady) and same,
+              json.dumps([(f["t"], f["state"], f["amount"][:30], f["y"]) for f in fr if f in steady][:6]))
+        if not reduced:
+            check(f"{label}: {name}: animazione {kind}", all(kind in a for a in an), json.dumps(an))
+        return fr
+    nav = lambda t: (lambda: pg.locator("nav").get_by_role("link", name=t, exact=True).locator("visible=true").first.click())
+    for tab in ["Conti", "Analisi", "Altro", "Movimenti"]:
+        await go(nav(tab), f"scheda {tab}", "screen-fade")
+    await nav("Conti")(); await pg.wait_for_timeout(1500)
+    await go(lambda: pg.locator(".screen a.list-row[href^='#/conto/']").first.click(), "dettaglio conto", "screen-forward")
+    await go(lambda: pg.get_by_role("link", name="Torna a Conti").first.click(), "ritorno a Conti", "screen-back")
+    # il modulo aperto sopra Movimenti non rifà comparire la schermata
+    await nav("Movimenti")(); await pg.wait_for_timeout(1500)
+    await pg.evaluate(FRAMES); await (await new_button(pg)).click(); await pg.wait_for_timeout(800)
+    fr = await pg.evaluate("window.__fr")
+    check(f"{label}: aprire il modulo non nasconde Movimenti", all(f["state"] != "wait" for f in fr))
+    await pg.keyboard.press("Escape"); await pg.wait_for_timeout(600)
+    if reduced:
+        d = await pg.evaluate("() => [...document.querySelectorAll('.screen > *')].map(e => getComputedStyle(e).animationDuration)")
+        check(f"{label}: comparsa delle schermate ridotta a 0,01 ms", all(float(x.rstrip('ms')) <= 0.00001 for x in d), json.dumps(d))
+    check(f"{label}: nessun errore", not errs, " | ".join(errs[:3]))
+    await ctx.close()
+
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
@@ -166,7 +245,10 @@ async def main():
         pc = {"viewport": {"width": 1366, "height": 800}}
         await run(b, p, "Android", phone, True)
         await run(b, p, "PC", {**pc, "color_scheme": "dark"}, False)
+        await run_screens(b, p, "Android", phone)
+        await run_screens(b, p, "PC", pc)
         await run_reduced(b, p, "Android", phone)
+        await run_screens(b, p, "Android", phone, reduced=True)
         await run_reduced(b, p, "PC", pc)
         await b.close()
     print(f"\n{sum(results)}/{len(results)} superati")

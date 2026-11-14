@@ -70,6 +70,9 @@
     width: 100%;
     margin: auto auto 0;
     color: var(--color-text);
+    /* Non scorre mai (scorre solo .body): all'apertura il browser mette il focus sul primo comando e,
+       col pannello ancora fuori schermo per l'animazione, farebbe scorrere la finestra (effetto rimbalzo) */
+    overflow: clip;
   }
 
   dialog::backdrop {

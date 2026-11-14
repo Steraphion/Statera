@@ -63,4 +63,9 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
   focus nel pannello, Tab che non esce, chiusura con Esc (anche doppio), «Chiudi» e tocco sullo sfondo, focus che torna
   a «Nuovo movimento», riapertura durante l'uscita, blocco che arriva mentre un pannello si chiude (resta sopra, col
   focus sul PIN). Poi con «riduci animazioni»: durate a 0,01 ms (sfondo compreso), pannello subito al suo posto, Esc che
-  chiude senza attesa. Le animazioni si osservano rallentate (CDP `Animation.setPlaybackRate`). Uso come `collaudo.py`.
+  chiude senza attesa. Le animazioni si osservano rallentate (CDP `Animation.setPlaybackRate`).
+  Dalla v0.30.1: sul telefono il pannello sale senza tornare indietro (posizione fotogramma per fotogramma, finestra
+  che non scorre) per quasi tutto `--duration-slow`; cambio di schermata con un anno di movimenti e processore
+  rallentato 6 volte: la schermata compare intera (importo e posizione del riquadro principale non cambiano dopo la
+  comparsa), in dissolvenza tra le sezioni, con spostamento verso il dettaglio conto e al ritorno; il modulo aperto
+  sopra Movimenti non la nasconde; con «riduci animazioni» comparsa a 0,01 ms. Uso come `collaudo.py`.

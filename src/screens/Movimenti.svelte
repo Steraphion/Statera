@@ -17,6 +17,7 @@
   import { today } from '../lib/data/util'
   import { formatDay, formatEuro, formatMonth, monthOf, parseDay, shiftMonth } from '../lib/format'
   import { ui } from '../lib/ui.svelte'
+  import { screen } from '../lib/screen.svelte'
 
   const refs = useRefs()
 
@@ -26,12 +27,17 @@
   $effect(() => {
     const month = ui.month
     loaded = false
+    const ready = screen.track()
     const sub = liveQuery(() => mv.movementsOfMonth(month)).subscribe({
       next: (v) => {
         rows = v
         loaded = true
+        ready()
       },
-      error: (e) => console.error('Errore di lettura movimenti', e),
+      error: (e) => {
+        ready()
+        console.error('Errore di lettura movimenti', e)
+      },
     })
     return () => sub.unsubscribe()
   })
