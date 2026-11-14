@@ -1,3 +1,12 @@
+/* Plus Jakarta Sans (licenza OFL, src/assets/fonts/OFL.txt): sottoinsieme latino, pesi 200–800 */
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url('../assets/fonts/PlusJakartaSans-latin.woff2') format('woff2');
+}
+
 *,
 *::before,
 *::after {
@@ -17,6 +26,7 @@ body {
   line-height: 1.45;
   color: var(--color-text);
   background: var(--color-bg);
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   /* Come un'app, non un documento: puntatore normale sul testo e nessuna
@@ -52,6 +62,8 @@ h2,
 h3 {
   margin: 0;
   line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
 }
 
 p {
@@ -68,13 +80,14 @@ a {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--color-focus);
+  outline-offset: var(--focus-offset);
 }
 
 .num {
   font-family: var(--font-num);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .visually-hidden {
@@ -86,54 +99,84 @@ a {
   white-space: nowrap;
 }
 
-/* ---------- Pulsanti ---------- */
+/* ---------- Pulsanti: pillole (design system: Pulsante) ---------- */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  min-height: 44px;
-  padding: 0 var(--space-4);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
+  min-height: var(--size-touch);
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-full);
+  border: none;
   background: var(--color-surface);
   color: var(--color-text);
-  font-weight: 600;
+  font-weight: 800;
   cursor: pointer;
   text-decoration: none;
+  white-space: nowrap;
+  transition:
+    transform var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+/* Passaggio del puntatore e pressione: un velo del colore del testo */
+@media (hover: hover) {
+  .btn:hover:not(:disabled) {
+    box-shadow: inset 0 0 0 100px color-mix(in srgb, currentColor 8%, transparent);
+  }
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+  box-shadow: inset 0 0 0 100px color-mix(in srgb, currentColor 14%, transparent);
 }
 
 .btn:disabled {
-  opacity: 0.5;
-  cursor: default;
+  opacity: var(--opacity-disabled);
+  cursor: not-allowed;
+}
+
+/* Dentro una scheda i pulsanti secondari stanno sul secondo livello */
+.card .btn:not(.btn-primary, .btn-ghost, .btn-danger),
+.sheet-body .card .btn:not(.btn-primary, .btn-ghost, .btn-danger) {
+  background: var(--color-surface-2);
 }
 
 .btn-primary {
   background: var(--color-primary);
-  border-color: var(--color-primary);
   color: var(--color-on-primary);
+}
+
+.btn-soft {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
 }
 
 .btn-ghost {
   background: transparent;
-  border-color: transparent;
   color: var(--color-accent);
+  padding: 0 var(--space-3);
 }
 
 .btn-danger {
-  color: var(--color-expense);
+  color: var(--color-danger);
 }
 
 .btn-danger.confirm {
-  background: var(--color-expense);
-  border-color: var(--color-expense);
-  color: var(--color-on-brand);
+  background: var(--color-danger);
+  color: var(--color-on-danger);
 }
 
 .btn-small {
-  min-height: 36px;
+  min-height: var(--size-btn-s);
   padding: 0 var(--space-3);
   font-size: var(--text-sm);
+}
+
+.btn-large {
+  min-height: var(--size-btn-l);
+  font-size: var(--text-lg);
 }
 
 /* ---------- Moduli ---------- */
@@ -153,7 +196,7 @@ a {
 .field > label,
 .field > legend {
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-text-muted);
   padding: 0;
 }
@@ -169,21 +212,32 @@ fieldset.field {
   color: var(--color-text-muted);
 }
 
+/* Campi (design system: Campo): riempiti, senza bordo; dentro una scheda sullo sfondo */
 .input {
   width: 100%;
   min-width: 0;
-  min-height: 44px;
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-bg);
+  min-height: var(--size-field);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
+  font-size: var(--text-input);
+  font-weight: 500;
+}
+
+.card .input {
+  background: var(--color-bg);
 }
 
 .input:focus {
-  outline: 2px solid var(--color-accent);
-  outline-offset: -1px;
+  outline: none;
+  box-shadow: 0 0 0 var(--focus-width) var(--color-focus);
+}
+
+.input[aria-invalid='true'] {
+  box-shadow: 0 0 0 var(--focus-width) var(--color-danger);
 }
 
 .row-2 {
@@ -192,12 +246,14 @@ fieldset.field {
   gap: var(--space-3);
 }
 
+/* Errore (design system: Avviso di pericolo): testo leggibile su un fondo tenue */
 .error-box {
-  padding: var(--space-3);
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--color-expense) 12%, transparent);
-  color: var(--color-expense);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-danger) 12%, var(--color-bg));
+  color: var(--color-text);
   font-size: var(--text-sm);
+  font-weight: 600;
 }
 
 /* ---------- Liste ---------- */
@@ -216,7 +272,7 @@ fieldset.field {
   padding: var(--space-2) 0;
   background: none;
   border: none;
-  border-bottom: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   text-align: left;
   cursor: pointer;
 }
@@ -224,10 +280,6 @@ fieldset.field {
 a.list-row {
   color: inherit;
   text-decoration: none;
-}
-
-.list li:last-child > .list-row {
-  border-bottom: none;
 }
 
 .list-row .main {
@@ -238,7 +290,7 @@ a.list-row {
 }
 
 .list-row .name {
-  font-weight: 600;
+  font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -265,9 +317,9 @@ a.list-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: var(--space-5) 0 var(--space-2);
-  font-size: var(--text-sm);
-  font-weight: 650;
+  margin: var(--space-6) 0 var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--color-text-muted);
@@ -280,6 +332,50 @@ a.list-row {
   font-size: var(--text-sm);
 }
 
+/* Importi negativi: col colore del testo (il segno − basta) */
 .amount-neg {
   color: var(--color-expense);
+}
+
+/* Icona di categoria (design system: IconaCategoria). La tinta arriva da --cat. */
+.cat-icon {
+  --cat: var(--swatch-s1);
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: var(--size-cat);
+  height: var(--size-cat);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--cat) var(--cat-tint), transparent);
+  color: var(--cat);
+  font-weight: 800;
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+.cat-icon.small {
+  width: var(--size-cat-s);
+  height: var(--size-cat-s);
+  font-size: 0.875rem;
+}
+
+.cat-icon.large {
+  width: var(--size-cat-l);
+  height: var(--size-cat-l);
+}
+
+@media (prefers-color-scheme: dark) {
+  .cat-icon {
+    color: #fff;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

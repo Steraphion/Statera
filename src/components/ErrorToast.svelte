@@ -23,8 +23,7 @@
     margin: 0 auto;
     padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-md);
-    background: var(--color-surface);
-    border: 1px solid var(--color-expense);
+    background: color-mix(in srgb, var(--color-danger) 12%, var(--color-surface));
     box-shadow: var(--shadow-2);
     font-size: var(--text-sm);
   }

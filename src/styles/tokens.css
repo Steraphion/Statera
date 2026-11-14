@@ -1,76 +1,121 @@
 /*
  * STILE DI STATERA — tutte le scelte estetiche stanno qui.
- * Per ritoccare l'aspetto (colori, font, arrotondamenti, spaziature)
- * basta modificare questi valori: il resto dell'app li usa per nome.
+ * Valori dal design system "Statera" (stile Vivace, palette Indaco morbido):
+ * https://claude.ai/artifact/HYogYA8sLDbtWMS277c1CF
+ * Per ritoccare l'aspetto basta modificare questi valori: il resto dell'app li usa per nome.
  */
 
 :root {
-  /* Tipografia: font di sistema, nessun download esterno */
-  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-num: ui-monospace, 'Cascadia Mono', 'Roboto Mono', Consolas, monospace;
-  --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
-  --text-md: 1rem;
-  --text-lg: 1.25rem;
-  --text-xl: 1.75rem;
+  /* Tipografia: Plus Jakarta Sans incluso nel pacchetto (base.css), nessun download esterno */
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* Cifre tabulari con lo stesso carattere (classe .num) */
+  --font-num: var(--font-sans);
+  --text-xs: 0.75rem; /* 12 px: tasti, didascalie piccole */
+  --text-sm: 0.8125rem; /* 13 px: seconde righe, etichette dei campi */
+  --text-md: 0.9375rem; /* 15 px: testo */
+  --text-input: 1rem; /* 16 px: dentro i campi, così il telefono non ingrandisce */
+  --text-lg: 1.0625rem; /* 17 px: titoli delle schede */
+  --text-xl: 1.375rem; /* 22 px: titoli delle schermate secondarie e delle finestre */
+  --text-2xl: 1.625rem; /* 26 px: titoli delle sezioni */
+  --amount-s: 1.25rem; /* 20 px: riquadri e totali */
+  --amount-m: 2.125rem; /* 34 px: patrimonio, saldo di un conto */
+  --amount-l: 2.875rem; /* 46 px: saldo del mese */
+  --amount-xl: 3.5rem; /* 56 px: importo mentre lo scrivi */
+  --tracking-tight: -0.02em;
+  --tracking-tighter: -0.03em;
 
-  /* Spaziature e forme */
+  /* Spazi: griglia di 4 px */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --nav-height: 64px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 48px;
+
+  /* Forme */
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-full: 999px;
+
+  /* Dimensioni */
+  --size-touch: 44px;
+  --size-field: 52px;
+  --size-btn-l: 58px;
+  --size-btn-s: 36px;
+  --size-cat-s: 32px;
+  --size-cat: 44px;
+  --size-cat-l: 52px;
+  --size-fab: 56px;
+  --nav-height: 66px; /* barra flottante del telefono */
+  --size-sidebar: 232px;
   --content-max: 760px;
 
+  /* Stati e movimento */
+  --opacity-disabled: 0.45;
+  --focus-width: 2px;
+  --focus-offset: 2px;
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 280ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
+
   /* Colori — tema chiaro */
-  --color-bg: #f5f3ee;
+  --color-bg: #f4f5fb;
   --color-surface: #ffffff;
-  --color-surface-2: #ece9e1;
-  --color-border: #ddd8cc;
-  --color-text: #1e2a30;
-  --color-text-muted: #5c676c;
-  --color-brand: #1e2a30;          /* ardesia */
-  --color-accent: #8a5f1a;         /* ottone scuro, leggibile su chiaro */
-  --color-accent-soft: #f1e4c8;
-  --color-income: #1f7a4a;
-  --color-expense: #b3261e;
-  --color-on-brand: #f5f3ee;
-  --color-primary: #1e2a30;        /* pulsanti principali */
-  --color-on-primary: #f5f3ee;
-  --color-segment-active: #ffffff;
-  --shadow-1: 0 1px 2px rgb(30 42 48 / 0.08), 0 2px 8px rgb(30 42 48 / 0.06);
-  --shadow-2: 0 8px 32px rgb(30 42 48 / 0.18);
-  --color-backdrop: rgb(18 23 26 / 0.45);
-  /* Avviso breve in basso (es. "Registrato · Annulla") */
-  --toast-bg: #1e2a30;
-  --toast-text: #f5f3ee;
-  --toast-action: #e2b864;
+  --color-surface-2: #e7e9f3;
+  --color-border: #dddfeb;
+  --color-text: #171928;
+  --color-text-muted: #5f6275;
+  --color-primary: #535aa6; /* pulsante +, pulsanti principali, segmento attivo */
+  --color-on-primary: #ffffff;
+  --color-accent: #535aa6; /* link, icone d'accento, voce attiva */
+  --color-accent-soft: #e3e8ff;
+  --color-income: #1d7a5a;
+  /* Importi in uscita: col colore del testo, mai in rosso */
+  --color-expense: var(--color-text);
+  --color-expense-icon: #b4562a;
+  /* Pericolo: solo errori e azioni che cancellano */
+  --color-danger: #b33736;
+  --color-on-danger: #ffffff;
+  --color-focus: var(--color-primary);
+  --shadow-1: 0 1px 3px rgb(23 25 40 / 0.18);
+  --shadow-2: 0 6px 24px rgb(23 25 40 / 0.1);
+  --shadow-3: 0 24px 64px rgb(23 25 40 / 0.28);
+  --shadow-fab: 0 8px 20px rgb(83 90 166 / 0.35);
+  --color-backdrop: rgb(20 22 40 / 0.5);
+  /* Avviso breve in basso (es. "Registrato · Annulla"): colori invertiti */
+  --toast-bg: #171928;
+  --toast-text: #ffffff;
+  --toast-action: #a9b3ee;
 
   /* Grafici: coppia verificata anche per daltonismo (non il verde/rosso dei testi) */
   --chart-income: #2a78d6;
   --chart-expense: #eb6834;
-  /* Andamento del patrimonio: una sola serie, tinta neutra diversa da entrate e uscite */
-  --chart-worth: #3d5a6c;
-  --chart-track: #ece9e1;
-  --chart-grid: #e6e2d8;
-  /* Stati (budget): sempre accompagnati da un'etichetta, mai solo colore */
-  --status-warning: #c98500;
-  --status-critical: #d03b3b;
+  /* Andamento del patrimonio: una sola serie */
+  --chart-worth: var(--color-primary);
+  --chart-track: var(--color-surface-2);
+  --chart-grid: var(--color-border);
+  /* Stati (budget): sempre accompagnati da un'etichetta e un simbolo, mai solo colore */
+  --status-warning: #a86a00;
+  --status-critical: var(--color-danger);
 
-  /* Tinte per conti e categorie (i dati salvano solo il nome: s1…s8) */
-  --swatch-s1: #3f7d6e;
-  --swatch-s2: #b5653a;
-  --swatch-s3: #4a6fa5;
-  --swatch-s4: #7a6a58;
-  --swatch-s5: #7b5ea7;
-  --swatch-s6: #2f8f9d;
-  --swatch-s7: #a24f7a;
-  --swatch-s8: #6b7a3a;
+  /* Tinte per conti e categorie (i dati salvano solo il nome: s1…s8), uguali nei due temi */
+  --swatch-s1: #318454;
+  --swatch-s2: #b86838;
+  --swatch-s3: #3a75af;
+  --swatch-s4: #7f624c;
+  --swatch-s5: #8160a5;
+  --swatch-s6: #1d878c;
+  --swatch-s7: #aa5478;
+  --swatch-s8: #798136;
+  /* Cerchio dell'icona di categoria: tinta al 15% con icona colorata */
+  --cat-tint: 15%;
 
   color-scheme: light;
 }
@@ -78,44 +123,35 @@
 /* Tema scuro: automatico, segue l'impostazione del dispositivo */
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #12171a;
-    --color-surface: #1b2226;
-    --color-surface-2: #242c31;
-    --color-border: #313b41;
-    --color-text: #e9e6df;
-    --color-text-muted: #9aa3a7;
-    --color-brand: #1e2a30;
-    --color-accent: #d4a24c;       /* ottone chiaro, leggibile su scuro */
-    --color-accent-soft: #3a3020;
-    --color-income: #5cc48b;
-    --color-expense: #f2837a;
-    --color-on-brand: #f5f3ee;
-    --color-primary: #d4a24c;
-    --color-on-primary: #1b1408;
-    --color-segment-active: #3a454b;
-    --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
-    --shadow-2: 0 8px 32px rgb(0 0 0 / 0.5);
+    --color-bg: #0e0f16;
+    --color-surface: #171923;
+    --color-surface-2: #212330;
+    --color-border: #2a2d3a;
+    --color-text: #eef0f6;
+    --color-text-muted: #a6aabb;
+    --color-primary: #a9b3ee;
+    --color-on-primary: #0e0f16;
+    --color-accent: #b0baf2;
+    --color-accent-soft: #2c304c;
+    --color-income: #5ccb98;
+    --color-expense-icon: #ee9a70;
+    --color-danger: #f58b84;
+    --color-on-danger: #0e0f16;
+    --shadow-1: 0 1px 3px rgb(0 0 0 / 0.5);
+    --shadow-2: 0 6px 24px rgb(0 0 0 / 0.45);
+    --shadow-3: 0 24px 64px rgb(0 0 0 / 0.6);
+    --shadow-fab: 0 8px 20px rgb(0 0 0 / 0.5);
     --color-backdrop: rgb(0 0 0 / 0.6);
-    --toast-bg: #e9e6df;
-    --toast-text: #1b2226;
-    --toast-action: #7a5214;
+    --toast-bg: #eef0f6;
+    --toast-text: #0e0f16;
+    --toast-action: #535aa6;
 
     --chart-income: #3987e5;
     --chart-expense: #d95926;
-    --chart-worth: #9cc0d4;
-    --chart-track: #2a3338;
-    --chart-grid: #2c353a;
-    --status-warning: #fab219;
-    --status-critical: #e5615f;
+    --status-warning: #f2b13c;
 
-    --swatch-s1: #6fb3a2;
-    --swatch-s2: #e0956a;
-    --swatch-s3: #7fa3d6;
-    --swatch-s4: #b3a28e;
-    --swatch-s5: #ad93d6;
-    --swatch-s6: #5ec0cd;
-    --swatch-s7: #d684ae;
-    --swatch-s8: #a3b46a;
+    /* In scuro il cerchio è più pieno e l'icona bianca */
+    --cat-tint: 30%;
 
     color-scheme: dark;
   }

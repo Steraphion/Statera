@@ -1000,7 +1000,7 @@
   }
 
   .split-sum.off {
-    color: var(--color-expense);
+    color: var(--color-danger);
   }
 
   .tags {
@@ -1030,8 +1030,7 @@
   }
 
   .total {
-    font-weight: 650;
-    color: var(--color-expense);
+    font-weight: 700;
   }
 
   textarea.input {

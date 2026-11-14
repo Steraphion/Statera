@@ -72,9 +72,9 @@
 </script>
 
 <header class="top">
-  <button class="btn btn-ghost nav" aria-label="Periodo precedente" onclick={() => shift(-1)}><Icon name="left" /></button>
+  <button class="btn btn-ghost nav" aria-label="Periodo precedente" onclick={() => shift(-1)}><Icon name="chevron-left" /></button>
   <h1>{title}</h1>
-  <button class="btn btn-ghost nav" aria-label="Periodo successivo" onclick={() => shift(1)}><Icon name="right" /></button>
+  <button class="btn btn-ghost nav" aria-label="Periodo successivo" onclick={() => shift(1)}><Icon name="chevron-right" /></button>
   <span class="spacer"></span>
   {#if !isCurrent}
     <button class="btn btn-small" onclick={() => (a.month = monthOf(today()))}>Oggi</button>

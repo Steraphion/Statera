@@ -23,29 +23,32 @@
 </div>
 
 <style>
+  /* Segmentato (design system): pillola, scelta in colore principale */
   .segmented {
     display: flex;
-    padding: 3px;
-    gap: 3px;
-    border-radius: var(--radius-sm);
+    padding: var(--space-1);
+    gap: var(--space-1);
+    border-radius: var(--radius-full);
     background: var(--color-surface-2);
   }
 
   button {
     flex: 1;
-    min-height: 38px;
+    min-height: var(--size-btn-s);
+    padding: 0 var(--space-3);
     border: none;
-    border-radius: calc(var(--radius-sm) - 2px);
+    border-radius: var(--radius-full);
     background: transparent;
     color: var(--color-text-muted);
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
+    transition: background-color var(--duration-base) var(--ease-standard);
   }
 
   button.active {
-    background: var(--color-segment-active);
-    color: var(--color-text);
-    box-shadow: var(--shadow-1);
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+    font-weight: 800;
   }
 
   button:disabled {

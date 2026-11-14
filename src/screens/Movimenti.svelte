@@ -81,11 +81,11 @@
 
 <header class="month">
   <button class="btn btn-ghost nav" aria-label="Mese precedente" onclick={() => (ui.month = shiftMonth(ui.month, -1))}>
-    <Icon name="left" />
+    <Icon name="chevron-left" />
   </button>
   <h1>{formatMonth(parseDay(`${ui.month}-01`))}</h1>
   <button class="btn btn-ghost nav" aria-label="Mese successivo" onclick={() => (ui.month = shiftMonth(ui.month, 1))}>
-    <Icon name="right" />
+    <Icon name="chevron-right" />
   </button>
   <span class="spacer"></span>
   {#if !isCurrentMonth}

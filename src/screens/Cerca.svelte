@@ -213,7 +213,7 @@
 
   .bad {
     font-size: var(--text-sm);
-    color: var(--color-expense);
+    color: var(--color-danger);
   }
 
   .reset {

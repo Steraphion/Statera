@@ -53,7 +53,7 @@ export default defineConfig({
       // Nuova versione: l'app mostra un avviso "Aggiorna" (src/lib/pwa.svelte.ts)
       registerType: 'prompt',
       injectRegister: false,
-      includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png'],
+      includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png', 'licenze.html'],
       manifest: {
         id: './',
         name: 'Statera',
@@ -64,8 +64,8 @@ export default defineConfig({
         scope: './',
         display: 'standalone',
         orientation: 'any',
-        background_color: '#F5F3EE',
-        theme_color: '#1E2A30',
+        background_color: '#F4F5FB',
+        theme_color: '#F4F5FB',
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
@@ -94,10 +94,10 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}'],
         navigateFallback: 'index.html',
         // Le pagine statiche (es. informativa privacy) non vanno sostituite dall'app
-        navigateFallbackDenylist: [/privacy\.html$/],
+        navigateFallbackDenylist: [/privacy\.html$/, /licenze\.html$/],
         cleanupOutdatedCaches: true,
         // La nuova versione, una volta attivata, prende subito il controllo della pagina
         clientsClaim: true,

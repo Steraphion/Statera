@@ -3,14 +3,16 @@
  * Funziona offline e su GitHub Pages senza configurazioni del server.
  */
 
+import type { IconName } from './icons'
+
 export type NavId = 'movimenti' | 'conti' | 'analisi' | 'altro'
 export type RouteId = NavId | 'categorie' | 'conto' | 'cerca' | 'ricorrenti'
 
-export const ROUTES: { id: NavId; label: string; icon: string }[] = [
+export const ROUTES: { id: NavId; label: string; icon: IconName }[] = [
   { id: 'movimenti', label: 'Movimenti', icon: 'list' },
   { id: 'conti', label: 'Conti', icon: 'wallet' },
-  { id: 'analisi', label: 'Analisi', icon: 'chart' },
-  { id: 'altro', label: 'Altro', icon: 'more' },
+  { id: 'analisi', label: 'Analisi', icon: 'chart-column' },
+  { id: 'altro', label: 'Altro', icon: 'ellipsis' },
 ]
 
 /** Schermate secondarie e la voce di menu a cui appartengono. */

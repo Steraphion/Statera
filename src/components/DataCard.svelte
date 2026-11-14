@@ -308,7 +308,7 @@
 
   .warn {
     margin-top: var(--space-2);
-    color: var(--color-expense);
+    color: var(--color-danger);
     font-weight: 600;
   }
 

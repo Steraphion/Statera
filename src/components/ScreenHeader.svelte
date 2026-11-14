@@ -21,8 +21,6 @@
   }
 
   h1 {
-    font-size: var(--text-xl);
-    font-weight: 650;
-    letter-spacing: -0.01em;
+    font-size: var(--text-2xl);
   }
 </style>

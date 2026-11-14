@@ -9,15 +9,14 @@
 </section>
 
 <style>
+  /* Scheda (design system: Scheda): superficie, angoli grandi, niente bordo né ombra */
   .card {
     background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: var(--space-4);
-    box-shadow: var(--shadow-1);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4) var(--space-5);
   }
 
   .card + :global(.card) {
-    margin-top: var(--space-3);
+    margin-top: var(--space-4);
   }
 </style>

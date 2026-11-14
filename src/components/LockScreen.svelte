@@ -172,7 +172,7 @@
   }
 
   .error {
-    color: var(--color-expense);
+    color: var(--color-danger);
     font-size: var(--text-sm);
   }
 

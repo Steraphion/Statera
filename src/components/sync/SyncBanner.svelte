@@ -31,13 +31,12 @@
     padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-md);
     background: var(--color-accent-soft);
-    border: 1px solid var(--color-border);
     font-size: var(--text-sm);
     font-weight: 500;
   }
 
   .banner.error {
-    border-color: var(--color-expense);
+    background: color-mix(in srgb, var(--color-danger) 12%, var(--color-bg));
   }
 
   .banner span {

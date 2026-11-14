@@ -62,34 +62,46 @@
     background: var(--color-backdrop);
   }
 
+  /* Pannello dal basso (telefono) e finestra centrata (PC): design system, Finestra */
   .panel {
     display: flex;
     flex-direction: column;
-    max-height: 92dvh;
-    background: var(--color-surface);
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    box-shadow: var(--shadow-2);
+    max-height: 94dvh;
+    background: var(--color-bg);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    box-shadow: var(--shadow-3);
     padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .panel::before {
+    content: '';
+    align-self: center;
+    width: 40px;
+    height: 4px;
+    margin-top: var(--space-2);
+    border-radius: var(--radius-full);
+    background: var(--color-border);
   }
 
   header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--space-4) var(--space-4) var(--space-2);
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-5) var(--space-2);
   }
 
   h2 {
-    font-size: var(--text-lg);
+    font-size: var(--text-xl);
   }
 
   .body {
     overflow-y: auto;
-    padding: var(--space-2) var(--space-4) var(--space-4);
+    padding: var(--space-2) var(--space-5) var(--space-5);
   }
 
   .sheet-error {
-    margin: var(--space-2) var(--space-4) 0;
+    margin: var(--space-2) var(--space-5) 0;
   }
 
   footer {
@@ -97,19 +109,27 @@
     flex-wrap: wrap;
     gap: var(--space-2);
     justify-content: flex-end;
-    padding: var(--space-3) var(--space-4) var(--space-4);
+    padding: var(--space-3) var(--space-5) var(--space-5);
     border-top: 1px solid var(--color-border);
   }
 
   @media (min-width: 600px) {
     dialog {
-      width: min(520px, calc(100vw - 32px));
+      width: min(560px, calc(100vw - 32px));
       margin: auto;
     }
 
     .panel {
-      border-radius: var(--radius-lg);
-      max-height: 86dvh;
+      border-radius: var(--radius-xl);
+      max-height: 88dvh;
+    }
+
+    .panel::before {
+      display: none;
+    }
+
+    header {
+      padding-top: var(--space-5);
     }
   }
 </style>

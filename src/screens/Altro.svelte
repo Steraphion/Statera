@@ -76,6 +76,10 @@
     <span>Informativa sulla privacy</span>
     <span aria-hidden="true">›</span>
   </a>
+  <a class="link-row" href="./licenze.html" target="_blank" rel="noopener">
+    <span>Licenze del carattere e delle icone</span>
+    <span aria-hidden="true">›</span>
+  </a>
 </Card>
 
 <style>

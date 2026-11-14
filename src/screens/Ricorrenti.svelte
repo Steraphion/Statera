@@ -64,7 +64,7 @@
         <li>
           <button class="list-row" class:paused={r.paused} onclick={() => (sheet = { recurring: r })}>
             {#if r.type === 'trasferimento'}
-              <span class="icon"><Icon name="transfer" size={16} /></span>
+              <span class="icon"><Icon name="arrow-left-right" size={16} /></span>
             {:else}
               <span class="dot" style:background={color(r)}></span>
             {/if}

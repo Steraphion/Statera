@@ -125,10 +125,10 @@
   }
 
   .danger {
-    color: var(--color-expense);
+    color: var(--color-danger);
   }
 
   .armed {
-    border: 1px solid var(--color-expense);
+    border: 1px solid var(--color-danger);
   }
 </style>

@@ -95,7 +95,7 @@
   }
 
   dd.warn {
-    color: var(--color-expense);
+    color: var(--color-danger);
     font-weight: 600;
   }
 
