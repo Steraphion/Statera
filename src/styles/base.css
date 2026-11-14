@@ -469,10 +469,12 @@ a.list-row {
   color: var(--cat-icon-dark);
 }
 
+/* Riduci animazioni: vale anche per lo sfondo delle finestre modali (::backdrop non è coperto da *) */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
-  *::after {
+  *::after,
+  ::backdrop {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     scroll-behavior: auto !important;

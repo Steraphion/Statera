@@ -57,3 +57,10 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
   scorciatoie a 96 px; favicon ICO (16, 32, 48) e SVG; icona Apple 180 px; tutto nella cache per l'uso senza rete;
   logo nella barra laterale (indaco in chiaro, lilla col simbolo scuro in scuro), nascosto su telefono.
   Uso come `collaudo.py`.
+- `movimento.py` — v0.30: movimento di pannelli e finestre su Android (sale dal basso) e PC (finestra centrata).
+  Durate e curve uguali ai token (`--duration-slow`/`--ease-standard` in entrata, `--duration-base`/`--ease-exit` in
+  uscita, anche per lo sfondo scurito), finestra ancora aperta e inattiva durante l'uscita, apertura da tastiera con
+  focus nel pannello, Tab che non esce, chiusura con Esc (anche doppio), «Chiudi» e tocco sullo sfondo, focus che torna
+  a «Nuovo movimento», riapertura durante l'uscita, blocco che arriva mentre un pannello si chiude (resta sopra, col
+  focus sul PIN). Poi con «riduci animazioni»: durate a 0,01 ms (sfondo compreso), pannello subito al suo posto, Esc che
+  chiude senza attesa. Le animazioni si osservano rallentate (CDP `Animation.setPlaybackRate`). Uso come `collaudo.py`.

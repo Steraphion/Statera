@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
   import Keypad from './Keypad.svelte'
+  import { enter, leave } from '../lib/motion'
 
   // Finestra di modifica: pannello dal basso su smartphone, finestra centrata su PC.
   let {
@@ -14,13 +15,24 @@
   let dialog = $state<HTMLDialogElement>()
 
   $effect(() => {
+    const opener = document.activeElement
     dialog!.showModal()
-    return () => dialog!.close()
+    // Si chiude dopo l'animazione d'uscita (out:leave): Svelte smonta il pannello solo alla fine.
+    // Il focus torna a chi l'aveva aperto, se nel frattempo non è andato altrove (es. il blocco).
+    return () => {
+      dialog!.close()
+      const now = document.activeElement
+      if (opener instanceof HTMLElement && opener.isConnected && (!now || now === document.body)) {
+        opener.focus({ preventScroll: true })
+      }
+    }
   })
 </script>
 
 <dialog
   bind:this={dialog}
+  in:enter
+  out:leave
   aria-label={title}
   oncancel={(e) => {
     e.preventDefault()
@@ -62,6 +74,12 @@
 
   dialog::backdrop {
     background: var(--color-backdrop);
+    animation: fade-in var(--duration-slow) var(--ease-standard);
+  }
+
+  /* Uscita: data-leaving arriva da out:leave (src/lib/motion.ts), che aspetta --duration-base */
+  dialog:global([data-leaving])::backdrop {
+    animation: fade-out var(--duration-base) var(--ease-exit) forwards;
   }
 
   /* Pannello dal basso (telefono) e finestra centrata (PC): design system, Finestra */
@@ -73,6 +91,36 @@
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     box-shadow: var(--shadow-3);
     padding-bottom: env(safe-area-inset-bottom);
+    /* Movimento: il pannello sale dal basso ed esce scendendo */
+    animation: sheet-in var(--duration-slow) var(--ease-standard);
+  }
+
+  dialog:global([data-leaving]) .panel {
+    animation: sheet-out var(--duration-base) var(--ease-exit) forwards;
+  }
+
+  @keyframes sheet-in {
+    from {
+      transform: translateY(100%);
+    }
+  }
+
+  @keyframes sheet-out {
+    to {
+      transform: translateY(100%);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes fade-out {
+    to {
+      opacity: 0;
+    }
   }
 
   .panel::before {
@@ -124,6 +172,26 @@
     .panel {
       border-radius: var(--radius-xl);
       max-height: 88dvh;
+      /* Finestra centrata: compare con un leggero ingrandimento, esce rimpicciolendo appena */
+      animation-name: window-in;
+    }
+
+    dialog:global([data-leaving]) .panel {
+      animation-name: window-out;
+    }
+
+    @keyframes window-in {
+      from {
+        opacity: 0;
+        transform: scale(0.96);
+      }
+    }
+
+    @keyframes window-out {
+      to {
+        opacity: 0;
+        transform: scale(0.98);
+      }
     }
 
     .panel::before {
