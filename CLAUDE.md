@@ -12,6 +12,7 @@ Le specifiche complete sono nel Progetto claude.ai "Statera" (`claude/specifiche
 - Prima di pubblicare: `npm run check`, `npm test` e `npm run build` senza errori; per modifiche all'interfaccia anche il collaudo in `qa/`.
 - Moduli: `novalidate` (validazione solo nostra), errori mostrati nel pannello accanto ai pulsanti, ogni salvataggio con `withTimeout`.
 - Sincronizzazione (`src/lib/sync/`): `core.ts` è la logica pura (testata con Drive finto), `sync.svelte.ts` lo stato e i momenti, `google.ts` l'accesso e le API Drive. Non cambiare il formato dei file su Drive (`statera-data.json`, `statera-keys.json`, `statera-backup-*.json`) senza una migrazione.
-- Esportazione CSV solo tramite `src/lib/data/csv.ts` (formato Excel italiano, testo protetto dalle formule).
+- Esportazione CSV solo tramite `src/lib/data/csv.ts` (formato Excel italiano, testo protetto dalle formule); importazione tramite `src/lib/data/csvImport.ts` (tutto sul dispositivo, doppioni saltati).
+- Campi facoltativi dei movimenti: `tags` ed `splits` (ripartizione, somma = totale, `categoryId` = parte più grande). Per i totali per categoria usare sempre `categoryShares()`, mai `categoryId` da solo.
 - Tabelle sincronizzate: elenco unico `TABLES` in `src/lib/sync/merge.ts` (sync, backup e unione le usano tutte). Una tabella nuova = nuova versione del database in `db.ts` + `TABLES` + `Snapshot` + ricollegamento in `unifyForFirstLink` se ha riferimenti a conti, carte o categorie.
 - Blocco dell'app: logica pura in `src/lib/lock.ts` (testata), stato e WebAuthn in `src/lib/lock.svelte.ts`. La schermata di blocco deve restare una `<dialog>` aperta con `showModal()`, così sta sopra ogni altro pannello modale.

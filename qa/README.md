@@ -42,3 +42,6 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
 - `calendario-obiettivi.py` — Fase 5.3 con orologio fisso: calendario del mese (giorno scelto, movimenti del
   giorno, entrate segnate anche a parole, tinta per il giorno più caro, cambio mese) e obiettivi di risparmio (a
   mano con aggiunte, collegati al saldo di un conto, quanto al mese, eliminazione). Uso come `collaudo.py`.
+- `importa.py` — Fase 5.4: import da CSV di un estratto conto (colonne riconosciute, tipo dal segno, categoria
+  "Altro", riga con problema, doppioni saltati reimportando) e di un file esportato da Statera (categoria,
+  sottocategoria, note, etichette; trasferimenti esclusi). Uso come `collaudo.py`.

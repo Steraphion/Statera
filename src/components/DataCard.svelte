@@ -1,6 +1,7 @@
 <script lang="ts">
   import Card from './Card.svelte'
   import DeleteButton from './DeleteButton.svelte'
+  import ImportSheet from './ImportSheet.svelte'
   import { db } from '../lib/data/db'
   import { live } from '../lib/data/live.svelte'
   import * as bk from '../lib/data/backup'
@@ -118,6 +119,7 @@
     sync.forget()
     message = 'Tutti i dati sono stati eliminati. Le categorie di base sono state ricaricate.'
   }
+  let importing = $state(false)
 </script>
 
 <Card>
@@ -137,6 +139,7 @@
       Esporta backup
     </button>
     <button class="btn" onclick={() => fileInput.click()}>Ripristina da file</button>
+    <button class="btn" onclick={() => (importing = true)}>Importa da CSV</button>
     <input
       bind:this={fileInput}
       type="file"
@@ -238,6 +241,10 @@
     <DeleteButton label="Elimina tutti i dati" onconfirm={wipe} />
   </div>
 </Card>
+
+{#if importing}
+  <ImportSheet onclose={() => (importing = false)} />
+{/if}
 
 <style>
   h2 {
