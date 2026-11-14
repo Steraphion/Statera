@@ -45,3 +45,6 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
 - `importa.py` — Fase 5.4: import da CSV di un estratto conto (colonne riconosciute, tipo dal segno, categoria
   "Altro", riga con problema, doppioni saltati reimportando) e di un file esportato da Statera (categoria,
   sottocategoria, note, etichette; trasferimenti esclusi). Uso come `collaudo.py`.
+- `icone.py` — v0.25: icona delle categorie (predefinita per le categorie iniziali, scelta nel modulo con
+  anteprima, "Nessuna" mostra l'iniziale, salvata come chiave e solo se cambiata, visibile nell'elenco e nella
+  scelta della categoria, conservata dopo il riavvio), su Android chiaro e PC scuro. Uso come `collaudo.py`.

@@ -37,7 +37,9 @@ export const SEED_ICONS: ReadonlyMap<string, CategoryIconKey> = new Map(SEED.map
 
 /** Chiave dell'icona di una categoria: quella scelta, altrimenti la predefinita; null = si mostra l'iniziale. */
 export function categoryIconKey(c: { id: string; icon?: string | null }): CategoryIconKey | null {
+  if (c.icon === null) return null
   if (isCategoryIconKey(c.icon)) return c.icon
+  // Assente (o di una versione più recente dell'app): icona predefinita delle categorie iniziali
   return SEED_ICONS.get(c.id) ?? null
 }
 

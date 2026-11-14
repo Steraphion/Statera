@@ -23,6 +23,7 @@
   --amount-xl: 3.5rem; /* 56 px: importo mentre lo scrivi */
   --tracking-tight: -0.02em;
   --tracking-tighter: -0.03em;
+  --tracking-caps: 0.06em;
 
   /* Spazi: griglia di 4 px */
   --space-1: 4px;

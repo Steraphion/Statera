@@ -4,6 +4,9 @@
   import ColorPicker from './ColorPicker.svelte'
   import DeleteButton from './DeleteButton.svelte'
   import Segmented from './Segmented.svelte'
+  import IconPicker from './IconPicker.svelte'
+  import { categoryIconKey } from '../lib/categoryIcon'
+  import type { CategoryIconKey } from '../lib/icons'
   import * as repo from '../lib/data/repo'
   import { errorMessage, withTimeout } from '../lib/data/util'
   import type { Category, CategoryKind, SwatchKey } from '../lib/data/types'
@@ -39,6 +42,9 @@
     orig?.color ??
       untrack(() => categories.find((c) => c.id === defaultParentId)?.color ?? defaultColor),
   )
+  // Icona: si salva solo se cambiata, così le categorie iniziali seguono l'icona predefinita
+  const initIcon: CategoryIconKey | null = orig ? categoryIconKey(orig) : null
+  let icon = $state<CategoryIconKey | null>(initIcon)
   let error = $state('')
   let busy = $state(false)
 
@@ -67,7 +73,7 @@
 
   function save(e: SubmitEvent) {
     e.preventDefault()
-    const input = { name, kind, parentId: parentId || null, color }
+    const input = { name, kind, parentId: parentId || null, color, ...(icon !== initIcon ? { icon } : {}) }
     run(() => (category ? repo.updateCategory(category.id, input) : repo.createCategory(input)))
   }
 </script>
@@ -106,6 +112,8 @@
         </select>
       </label>
     {/if}
+
+    <IconPicker bind:value={icon} {color} {name} />
 
     <ColorPicker bind:value={color} />
 

@@ -1,4 +1,5 @@
 import { db, type StateraDB } from './db'
+import { isCategoryIconKey } from '../icons'
 import type { Account, AccountType, Card, Category, CategoryKind, SwatchKey } from './types'
 import { baseFields, today } from './util'
 
@@ -122,6 +123,8 @@ export interface CategoryInput {
   kind: CategoryKind
   parentId: string | null
   color: SwatchKey
+  /** Chiave dell'icona; null = nessuna (iniziale); non indicata = resta com'è. */
+  icon?: string | null
 }
 
 async function normalizeCategory(input: CategoryInput, selfId: string | null, d: StateraDB) {
@@ -140,7 +143,9 @@ async function normalizeCategory(input: CategoryInput, selfId: string | null, d:
       }
     }
   }
-  return { ...input, name }
+  const { icon, ...rest } = input
+  if (icon === undefined) return { ...rest, name }
+  return { ...rest, name, icon: isCategoryIconKey(icon) ? icon : null }
 }
 
 export async function createCategory(input: CategoryInput, d: StateraDB = db): Promise<Category> {

@@ -55,6 +55,11 @@ export interface Category extends Base {
   archived: boolean
   /** Solo categorie principali di spesa: budget mensile in centesimi (assente/null = nessun budget). */
   monthlyBudget?: number | null
+  /**
+   * Chiave dell'icona (es. 'spesa', vedi CATEGORY_ICONS in src/lib/icons.ts), mai il disegno.
+   * Assente = icona predefinita (le categorie iniziali ne hanno una); null = nessuna icona, si vede l'iniziale.
+   */
+  icon?: string | null
 }
 
 export type TransactionType = 'entrata' | 'uscita' | 'trasferimento'

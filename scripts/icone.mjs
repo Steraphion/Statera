@@ -45,6 +45,23 @@ const CATEGORIE = {
   cuore: 'heart', mondo: 'globe', campeggio: 'tent', alloggio: 'bed-double', cane: 'dog', donazioni: 'hand-heart',
 }
 
+/** Nome dell'icona letto dagli screen reader nella scelta dell'icona (descrive il disegno). */
+const NOMI = {
+  spesa: 'Carrello', pasti: 'Posate', casa: 'Casa', affitto: 'Chiave', bollette: 'Fulmine', manutenzione: 'Chiave inglese',
+  trasporti: 'Percorso', carburante: 'Pompa di benzina', mezzi: 'Autobus', auto: 'Auto', salute: 'Cuore con battito',
+  abbigliamento: 'Maglietta', sport: 'Manubrio', svago: 'Popcorn', viaggi: 'Aereo', regali: 'Pacco regalo',
+  abbonamenti: 'Calendario con frecce', altro: 'Forme', stipendio: 'Valigetta', buoni: 'Biglietto',
+  rimborsi: 'Mano con monete', rettifica: 'Bilancia', caffe: 'Tazza', pizza: 'Pizza', vino: 'Calice', birra: 'Boccale',
+  gelato: 'Gelato', colazione: 'Cornetto', arredamento: 'Divano', bambini: 'Bambino', animali: 'Zampa',
+  giardino: 'Germoglio', elettrodomestici: 'Lavatrice', internet: 'Wi-Fi', telefono: 'Telefono', tv: 'Televisore',
+  bici: 'Bicicletta', treno: 'Treno', taxi: 'Taxi', parcheggio: 'Parcheggio', traghetto: 'Nave', farmaci: 'Pillola',
+  medico: 'Stetoscopio', parrucchiere: 'Forbici', bellezza: 'Scintille', ottico: 'Occhiali', musica: 'Note musicali',
+  cinema: 'Ciak', libri: 'Libro', videogiochi: 'Controller', foto: 'Macchina fotografica', feste: 'Coriandoli',
+  studio: 'Tocco di laurea', computer: 'Portatile', monete: 'Monete', tasse: 'Percentuale', scontrino: 'Scontrino',
+  investimenti: 'Grafico in crescita', assicurazioni: 'Ombrello', cuore: 'Cuore', mondo: 'Mappamondo',
+  campeggio: 'Tenda', alloggio: 'Letto', cane: 'Cane', donazioni: 'Mano con cuore',
+}
+
 /** Gruppi della scelta dell'icona nel modulo della categoria. */
 const GRUPPI = [
   ['Suggerite', ['spesa', 'pasti', 'caffe', 'pizza', 'vino', 'birra', 'gelato', 'colazione', 'regali', 'feste', 'cuore', 'donazioni']],
@@ -72,6 +89,9 @@ function nodes(name) {
 
 const names = [...new Set([...UI, ...Object.values(CATEGORIE)])].sort()
 for (const [, keys] of GRUPPI) for (const k of keys) if (!(k in CATEGORIE)) throw new Error(`Chiave sconosciuta: ${k}`)
+for (const k of Object.keys(CATEGORIE)) if (!NOMI[k]) throw new Error(`Manca il nome dell'icona: ${k}`)
+const inGruppi = new Set(GRUPPI.flatMap(([, keys]) => keys))
+for (const k of Object.keys(CATEGORIE)) if (!inGruppi.has(k)) throw new Error(`Icona fuori dai gruppi: ${k}`)
 const body = names.map((n) => `  '${n}': ${JSON.stringify(nodes(n))},`).join('\n')
 
 const ts = `// GENERATO da scripts/icone.mjs con lucide-static ${version}: non modificare a mano.
@@ -89,6 +109,9 @@ export type IconName = keyof typeof ICONS
 export const CATEGORY_ICONS = ${JSON.stringify(CATEGORIE, null, 2).replace(/"([a-z]+)":/g, '$1:').replace(/"/g, "'")} satisfies Record<string, IconName>
 
 export type CategoryIconKey = keyof typeof CATEGORY_ICONS
+
+/** Nome di ogni icona per gli screen reader. */
+export const CATEGORY_ICON_LABELS: Record<CategoryIconKey, string> = ${JSON.stringify(NOMI, null, 2).replace(/"([a-z]+)":/g, '$1:').replace(/"/g, "'")}
 
 /** Gruppi della scelta dell'icona nel modulo della categoria. */
 export const CATEGORY_ICON_GROUPS: { label: string; keys: CategoryIconKey[] }[] = ${JSON.stringify(GRUPPI.map(([label, keys]) => ({ label, keys })), null, 2).replace(/"/g, "'")}
