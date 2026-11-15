@@ -43,3 +43,12 @@ describe('righe appena cambiate', () => {
     expect(takeChanged('c', 1000 + RECENT_MS)).toBe(false)
   })
 })
+
+describe('pulizia', () => {
+  it('una modifica nuova toglie quelle scadute', () => {
+    markChanged('vecchio', 1000)
+    markChanged('nuovo', 1000 + RECENT_MS)
+    expect(takeChanged('vecchio', 1000)).toBe(false)
+    expect(takeChanged('nuovo', 1000 + RECENT_MS)).toBe(true)
+  })
+})

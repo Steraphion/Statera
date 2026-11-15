@@ -1,6 +1,6 @@
 import type { Account, Category, CategoryKind, Transaction } from './types'
 import { categoryShares, total } from './transactions'
-import { accountBalance } from './balances'
+import { accountBalance, effectOn } from './balances'
 
 /**
  * Calcoli per la sezione Analisi. Regole:
@@ -259,12 +259,25 @@ export interface WorthPoint {
  */
 export function netWorthSeries(accounts: Account[], rows: Transaction[], endMonth: string, todayStr: string, n = 12): WorthPoint[] {
   const alive = accounts.filter((a) => a.deletedAt === null)
-  const txs = rows.filter((t) => t.deletedAt === null)
+  // Un solo passaggio sui movimenti in ordine di data, con un saldo progressivo per conto: prima si
+  // ricalcolava il saldo di ogni conto da capo per ciascun mese (12 volte tutti i movimenti), e con
+  // qualche anno di dati era la parte più lenta di Analisi. Stesso risultato di accountBalance().
+  const txs = rows.filter((t) => t.deletedAt === null).sort((x, y) => (x.date < y.date ? -1 : x.date > y.date ? 1 : 0))
+  const running = new Map(alive.map((a) => [a.id, 0]))
+  let next = 0
   const out: WorthPoint[] = []
   for (let i = n - 1; i >= 0; i--) {
     const month = addMonths(endMonth, -i)
     let end = lastDay(month)
     if (end > todayStr) end = todayStr
+    for (; next < txs.length && txs[next].date <= end; next++) {
+      const t = txs[next]
+      for (const a of alive) {
+        if (t.date < a.initialDate) continue
+        const e = effectOn(a.id, t).amount
+        if (e !== 0) running.set(a.id, running.get(a.id)! + e)
+      }
+    }
     if (month > todayStr.slice(0, 7)) {
       out.push({ month, value: null })
       continue
@@ -274,8 +287,7 @@ export function netWorthSeries(accounts: Account[], rows: Transaction[], endMont
       out.push({ month, value: null })
       continue
     }
-    const until = txs.filter((t) => t.date <= end)
-    out.push({ month, value: started.reduce((s, a) => s + accountBalance(a, until).amount, 0) })
+    out.push({ month, value: started.reduce((s, a) => s + a.initialBalance + running.get(a.id)!, 0) })
   }
   return out
 }

@@ -69,6 +69,8 @@ const recent = new Map<string, number>()
 
 /** Da chiamare appena prima di salvare, eliminare o ripristinare un movimento dall'interfaccia. */
 export function markChanged(id: string, now = Date.now()) {
+  // Le modifiche mai mostrate (es. un movimento in un altro mese) non restano in memoria
+  for (const [k, at] of recent) if (now - at >= RECENT_MS) recent.delete(k)
   recent.set(id, now)
 }
 

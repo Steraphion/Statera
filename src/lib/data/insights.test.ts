@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import * as an from './analytics'
+import { accountBalance } from './balances'
 import type { Account, Category, Transaction } from './types'
 
 const base = { createdAt: 1, updatedAt: 1, deletedAt: null }
@@ -60,6 +61,45 @@ describe('patrimonio nel tempo', () => {
       { month: '2026-10', value: 120000 },
       { month: '2026-11', value: 120000 },
     ])
+  })
+})
+
+describe('patrimonio nel tempo: stesso risultato del calcolo conto per conto', () => {
+  const acc = (id: string, initialBalance: number, initialDate: string): Account => ({
+    ...base, id, name: id, type: 'conto_corrente', initialBalance, initialDate, voucherValue: null, initialVouchers: null, color: 's1', order: 1, archived: false,
+  })
+  // Generatore pseudo-casuale fisso, così il test è ripetibile
+  let seed = 7
+  const rnd = (k: number) => ((seed = (seed * 1103515245 + 12345) % 2147483648) % k)
+  it('con entrate, uscite, trasferimenti, pagamenti misti, eliminati e movimenti prima del saldo iniziale', () => {
+    const accounts = [acc('a', 100000, '2025-03-10'), acc('b', 20000, '2025-08-01'), acc('c', 0, '2026-02-15')]
+    const ids = accounts.map((a) => a.id)
+    const rows: Transaction[] = []
+    for (let i = 0; i < 400; i++) {
+      const date = `202${5 + rnd(2)}-${String(1 + rnd(12)).padStart(2, '0')}-${String(1 + rnd(28)).padStart(2, '0')}`
+      const kind = rnd(4)
+      const t = tx(date, 'spesa', 100 + rnd(9000), kind === 0 ? 'entrata' : kind === 1 ? 'trasferimento' : 'uscita', ids[rnd(3)])
+      if (kind === 1) t.toAccountId = ids.find((x) => x !== t.parts[0].accountId)!
+      if (kind === 2 && rnd(3) === 0) t.parts.push({ accountId: ids[rnd(3)], cardId: null, amount: 50 + rnd(500), vouchers: null, voucherValue: null })
+      if (rnd(10) === 0) t.deletedAt = 99
+      rows.push(t)
+    }
+    const today = '2026-11-14'
+    const reference = (end: string) => {
+      const e = end > today ? today : end
+      const until = rows.filter((t) => t.deletedAt === null && t.date <= e)
+      const started = accounts.filter((a) => a.initialDate <= e)
+      return started.length ? started.reduce((s, a) => s + accountBalance(a, until).amount, 0) : null
+    }
+    for (const endMonth of ['2025-06', '2026-02', '2026-11', '2027-01']) {
+      const s = an.netWorthSeries(accounts, rows, endMonth, today, 12)
+      expect(s.filter((p) => p.value !== null).length).toBeGreaterThan(3)
+      for (const p of s) {
+        const last = new Date(Number(p.month.slice(0, 4)), Number(p.month.slice(5)), 0).getDate()
+        const expected = p.month > today.slice(0, 7) ? null : reference(`${p.month}-${String(last).padStart(2, '0')}`)
+        expect([p.month, p.value]).toEqual([p.month, expected])
+      }
+    }
   })
 })
 
