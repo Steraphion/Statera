@@ -41,8 +41,17 @@ export function enter(node: Element) {
   return { duration: 0 }
 }
 
+const armed = new WeakSet<Element>()
+
 /** Uscita: avvia l'animazione `[data-leaving]` del CSS e tiene l'elemento per la durata del token. */
 export function leave(node: Element, { duration = '--duration-base' }: { duration?: DurationToken } = {}) {
   node.setAttribute('data-leaving', '')
+  // Svelte chiama leave() solo alla prima uscita: se l'elemento torna prima di sparire (enter toglie
+  // data-leaving) e poi esce di nuovo, riusa la stessa durata senza richiamarla. L'evento outrostart
+  // arriva a ogni uscita e rimette l'attributo.
+  if (!armed.has(node)) {
+    armed.add(node)
+    node.addEventListener('outrostart', () => node.setAttribute('data-leaving', ''))
+  }
   return { duration: tokenDuration(duration, node) }
 }

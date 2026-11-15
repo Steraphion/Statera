@@ -46,7 +46,7 @@ async def main():
             await pg.locator("dialog input[type=date]").fill("2026-11-01")
             await pg.get_by_role("button", name="Salva").click(); await pg.wait_for_timeout(300)
             await pg.goto(BASE + "/#/movimenti/nuovo"); await pg.wait_for_selector("dialog[open]"); await pg.wait_for_timeout(400)
-            amt = pg.get_by_label("Importo (€)"); kp = pg.locator("dialog .keypad")
+            amt = pg.get_by_label("Importo (€)"); kp = pg.locator("dialog .slot:not([data-leaving]) > .keypad")  # v0.30.2: escluso quello che sta uscendo
             if phone:
                 check(f"{label}: tastierino aperto sull'importo, senza tastiera del telefono", await kp.count() == 1 and await amt.get_attribute("inputmode") == "none" and await amt.evaluate("e => e === document.activeElement"))
                 async def key(n): await kp.get_by_role("button", name=n, exact=True).click()
@@ -90,14 +90,14 @@ async def main():
                 await pg.get_by_role("button", name="Conto").first.click()
                 await pg.get_by_label("Nome").fill("Buoni"); await pg.get_by_label("Tipo").select_option("buoni_pasto"); await pg.wait_for_timeout(200)
                 await pg.get_by_label("Buoni disponibili").click(); await pg.wait_for_timeout(100)
-                kp2 = pg.locator("dialog .keypad")
+                kp2 = pg.locator("dialog .slot:not([data-leaving]) > .keypad")
                 check(f"{label}: per i buoni il tastierino ha solo cifre", await kp2.count() == 1 and not await kp2.get_by_role("button", name="Virgola").is_visible() and not await kp2.get_by_role("button", name="Più").is_visible())
                 await pg.get_by_role("button", name="Chiudi").first.click(); await pg.wait_for_timeout(200)
                 # Cerca: il tastierino compare in fondo alla pagina
                 await pg.goto(BASE + "/#/cerca"); await pg.wait_for_timeout(300)
                 await pg.get_by_role("button", name=re.compile("^Filtri")).click(); await pg.wait_for_timeout(200)
                 await pg.get_by_label("Importo da (€)").click(); await pg.wait_for_timeout(150)
-                fk = pg.locator(".keypad.floating")
+                fk = pg.locator(".slot:not([data-leaving]) > .keypad.floating")
                 check(f"{label}: in Cerca il tastierino sta in fondo alla pagina", await fk.count() == 1)
                 await fk.get_by_role("button", name="5", exact=True).click(); await fk.get_by_role("button", name="0", exact=True).click()
                 check(f"{label}: e scrive nel filtro", await pg.get_by_label("Importo da (€)").input_value() == "50")

@@ -7,7 +7,10 @@ blocco sopra un pannello che si sta chiudendo. Sul telefono il pannello sale sen
 posizione, fotogramma per fotogramma, scende sempre e la finestra non scorre (v0.30.1).
 Cambio di schermata (v0.30.1) con un anno di movimenti e processore rallentato: la nuova schermata compare
 intera (nessun importo che cambia e nessun riquadro che si sposta dopo la comparsa), in dissolvenza tra le
-sezioni, con spostamento verso il dettaglio conto e al ritorno. Poi le stesse prove con «riduci animazioni».
+sezioni, con spostamento verso il dettaglio conto e al ritorno. Avvisi e tastierino (v0.30.2): l'avviso a comparsa entra salendo (--duration-base, --ease-standard) ed esce
+in dissolvenza (--ease-exit); «Annulla» lo sostituisce senza sovrapporne due; il tastierino nel pannello si apre in
+altezza e si chiude con «Fatto» con --ease-exit, quello in fondo a Cerca sale dal basso e resta fermo passando
+da un importo all'altro. Poi le stesse prove con «riduci animazioni».
 """
 import asyncio, re, json
 from playwright.async_api import async_playwright
@@ -143,7 +146,11 @@ async def run(b, p, label, opts, phone):
     check(f"{label}: riaperto durante l'uscita, il pannello è visibile e attivo", ok and st == [{"open": True, "leaving": False}], json.dumps(st))
     await pg.get_by_label("Importo (€)").fill("4,20")
     check(f"{label}: e si può scrivere", await pg.get_by_label("Importo (€)").input_value() == "4,20")
-    await pg.keyboard.press("Escape"); await pg.wait_for_timeout(500)
+    await slow(0.1)
+    await pg.keyboard.press("Escape"); await pg.wait_for_timeout(60)
+    an = await pg.evaluate(ANIMS)
+    check(f"{label}: richiuso, esce di nuovo con l'animazione", any(leave_ in a["name"] for a in an) and await pg.locator("dialog[data-leaving]").count() == 1, json.dumps(an))
+    await slow(1); await pg.wait_for_timeout(500)
 
     # blocco che arriva mentre un pannello si chiude: resta sopra tutto
     await pg.goto(BASE + "/#/altro"); await pg.wait_for_timeout(400)
@@ -185,6 +192,86 @@ async def run_reduced(b, p, label, opts):
     check(f"{label}: Esc chiude subito, senza attendere l'uscita", await pg.evaluate(SHEETS) == [], json.dumps(await pg.evaluate(SHEETS)))
     f = await pg.evaluate("() => document.activeElement?.getAttribute('aria-label') || document.activeElement?.textContent?.trim()")
     check(f"{label}: il focus torna su «Nuovo movimento»", f == "Nuovo movimento", str(f))
+    check(f"{label}: nessun errore", not errs, " | ".join(errs[:3]))
+    await ctx.close()
+
+async def run_notices(b, p, label, opts, phone, reduced=False):
+    print(f"\n===== {label}: avvisi e tastierino{', riduci animazioni' if reduced else ''} =====")
+    ctx = await b.new_context(**opts, locale="it-IT", **({"reduced_motion": "reduce"} if reduced else {})); pg = await ctx.new_page(); errs = []
+    pg.on("pageerror", lambda e: errs.append(str(e))); pg.on("console", lambda m: errs.append(m.text) if m.type == "error" else None)
+    cdp = await ctx.new_cdp_session(pg); await cdp.send("Animation.enable")
+    slow = lambda r: cdp.send("Animation.setPlaybackRate", {"playbackRate": r})
+    await setup(pg)
+    tok = await pg.evaluate(TOKENS)
+    toasts = pg.locator(".toast[role=status]")
+    # preferito di esempio, per avere un avviso con «Annulla»
+    await (await new_button(pg)).click(); await pg.wait_for_selector("dialog[open]"); await pg.wait_for_timeout(500)
+    await pg.get_by_label("Importo (€)").fill("1,20"); await pg.get_by_label("Descrizione").fill("Caffè")
+    await pg.locator(".cat-list").get_by_role("radio", name=re.compile("^Pasti fuori")).click()
+    await pg.get_by_label("Salva anche tra i preferiti").check()
+    await pg.get_by_role("button", name="Salva", exact=True).click(); await pg.wait_for_timeout(800)
+    chip = pg.locator("section.fav .chip:not(.manage)").first
+    if not reduced:
+        await slow(0.1)
+        await chip.click(); await toasts.first.wait_for()
+        an = await pg.evaluate(ANIMS)
+        a = next((x for x in an if "toast-in" in x["name"]), None)
+        check(f"{label}: l'avviso entra con --duration-base e --ease-standard", bool(a) and a["dur"] == tok["base"] and norm(a["easing"]) == norm(tok["std"]), json.dumps(an))
+        await slow(1); await pg.wait_for_timeout(300)
+        await toasts.get_by_role("button", name="Annulla").click(); await pg.wait_for_timeout(120)
+        n = await pg.evaluate("() => [...document.querySelectorAll('.toast[role=status]')].map(t => [t.hasAttribute('data-leaving'), t.textContent.trim()])")
+        check(f"{label}: «Annulla» sostituisce l'avviso senza sovrapporne due", len(n) == 1 and not n[0][0] and "annullata" in n[0][1], json.dumps(n))
+        # uscita da sola dopo 6 secondi, rallentata per osservarla
+        await pg.wait_for_timeout(5700); await slow(0.1); await pg.wait_for_timeout(400)
+        an = await pg.evaluate(ANIMS)
+        a = next((x for x in an if "fade-out" in x["name"] and "toast" in x["target"]), None)
+        check(f"{label}: l'avviso esce in dissolvenza con --ease-exit", bool(a) and a["dur"] == tok["base"] and norm(a["easing"]) == norm(tok["exit"]) and await pg.locator(".toast[data-leaving]").count() == 1, json.dumps(an))
+        await slow(1); await pg.wait_for_timeout(500)
+        check(f"{label}: poi l'avviso è tolto", await toasts.count() == 0)
+    else:
+        await chip.click(); await toasts.first.wait_for()
+        d = await pg.evaluate("() => getComputedStyle(document.querySelector('.toast')).animationDuration")
+        check(f"{label}: avviso senza animazione", float(d.rstrip('ms')) <= 0.00001, d)
+        await toasts.get_by_role("button", name="Annulla").click(); await pg.wait_for_timeout(60)
+        check(f"{label}: «Annulla» lo sostituisce subito", await toasts.count() == 1)
+    if phone:
+        # tastierino nel pannello: si apre in altezza, «Fatto» lo chiude con --ease-exit
+        await pg.goto(BASE + "/#/movimenti"); await pg.wait_for_timeout(400)
+        if not reduced: await slow(0.1)
+        await (await new_button(pg)).click(); await pg.wait_for_selector("dialog[open]")
+        await pg.wait_for_selector("dialog .slot.grow"); await pg.wait_for_timeout(100)
+        an = await pg.evaluate(ANIMS)
+        a = next((x for x in an if "grow-in" in x["name"]), None)
+        if not reduced:
+            check(f"{label}: il tastierino nel pannello si apre in altezza (--duration-base)", bool(a) and a["dur"] == tok["base"], json.dumps(an))
+            await slow(1); await pg.wait_for_timeout(700)
+            await slow(0.1)
+        else:
+            check(f"{label}: tastierino nel pannello senza animazione", float((await pg.evaluate("() => getComputedStyle(document.querySelector('dialog .slot')).animationDuration")).rstrip('ms')) <= 0.00001)
+        await pg.locator("dialog .keypad").get_by_role("button", name="Fatto").click(); await pg.wait_for_timeout(80)
+        if not reduced:
+            an = await pg.evaluate(ANIMS)
+            a = next((x for x in an if "grow-out" in x["name"]), None)
+            check(f"{label}: «Fatto» lo chiude con --ease-exit", bool(a) and norm(a["easing"]) == norm(tok["exit"]), json.dumps(an))
+            await slow(1)
+        await pg.wait_for_timeout(400)
+        check(f"{label}: poi il tastierino è tolto", await pg.locator("dialog .keypad").count() == 0)
+        await pg.keyboard.press("Escape"); await pg.wait_for_timeout(500)
+        # in fondo a Cerca: sale dal basso e resta fermo tra «Importo da» e «Importo a»
+        await pg.goto(BASE + "/#/cerca"); await pg.wait_for_timeout(500)
+        await pg.get_by_role("button", name=re.compile("^Filtri")).click(); await pg.wait_for_timeout(200)
+        await pg.get_by_label("Importo da (€)").click(); await pg.wait_for_timeout(60)
+        an = await pg.evaluate(ANIMS)
+        if not reduced:
+            check(f"{label}: in Cerca il tastierino sale dal basso", any("keypad-up" in x["name"] for x in an), json.dumps(an))
+        await pg.wait_for_timeout(500)
+        await pg.evaluate("() => document.querySelector('.keypad.floating').dataset.prova = '1'")
+        await pg.get_by_label("Importo a (€)").click(); await pg.wait_for_timeout(60)
+        an = await pg.evaluate(ANIMS)
+        same = await pg.evaluate("() => document.querySelectorAll('.keypad.floating').length === 1 && document.querySelector('.keypad.floating').dataset.prova === '1'")
+        check(f"{label}: passando a «Importo a» resta fermo", same and not any("keypad" in x["name"] for x in an), json.dumps(an))
+        await pg.locator(".keypad.floating").get_by_role("button", name="Fatto").click(); await pg.wait_for_timeout(500)
+        check(f"{label}: «Fatto» lo toglie", await pg.locator(".keypad.floating").count() == 0)
     check(f"{label}: nessun errore", not errs, " | ".join(errs[:3]))
     await ctx.close()
 
@@ -247,7 +334,10 @@ async def main():
         await run(b, p, "PC", {**pc, "color_scheme": "dark"}, False)
         await run_screens(b, p, "Android", phone)
         await run_screens(b, p, "PC", pc)
+        await run_notices(b, p, "Android", phone, True)
+        await run_notices(b, p, "PC", pc, False)
         await run_reduced(b, p, "Android", phone)
+        await run_notices(b, p, "Android", phone, True, reduced=True)
         await run_screens(b, p, "Android", phone, reduced=True)
         await run_reduced(b, p, "PC", pc)
         await b.close()

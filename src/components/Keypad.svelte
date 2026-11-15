@@ -4,6 +4,7 @@
   import Icon from './Icon.svelte'
   import { keypad } from '../lib/keypad.svelte'
   import type { Key } from '../lib/keypad'
+  import { enter, leave } from '../lib/motion'
 
   let { owner = null }: { owner?: HTMLElement | null } = $props()
 
@@ -20,6 +21,9 @@
 </script>
 
 {#if visible}
+  <!-- Movimento: nel pannello si apre in altezza (.grow), in fondo alla pagina sale dal basso.
+       Passando da un importo all'altro resta fermo: compare e sparisce solo con visible. -->
+  <div class="slot" class:grow={!!owner} in:enter out:leave>
   <!-- I tasti non prendono il focus: il cursore resta nel campo -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="keypad" class:floating={!owner} role="group" aria-label="Tastierino" onpointerdown={(e) => e.preventDefault()}>
@@ -46,6 +50,7 @@
     <button type="button" class="key op" class:off={integer} aria-label="Calcola" disabled={integer} onclick={() => keypad.press('=')}>=</button>
     <button type="button" class="key done" onclick={() => keypad.done()}>Fatto</button>
   </div>
+  </div>
 {/if}
 
 <style>
@@ -71,6 +76,23 @@
     border-top: none;
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     box-shadow: var(--shadow-3);
+    animation: keypad-up var(--duration-base) var(--ease-standard);
+  }
+
+  .slot:global([data-leaving]) > .floating {
+    animation: keypad-down var(--duration-base) var(--ease-exit) forwards;
+  }
+
+  @keyframes keypad-up {
+    from {
+      transform: translateY(100%);
+    }
+  }
+
+  @keyframes keypad-down {
+    to {
+      transform: translateY(100%);
+    }
   }
 
   .key {

@@ -1,9 +1,10 @@
 <script lang="ts">
   import { startup } from '../lib/startup.svelte'
+  import { enter, leave } from '../lib/motion'
 </script>
 
 {#if startup.lastError}
-  <div class="toast" role="alert">
+  <div class="toast" role="alert" in:enter out:leave>
     <p><strong>Si è verificato un errore.</strong> {startup.lastError}</p>
     <div class="actions">
       <button class="btn btn-small" onclick={() => (startup.lastError = '')}>Chiudi</button>
@@ -13,7 +14,9 @@
 {/if}
 
 <style>
+  /* Movimento: come l'avviso a comparsa (Toast) */
   .toast {
+    animation: toast-in var(--duration-base) var(--ease-standard);
     position: fixed;
     left: var(--space-3);
     right: var(--space-3);
@@ -26,6 +29,23 @@
     background: color-mix(in srgb, var(--color-danger) 12%, var(--color-surface));
     box-shadow: var(--shadow-2);
     font-size: var(--text-sm);
+  }
+
+  .toast:global([data-leaving]) {
+    animation: fade-out var(--duration-base) var(--ease-exit) forwards;
+  }
+
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      translate: 0 var(--space-4);
+    }
+  }
+
+  @keyframes fade-out {
+    to {
+      opacity: 0;
+    }
   }
 
   p {

@@ -68,4 +68,8 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
   che non scorre) per quasi tutto `--duration-slow`; cambio di schermata con un anno di movimenti e processore
   rallentato 6 volte: la schermata compare intera (importo e posizione del riquadro principale non cambiano dopo la
   comparsa), in dissolvenza tra le sezioni, con spostamento verso il dettaglio conto e al ritorno; il modulo aperto
-  sopra Movimenti non la nasconde; con «riduci animazioni» comparsa a 0,01 ms. Uso come `collaudo.py`.
+  sopra Movimenti non la nasconde; con «riduci animazioni» comparsa a 0,01 ms.
+  Dalla v0.30.2: avviso a comparsa (da un preferito) che entra salendo ed esce in dissolvenza coi token, «Annulla» che
+  lo sostituisce senza sovrapporne due; pannello e avviso riaperti mentre escono, poi richiusi, rifanno l'uscita;
+  tastierino nel pannello che si apre in altezza e si chiude con «Fatto» in `--ease-exit`; in Cerca sale dal basso e
+  resta fermo passando da «Importo da» a «Importo a». Uso come `collaudo.py`.

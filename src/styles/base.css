@@ -469,6 +469,42 @@ a.list-row {
   color: var(--cat-icon-dark);
 }
 
+/* Comparsa in altezza (design system: Movimento): avvisi in cima e tastierino dentro un pannello.
+   Il contenitore passa da 0 all'altezza del contenuto, insieme a margine e opacità; con data-leaving
+   (out:leave di src/lib/motion.ts) fa il contrario. Il contenuto va in un solo figlio. */
+.grow {
+  display: grid;
+  grid-template-rows: 1fr;
+  animation: grow-in var(--duration-base) var(--ease-standard);
+}
+
+.grow > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.grow[data-leaving] {
+  animation: grow-out var(--duration-base) var(--ease-exit) forwards;
+}
+
+@keyframes grow-in {
+  from {
+    grid-template-rows: 0fr;
+    margin-top: 0;
+    margin-bottom: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes grow-out {
+  to {
+    grid-template-rows: 0fr;
+    margin-top: 0;
+    margin-bottom: 0;
+    opacity: 0;
+  }
+}
+
 /* Riduci animazioni: vale anche per lo sfondo delle finestre modali (::backdrop non è coperto da *) */
 @media (prefers-reduced-motion: reduce) {
   *,

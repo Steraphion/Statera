@@ -4,32 +4,42 @@
   // Avviso in cima a ogni schermata solo quando serve un intervento dell'utente.
   // Permesso Google scaduto: prima si prova il rinnovo automatico al primo tocco (App.svelte),
   // l'avviso compare solo se non è riuscito.
+  // Movimento: ogni avviso si apre in altezza (.grow in base.css).
 </script>
 
 {#if sync.meta && sync.status === 'needs-auth' && sync.askReconnect}
+  <div class="grow notice">
   <div class="banner" role="status">
     <span>Sincronizzazione in pausa: l'accesso a Google è scaduto.</span>
     <button class="btn btn-primary btn-small" onclick={() => sync.reconnect()}>Riconnetti</button>
   </div>
+  </div>
 {:else if sync.meta && sync.status === 'locked'}
+  <div class="grow notice">
   <div class="banner" role="status">
     <span>Sincronizzazione bloccata: serve la password di Statera.</span>
     <a class="btn btn-primary btn-small" href="#/altro">Apri</a>
   </div>
+  </div>
 {:else if sync.meta && sync.status === 'error'}
+  <div class="grow notice">
   <div class="banner error" role="alert">
     <span>Sincronizzazione non riuscita: {sync.error}</span>
     <button class="btn btn-small" onclick={() => sync.syncNow()}>Riprova</button>
   </div>
+  </div>
 {/if}
 
 <style>
+  .notice {
+    margin-bottom: var(--space-4);
+  }
+
   .banner {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--space-3);
-    margin-bottom: var(--space-4);
     padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-md);
     background: var(--color-accent-soft);
