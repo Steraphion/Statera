@@ -348,3 +348,23 @@ export function byTag(rows: Transaction[]): TagTotal[] {
   }
   return [...map.values()].sort((a, b) => b.expense - a.expense || b.income - a.income || a.tag.localeCompare(b.tag, 'it'))
 }
+
+export interface MonthTotal {
+  month: string
+  income: number
+  expense: number
+}
+
+/** Entrate e uscite per mese (trasferimenti esclusi), dal mese più recente: riepilogo dei risultati di Cerca. */
+export function monthTotals(rows: Transaction[]): MonthTotal[] {
+  const map = new Map<string, MonthTotal>()
+  for (const t of rows) {
+    if (t.deletedAt !== null || t.type === 'trasferimento') continue
+    const month = t.date.slice(0, 7)
+    const m = map.get(month) ?? { month, income: 0, expense: 0 }
+    if (t.type === 'entrata') m.income += total(t)
+    else m.expense += total(t)
+    map.set(month, m)
+  }
+  return [...map.values()].sort((a, b) => (a.month < b.month ? 1 : a.month > b.month ? -1 : 0))
+}

@@ -21,6 +21,8 @@
   import { columns } from '../lib/columns.svelte'
   import Splitter from '../components/Splitter.svelte'
   import AccountPanel from '../components/AccountPanel.svelte'
+  import WorthLine from '../components/charts/WorthLine.svelte'
+  import { netWorthSeries } from '../lib/data/analytics'
   import { useRefs } from '../lib/data/refs.svelte'
 
   /** PC: conto mostrato accanto all'elenco (#/conto/<id>); senza, il primo conto attivo. */
@@ -73,6 +75,11 @@
       location.replace('#/conti')
     }
   })
+
+  // Area molto larga: terza colonna col saldo del conto a fine mese (12 mesi fino a quello del dettaglio)
+  // e gli obiettivi di risparmio, che altrimenti stanno sotto l'elenco
+  const molto = $derived(columns.at('molto'))
+  const series = $derived(current && molto ? netWorthSeries([current], data.value.transactions, detailMonth, today(), 12) : [])
 
   /** Mostra un altro conto senza riempire la cronologia (frecce ↑ ↓). */
   function show(id: string) {
@@ -192,6 +199,32 @@
   {/if}
 </Card>
 
+<!-- Obiettivi: sotto l'elenco, o nella terza colonna quando l'area è molto larga -->
+{#if !molto}
+  {@render goalsBlock()}
+{/if}
+
+{#if archived.length > 0}
+  <h2 class="section-title">
+    Archiviati
+    <button class="btn btn-ghost btn-small" onclick={() => (showArchived = !showArchived)}>
+      {showArchived ? 'Nascondi' : `Mostra (${archived.length})`}
+    </button>
+  </h2>
+  {#if showArchived}
+    <Card>
+      <ul class="list">
+        {#each archived as a (a.id)}
+          {@render accountRow(a)}
+        {/each}
+      </ul>
+    </Card>
+  {/if}
+{/if}
+
+</div>
+
+{#snippet goalsBlock()}
 <h2 class="section-title">
   Obiettivi di risparmio
   <button class="btn btn-ghost btn-small" onclick={() => (goalSheet = {})}>
@@ -242,29 +275,18 @@
     </ul>
   {/if}
 </Card>
-
-{#if archived.length > 0}
-  <h2 class="section-title">
-    Archiviati
-    <button class="btn btn-ghost btn-small" onclick={() => (showArchived = !showArchived)}>
-      {showArchived ? 'Nascondi' : `Mostra (${archived.length})`}
-    </button>
-  </h2>
-  {#if showArchived}
-    <Card>
-      <ul class="list">
-        {#each archived as a (a.id)}
-          {@render accountRow(a)}
-        {/each}
-      </ul>
-    </Card>
-  {/if}
-{/if}
-
-</div>
+{/snippet}
 
 {#if columns.pc}
-  <Splitter id="pane" token="--size-pane" other="--size-detail-min" grows="right" controls="conti-list" label="Larghezza dell'elenco dei conti" />
+  <Splitter
+    id="pane"
+    token="--size-pane"
+    other="--size-detail-min"
+    grows="right"
+    controls="conti-list"
+    label="Larghezza dell'elenco dei conti"
+    reserve={molto ? ['--size-extra', '--space-6'] : []}
+  />
   <div class="detail-col">
     {#if current}
       {#key current.id}
@@ -276,6 +298,20 @@
       <Card><p class="empty-note">Aggiungi un conto per vederne qui il dettaglio.</p></Card>
     {/if}
   </div>
+  {#if molto}
+    <aside class="extra-col" aria-label="Andamento del conto e obiettivi">
+      {#if current && series.some((p) => p.value !== null)}
+        <Card>
+          <section aria-labelledby="account-trend-title">
+            <h2 id="account-trend-title" class="card-title">Saldo a fine mese</h2>
+            <p class="card-sub">{current.name}, ultimi 12 mesi</p>
+            <WorthLine points={series} />
+          </section>
+        </Card>
+      {/if}
+      {@render goalsBlock()}
+    </aside>
+  {/if}
 {/if}
 </div>
 
@@ -327,6 +363,43 @@
 
     .list-col {
       min-width: 0;
+    }
+
+    /* Area molto larga: terza colonna larga --size-extra; l'elenco tiene conto anche di quella */
+    :global(.l-molto) .split {
+      grid-template-columns:
+        min(
+          clamp(var(--size-pane-min), var(--col-w, var(--size-pane)), var(--size-pane-max)),
+          max(var(--size-pane-min), 100% - var(--size-detail-min) - 2 * var(--space-6) - var(--size-extra))
+        )
+        var(--space-6) minmax(0, 1fr) var(--space-6) var(--size-extra);
+    }
+
+    .extra-col {
+      grid-column: 5;
+      min-width: 0;
+    }
+
+    .extra-col > :global(.section-title:first-child) {
+      margin-top: 0;
+    }
+
+    .extra-col :global(.card) {
+      padding: var(--space-4) var(--space-5);
+    }
+
+    .extra-col > :global(.card) + :global(.section-title) {
+      margin-top: var(--space-5);
+    }
+
+    .card-title {
+      font-size: var(--text-lg);
+    }
+
+    .card-sub {
+      margin: var(--space-1) 0 var(--space-3);
+      font-size: var(--text-sm);
+      color: var(--color-text-muted);
     }
 
     .list-col > :first-child {

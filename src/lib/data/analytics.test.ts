@@ -60,3 +60,15 @@ describe('analisi', () => {
     expect(an.niceTicks(0)).toEqual([0])
   })
 })
+
+describe('totali per mese', () => {
+  it('entrate e uscite per mese, dal più recente, senza trasferimenti né cancellati', () => {
+    const del = { ...tx('2026-11-07', 'uscita', 7000, 'spesa'), deletedAt: 5 }
+    expect(an.monthTotals([...rows, del])).toEqual([
+      { month: '2026-11', income: 150000, expense: 50000 },
+      { month: '2026-10', income: 0, expense: 4000 },
+      { month: '2025-12', income: 0, expense: 999 },
+    ])
+    expect(an.monthTotals([])).toEqual([])
+  })
+})

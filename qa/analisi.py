@@ -23,8 +23,10 @@ async def main():
             await pg.get_by_label("Budget Spesa alimentare (€)").fill("250")
             await pg.get_by_label("Budget Svago (€)").fill("30")
             await pg.get_by_role("button", name="Salva").click(); await pg.wait_for_timeout(500)
-            await pg.locator(".bars .row").first.click(); await pg.wait_for_timeout(200)
+            # La foto della pagina intera cambia per un attimo le dimensioni della finestra (su PC la schermata
+            # si ridispone): prima la foto, poi si apre la categoria
             await pg.screenshot(path=f"/home/claude/qa/an-{name}.png", full_page=True)
+            await pg.locator(".bars .row").first.click(); await pg.wait_for_timeout(200)
             # hover column
             hits = pg.locator("rect.hit")
             await hits.nth(10).hover(); await pg.wait_for_timeout(200)

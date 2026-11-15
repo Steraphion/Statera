@@ -14,6 +14,7 @@
     grows,
     token,
     other = '--size-main-min',
+    reserve = [],
   }: {
     id: ColumnId
     /** Nome per gli screen reader, es. "Larghezza della colonna di destra". */
@@ -26,6 +27,8 @@
     token: string
     /** Token della larghezza minima dell'altra colonna. */
     other?: string
+    /** Token delle misure occupate da altre colonne fisse e dai loro spazi (es. la colonna sinistra). */
+    reserve?: string[]
   } = $props()
 
   let el = $state<HTMLElement>()
@@ -42,7 +45,8 @@
     const max = token$(`${token}-max`, 600)
     const host = el?.parentElement
     if (!host || !el) return { min, max }
-    return limits(min, max, host.clientWidth - el.offsetWidth - token$(other, 400))
+    const taken = reserve.reduce((sum, t) => sum + token$(t, 0), 0)
+    return limits(min, max, host.clientWidth - el.offsetWidth - token$(other, 400) - taken)
   }
 
   function current(): number {
@@ -50,11 +54,22 @@
     return Math.round(col?.getBoundingClientRect().width ?? token$(token, 320))
   }
 
-  // Valore mostrato agli screen reader: si aggiorna quando cambia la scelta o la finestra
+  // Valore mostrato agli screen reader: segue la larghezza vera della colonna (anche quando compare dopo,
+  // es. la colonna di destra che resta nascosta finché non ha schede)
+  $effect(() => {
+    const col = document.getElementById(controls)
+    if (!col) return
+    const ro = new ResizeObserver(() => (now = current()))
+    ro.observe(col)
+    return () => ro.disconnect()
+  })
+
+  // …e quando cambia la scelta o la finestra
   $effect(() => {
     void columns.width(id)
     void columns.pc
     void columns.railNow
+    void columns.layout
     requestAnimationFrame(() => (now = current()))
   })
 
@@ -161,8 +176,10 @@
     height: var(--space-7);
     margin-top: var(--space-8);
     border-radius: var(--radius-full);
-    background: var(--color-border);
-    transition: background-color var(--duration-fast) var(--ease-standard);
+    background: var(--color-accent);
+    /* Si vede solo quando serve (puntatore, focus, trascinamento): ferma a metà sembrava fuori posto */
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-standard);
   }
 
   .splitter:hover::before,
@@ -174,7 +191,7 @@
   .splitter:hover .grip,
   .splitter.dragging .grip,
   .splitter:focus-visible .grip {
-    background: var(--color-accent);
+    opacity: 1;
   }
 
   .splitter:focus-visible .grip {

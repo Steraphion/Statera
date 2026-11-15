@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_PREFS,
+  LAYOUT_STEPS,
   STEP,
+  atLeast,
+  layoutClass,
   STEP_LARGE,
   clamp,
   dragWidth,
@@ -67,5 +70,31 @@ describe('colonne regolabili', () => {
     expect(pxOf(' 72.5px ', 1)).toBe(72.5)
     expect(pxOf('2rem', 7)).toBe(7)
     expect(pxOf('', 7)).toBe(7)
+  })
+})
+
+describe('classi di larghezza dell\'area dei contenuti', () => {
+  it('soglie 720, 1100, 1440 px', () => {
+    expect(layoutClass(0)).toBe('stretta')
+    expect(layoutClass(Number.NaN)).toBe('stretta')
+    expect(layoutClass(719)).toBe('stretta')
+    expect(layoutClass(LAYOUT_STEPS.media)).toBe('media')
+    expect(layoutClass(1099.5)).toBe('media')
+    expect(layoutClass(1100)).toBe('larga')
+    expect(layoutClass(1439)).toBe('larga')
+    expect(layoutClass(1440)).toBe('molto')
+    expect(layoutClass(2240)).toBe('molto')
+  })
+  it('schermi tipici (area = finestra meno barra e margini)', () => {
+    expect(layoutClass(900 - 144)).toBe('media') // barra stretta
+    expect(layoutClass(1280 - 320)).toBe('media')
+    expect(layoutClass(1536 - 320)).toBe('larga') // 1920 al 125%
+    expect(layoutClass(1920 - 320)).toBe('molto')
+  })
+  it('una classe comprende quelle più strette', () => {
+    expect(atLeast('molto', 'larga')).toBe(true)
+    expect(atLeast('larga', 'larga')).toBe(true)
+    expect(atLeast('media', 'larga')).toBe(false)
+    expect(atLeast('stretta', 'media')).toBe(false)
   })
 })

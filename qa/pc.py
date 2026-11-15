@@ -184,7 +184,7 @@ async def conti(pg, label):
     check(f"{label}: dettaglio del conto con saldo di oggi", await panel.count() == 1 and "Saldo di oggi" in await panel.inner_text())
     rows = panel.locator("tbody tr")
     n_nov = await rows.count()
-    heads = await panel.locator("thead th").all_text_contents()
+    heads = await panel.locator("thead th").evaluate_all("(ths) => ths.filter((t) => getComputedStyle(t).display !== 'none').map((t) => t.textContent.trim())")
     check(f"{label}: movimenti di novembre in tabella", n_nov >= 9 and heads == ["Data", "Descrizione", "Importo", "Saldo"], f"{n_nov} {heads}")
     check(f"{label}: saldo dopo ogni movimento", re.search(r"\d\s€$", (await rows.first.locator("td").last.inner_text()).strip()) is not None)
     check(f"{label}: saldo a inizio mese in fondo", "Saldo a inizio mese" in await panel.locator(".opening").inner_text())
@@ -230,7 +230,7 @@ async def conti(pg, label):
     # finestra stretta
     await pg.set_viewport_size({"width": 960, "height": 800}); await pg.wait_for_timeout(300)
     check(f"{label}: a 960 px dettaglio largo almeno il minimo e niente scorrimento", (await box(pg, ".detail-col"))["width"] >= await tok(pg, "--size-detail-min") - 1 and await no_hscroll(pg))
-    check(f"{label}: dettaglio stretto: la colonna del saldo si nasconde", not await panel.locator("thead th").last.is_visible() and await panel.locator("thead th").nth(2).is_visible())
+    check(f"{label}: dettaglio stretto: la colonna del saldo si nasconde", not await panel.locator("thead th").last.is_visible() and await panel.locator("thead th", has_text="Importo").is_visible())
     await pg.screenshot(path="/tmp/pc-conti-960.png")
     await pg.set_viewport_size({"width": 1280, "height": 860})
 

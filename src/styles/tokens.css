@@ -71,7 +71,11 @@
   --size-sidebar: 248px;
   --size-rail: 72px; /* barra laterale stretta, solo icone (PC tra 900 e 1199 px, o se la si stringe) */
   --content-max: 760px; /* schermate a una colonna */
-  --content-max-wide: 1200px; /* schermate su due colonne (PC): Movimenti, Conti */
+  /* Schermate su più colonne (PC): riempiono l'area dei contenuti fino a questo tetto, oltre restano centrate.
+     Le colonne dipendono dalla larghezza dell'area (a destra della barra laterale), non della finestra:
+     media da 720, larga da 1100, molto larga da 1440 px (LAYOUT_STEPS in src/lib/columns.ts, classi
+     l-media, l-larga, l-molto su main.content) */
+  --content-max-wide: 1880px;
   /* Colonne regolabili su PC: larghezza iniziale, minima e massima (chi le trascina le cambia per dispositivo) */
   --size-aside: 320px; /* colonna di destra di Movimenti */
   --size-aside-min: 260px;
@@ -80,6 +84,13 @@
   --size-pane-min: 300px;
   --size-pane-max: 520px;
   --size-main-min: 400px; /* la colonna principale non scende sotto questa larghezza */
+  /* Colonne fisse che compaiono solo nelle aree molto larghe (o larghe) */
+  --size-cal: 300px; /* colonna sinistra di Movimenti: calendario e categorie del mese (molto larga) */
+  --size-extra: 340px; /* terza colonna di Conti: saldo negli ultimi 12 mesi e obiettivi (molto larga) */
+  --size-filters: 340px; /* filtri sempre aperti di Cerca (PC) */
+  --size-summary: 320px; /* riepilogo dei risultati di Cerca (molto larga) */
+  --size-col-amount: 136px; /* colonna degli importi negli elenchi a colonne (area larga) */
+  --size-col-date: 104px; /* colonna della data negli elenchi a colonne di Cerca */
   --size-detail-min: 480px; /* il dettaglio del conto accanto all'elenco, idem */
   --size-window: 560px; /* finestra centrata (da 600 px) */
   --size-window-wide: 840px; /* finestra del movimento su due colonne (PC, da 900 px) */

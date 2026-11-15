@@ -102,6 +102,30 @@ export function keyWidth(
   }
 }
 
+/**
+ * Classi di larghezza dell'area dei contenuti (a destra della barra laterale), in px CSS. Decidono quante
+ * colonne ha una schermata: guardano lo spazio vero, quindi valgono uguali con la barra intera o stretta,
+ * con la finestra a metà schermo e con lo zoom del browser. Sotto i 900 px di finestra resta il telefono.
+ */
+export type LayoutClass = 'stretta' | 'media' | 'larga' | 'molto'
+
+export const LAYOUT_STEPS = { media: 720, larga: 1100, molto: 1440 } as const
+
+const ORDER: LayoutClass[] = ['stretta', 'media', 'larga', 'molto']
+
+export function layoutClass(width: number): LayoutClass {
+  if (!(width > 0)) return 'stretta'
+  if (width >= LAYOUT_STEPS.molto) return 'molto'
+  if (width >= LAYOUT_STEPS.larga) return 'larga'
+  if (width >= LAYOUT_STEPS.media) return 'media'
+  return 'stretta'
+}
+
+/** La classe `c` è almeno `min` (es. "molto larga" è anche "larga")? */
+export function atLeast(c: LayoutClass, min: LayoutClass): boolean {
+  return ORDER.indexOf(c) >= ORDER.indexOf(min)
+}
+
 /** Valore di un token di misura (es. "320px") in px; `fallback` se manca o non è in px. */
 export function pxOf(value: string | null | undefined, fallback: number): number {
   const m = /^\s*(-?\d+(?:\.\d+)?)px\s*$/.exec(value ?? '')

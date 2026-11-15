@@ -107,7 +107,7 @@ async def run_flow(b, label, ctx_opts, m):
     await sel(pg, "Con").select_option(label="Bancomat (Conto)")
     await pg.get_by_label("Descrizione").fill("Spesa")
     await save(pg, m)
-    check(f"{label}: uscita con carta salvata", await pg.locator("dialog[open]").count() == 0 and await pg.get_by_role("button", name=re.compile("^Spesa")).count() == 1)
+    check(f"{label}: uscita con carta salvata", await pg.locator("dialog[open]").count() == 0 and await pg.locator(".day-group").get_by_role("button", name=re.compile("^Spesa")).count() == 1)
 
     # IL CASO SEGNALATO: pagamento misto conto + buoni
     await open_new_movement(pg, m)

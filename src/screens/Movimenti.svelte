@@ -22,6 +22,8 @@
   import { columns } from '../lib/columns.svelte'
   import Splitter from '../components/Splitter.svelte'
   import MonthBudgetCard from '../components/MonthBudgetCard.svelte'
+  import MonthCategoriesCard from '../components/MonthCategoriesCard.svelte'
+  import { budgetStatus } from '../lib/data/analytics'
   import SyncLine from '../components/sync/SyncLine.svelte'
 
   const refs = useRefs()
@@ -56,7 +58,19 @@
   const selectedDay = $derived(
     picked.startsWith(ui.month) ? picked : isCurrentMonth ? today() : (days[0]?.date ?? `${ui.month}-01`),
   )
-  const shownDays = $derived(ui.view === 'calendario' ? days.filter((g) => g.date === selectedDay) : days)
+  // PC: colonne secondo la larghezza dell'area (columns.ts). Da "larga" importi in una riga, azioni rapide
+  // nella testata ed elenco a colonne; da "molto larga" calendario e categorie sempre visibili a sinistra
+  const larga = $derived(columns.at('larga'))
+  const molto = $derived(columns.at('molto'))
+  const hasBudgets = $derived(refs.ready && budgetStatus(rows, ui.month, refs.value.categories).length > 0)
+
+  // Con il calendario sempre visibile l'elenco mostra tutto il mese: toccando un giorno ci si va
+  const shownDays = $derived(ui.view === 'calendario' && !molto ? days.filter((g) => g.date === selectedDay) : days)
+
+  function pickDay(v: string) {
+    picked = v
+    if (molto) document.getElementById(`giorno-${v}`)?.scrollIntoView({ block: 'start' })
+  }
   const noAccounts = $derived(refs.ready && refs.value.accounts.length === 0)
 
   let sheet = $state<{ movement?: Transaction; type?: TransactionType; template?: Template } | null>(null)
@@ -102,6 +116,20 @@
   {#if !isCurrentMonth}
     <button class="btn btn-small" onclick={() => (ui.month = monthOf(today()))}>Oggi</button>
   {/if}
+  {#if larga && !noAccounts}
+    <!-- Area larga: le azioni rapide diventano pulsanti compatti nella testata -->
+    <div class="quick-pc">
+      <button class="btn btn-soft btn-small" data-no-autoauth aria-label="Nuova spesa" onclick={() => (sheet = { type: 'uscita' })}>
+        <Icon name="arrow-up-right" size={16} />Spesa
+      </button>
+      <button class="btn btn-soft btn-small" data-no-autoauth aria-label="Nuova entrata" onclick={() => (sheet = { type: 'entrata' })}>
+        <Icon name="arrow-down-left" size={16} />Entrata
+      </button>
+      <button class="btn btn-soft btn-small" data-no-autoauth aria-label="Nuovo trasferimento" onclick={() => (sheet = { type: 'trasferimento' })}>
+        <Icon name="arrow-left-right" size={16} />Trasferisci
+      </button>
+    </div>
+  {/if}
   <a class="btn btn-ghost nav" href="#/cerca" aria-label="Cerca" title="Cerca (/)">
     <Icon name="search" />
   </a>
@@ -117,7 +145,14 @@
 </div>
 
 {#if columns.pc}
-  <Splitter id="aside" token="--size-aside" grows="left" controls="mov-aside" label="Larghezza della colonna di destra" />
+  <Splitter
+    id="aside"
+    token="--size-aside"
+    grows="left"
+    controls="mov-aside"
+    label="Larghezza della colonna di destra"
+    reserve={molto ? ['--size-cal', '--space-6'] : []}
+  />
 {/if}
 
 <aside class="aside" id="mov-aside" aria-label="Preferiti, da registrare e budget">
@@ -132,24 +167,47 @@
 {/if}
 
 {#if columns.pc && refs.ready}
-  <MonthBudgetCard {rows} month={ui.month} categories={refs.value.categories} />
+  <!-- Senza budget, «Dove vanno i soldi» (da molto larga sta già nella colonna sinistra) -->
+  {#if hasBudgets}
+    <MonthBudgetCard {rows} month={ui.month} categories={refs.value.categories} />
+  {:else if !molto}
+    <MonthCategoriesCard {rows} month={ui.month} categories={refs.value.categories} />
+  {/if}
+  {@render keysHint()}
+{/if}
+</aside>
+
+{#snippet keysHint()}
   <p class="keys-hint">
     <kbd>N</kbd> nuovo <span aria-hidden="true">·</span> <kbd>/</kbd> cerca <span aria-hidden="true">·</span>
     <kbd>←</kbd><kbd>→</kbd> mese <span aria-hidden="true">·</span>
     <button class="all-keys" onclick={() => (ui.shortcuts = true)}><kbd>?</kbd> tutte le scorciatoie</button>
   </p>
+{/snippet}
+
+{#if molto && refs.ready && !noAccounts}
+  <!-- Area molto larga: calendario del mese (toccando un giorno l'elenco ci va) e categorie, sempre visibili -->
+  <aside class="cal-col" aria-label="Calendario e categorie del mese">
+    <Card>
+      <h2 class="cal-title">Calendario</h2>
+      <MonthCalendar month={ui.month} {rows} bind:selected={() => selectedDay, pickDay} />
+    </Card>
+    <MonthCategoriesCard {rows} month={ui.month} categories={refs.value.categories} />
+    {@render keysHint()}
+  </aside>
 {/if}
-</aside>
 
 <div class="body">
-<!-- Saldo del mese nel riquadro indaco, poi azioni rapide (accanto, su schermi larghi), entrate e uscite -->
+<!-- Saldo del mese nel riquadro indaco, poi azioni rapide (accanto, su schermi larghi), entrate e uscite;
+     da area larga saldo, entrate e uscite in una riga (.kpis) e le azioni rapide nella testata -->
+<div class="kpis">
 <div class="top">
 <section class="hero balance-box" aria-label="Saldo del mese">
   <span class="bb-label">Saldo del mese</span>
   <span class="bb-amount num">{totals.net > 0 ? '+' : ''}{formatEuro(totals.net)}</span>
 </section>
 
-{#if !noAccounts}
+{#if !noAccounts && !larga}
   <div class="quick">
     <button class="q" data-no-autoauth aria-label="Nuova spesa" onclick={() => (sheet = { type: 'uscita' })}>
       <span class="circle"><Icon name="arrow-up-right" size={22} /></span>Spesa
@@ -174,8 +232,9 @@
     <span class="t-text"><span class="label">Uscite</span><span class="num">{formatEuro(totals.expense)}</span></span>
   </div>
 </div>
+</div>
 
-{#if !noAccounts && loaded && rows.length > 0}
+{#if !noAccounts && loaded && rows.length > 0 && !molto}
   <div class="view">
     <Segmented
       label="Vista"
@@ -208,10 +267,16 @@
 {:else if shownDays.length}
   <!-- Un'unica scheda con i giorni come intestazioni -->
   <Card>
+    {#if larga}
+      <!-- Area larga: righe a colonne, con le intestazioni -->
+      <div class="cols-head row-cols" aria-hidden="true">
+        <span></span><span>Descrizione</span><span>Categoria</span><span>Conto o carta</span><span class="r">Importo</span>
+      </div>
+    {/if}
     <!-- Movimento: si aprono e si chiudono solo le righe (o i giorni) appena salvati, eliminati o
          ripristinati (enterIf / leaveIf e .fold) -->
     {#each shownDays as g (g.date)}
-      <div class="fold day-group" in:enterIf={g.items.map((i) => i.id)} out:leaveIf={g.items.map((i) => i.id)}>
+      <div class="fold day-group" id="giorno-{g.date}" in:enterIf={g.items.map((i) => i.id)} out:leaveIf={g.items.map((i) => i.id)}>
         <div>
           <h2 class="day">
             <span>{formatDay(g.date)}</span>
@@ -220,7 +285,7 @@
           <ul class="list">
             {#each g.items as t (t.id)}
               <li class="fold" in:enterIf={t.id} out:leaveIf={t.id}>
-                <MovementRow {t} refs={refs.value} onclick={() => (sheet = { movement: t })} />
+                <MovementRow {t} refs={refs.value} columns={larga} onclick={() => (sheet = { movement: t })} />
               </li>
             {/each}
           </ul>
@@ -275,16 +340,17 @@
   }
 
   /* PC: due colonne. La colonna di destra ha la larghezza scelta (o quella iniziale), mai più di quanto
-     lascia libera la colonna principale; il separatore sta nello spazio tra le due */
+     lascia libera la colonna principale; il separatore sta nello spazio tra le due. --reserve è lo spazio
+     preso dalle altre colonne fisse (da molto larga, la colonna sinistra) */
   @media (min-width: 900px) {
     .layout {
+      --reserve: 0px;
+      --aside-w: min(
+        clamp(var(--size-aside-min), var(--col-w, var(--size-aside)), var(--size-aside-max)),
+        max(var(--size-aside-min), 100% - var(--size-main-min) - var(--space-6) - var(--reserve))
+      );
       display: grid;
-      grid-template-columns:
-        minmax(0, 1fr) var(--space-6)
-        min(
-          clamp(var(--size-aside-min), var(--col-w, var(--size-aside)), var(--size-aside-max)),
-          max(var(--size-aside-min), 100% - var(--size-main-min) - var(--space-6))
-        );
+      grid-template-columns: minmax(0, 1fr) var(--space-6) var(--aside-w);
       grid-template-rows: auto 1fr;
       align-items: start;
     }
@@ -316,7 +382,8 @@
       grid-row: 1 / -1;
     }
 
-    .aside {
+    .aside,
+    .cal-col {
       grid-column: 3;
       grid-row: 1 / -1;
       display: flex;
@@ -325,18 +392,133 @@
       min-width: 0;
     }
 
-    .aside > :global(*) {
+    .aside > :global(*),
+    .cal-col > :global(*),
+    .aside > :global(.card) + :global(.card),
+    .cal-col > :global(.card) + :global(.card) {
       margin: 0;
     }
 
-    /* Nella colonna stretta le schede hanno un po' meno aria ai lati */
-    .aside :global(.card) {
+    /* Nelle colonne laterali le schede hanno un po' meno aria ai lati */
+    .aside :global(.card),
+    .cal-col :global(.card) {
       padding: var(--space-4) var(--space-5);
     }
 
     .top {
       margin-top: 0;
     }
+
+    /* Colonna di destra senza schede (niente da registrare, preferiti, budget né uscite nel mese): non c'è,
+       e l'elenco prende tutto lo spazio */
+    .layout:not(:has(> .aside :global(.card))) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .layout:not(:has(> .aside :global(.card))) > :is(.aside, :global(.splitter)) {
+      display: none;
+    }
+
+    /* Area molto larga: a sinistra calendario e «Dove vanno i soldi», larghi --size-cal */
+    :global(.l-molto) .layout {
+      --reserve: calc(var(--size-cal) + var(--space-6));
+      grid-template-columns: var(--size-cal) var(--space-6) minmax(0, 1fr) var(--space-6) var(--aside-w);
+    }
+
+    :global(.l-molto) .layout:not(:has(> .aside :global(.card))) {
+      grid-template-columns: var(--size-cal) var(--space-6) minmax(0, 1fr);
+    }
+
+    .cal-col {
+      grid-column: 1;
+    }
+
+    :global(.l-molto) .lead,
+    :global(.l-molto) .body {
+      grid-column: 3;
+    }
+
+    :global(.l-molto) .layout > :global(.splitter) {
+      grid-column: 4;
+    }
+
+    :global(.l-molto) .aside {
+      grid-column: 5;
+    }
+
+    /* I tasti stanno in fondo alla colonna di destra; a sinistra solo se quella non c'è */
+    .cal-col .keys-hint,
+    .layout:not(:has(> .aside :global(.card))) > .aside .keys-hint {
+      display: none;
+    }
+
+    .layout:not(:has(> .aside :global(.card))) > .cal-col .keys-hint {
+      display: flex;
+    }
+
+    .cal-title {
+      margin-bottom: var(--space-3);
+      font-size: var(--text-lg);
+    }
+
+    /* Toccando un giorno del calendario l'elenco ci va: un po' d'aria sopra l'intestazione */
+    .day-group {
+      scroll-margin-top: var(--space-4);
+    }
+  }
+
+  /* Saldo, entrate e uscite: sul telefono e nelle aree strette uno sotto l'altro (come se .kpis non ci
+     fosse); da area larga in una riga, col saldo più largo */
+  .kpis {
+    display: contents;
+  }
+
+  :global(.l-larga) .kpis {
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+
+  :global(.l-larga) .kpis .top {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    margin: 0;
+  }
+
+  :global(.l-larga) .kpis .hero {
+    flex: 1;
+  }
+
+  :global(.l-larga) .kpis .tiles2 {
+    display: contents;
+  }
+
+  :global(.l-larga) .kpis .tile {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: var(--space-4) var(--space-5);
+  }
+
+  :global(.l-larga) .kpis .t-text .num {
+    font-size: var(--amount-s);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  .quick-pc {
+    display: flex;
+    gap: var(--space-2);
+    margin-right: var(--space-2);
+  }
+
+  .quick-pc .btn {
+    gap: var(--space-1);
+  }
+
+  .cols-head + .day-group .day {
+    margin-top: var(--space-3);
   }
 
   .view {

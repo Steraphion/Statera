@@ -2,7 +2,17 @@
  * Stato delle colonne regolabili su PC (logica in columns.ts): larghezze scelte e barra laterale, per
  * dispositivo. Tiene anche le fasce di larghezza della finestra che decidono l'impaginazione.
  */
-import { COLUMNS_KEY, parseColumnPrefs, serializeColumnPrefs, type ColumnId, type ColumnPrefs, type SidePref } from './columns'
+import {
+  COLUMNS_KEY,
+  atLeast,
+  layoutClass,
+  parseColumnPrefs,
+  serializeColumnPrefs,
+  type ColumnId,
+  type ColumnPrefs,
+  type LayoutClass,
+  type SidePref,
+} from './columns'
 
 function read(): ColumnPrefs {
   try {
@@ -24,6 +34,10 @@ class Columns {
   pc = $state(false)
   /** Abbastanza largo per la barra laterale intera (da 1200 px). */
   wide = $state(false)
+  /** Larghezza dell'area dei contenuti (main.content, senza i margini interni), letta da App.svelte. */
+  area = $state(0)
+  /** Classe di larghezza dell'area (columns.ts): sul telefono sempre "stretta". */
+  layout = $derived<LayoutClass>(this.pc ? layoutClass(this.area) : 'stretta')
 
   constructor() {
     this.pc = media('(min-width: 900px)', (v) => (this.pc = v))
@@ -32,6 +46,23 @@ class Columns {
     window.addEventListener('storage', (e) => {
       if (e.key === COLUMNS_KEY) this.#prefs = read()
     })
+  }
+
+  /** L'area è almeno di questa classe? (es. at('larga') vale anche per "molto larga") */
+  at(min: LayoutClass): boolean {
+    return atLeast(this.layout, min)
+  }
+
+  /** Azione per main.content: tiene aggiornata la larghezza dell'area (prima che la pagina si disegni). */
+  observe = (node: HTMLElement) => {
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width ?? 0
+      // Una larghezza zero è un passaggio (stampa, foto della pagina intera): si tiene l'ultima, così le
+      // schermate non cambiano impaginazione per un attimo perdendo quello che si era aperto
+      if (w > 0 && Math.abs(w - this.area) >= 0.5) this.area = w
+    })
+    ro.observe(node)
+    return { destroy: () => ro.disconnect() }
   }
 
   width(id: ColumnId): number | null {

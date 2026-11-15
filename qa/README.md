@@ -107,3 +107,14 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
   (tocco annullato, voci e voce attuale, Esc senza cambiare, calendario con mesi e anni, Oggi, Cancella per le
   date facoltative, pannello sopra il modulo del movimento e in Cerca), in chiaro e in scuro; su PC restano i
   campi del sistema. Uso come `collaudo.py` (con una cartella come argomento salva anche le foto).
+- `adattivo.py` — v0.34: PC adattivo con orologio fisso (14/11/2026) e dati di esempio. Classi di larghezza dell'area
+  dei contenuti (`l-media` da 720 px, `l-larga` da 1100, `l-molto` da 1440 su `main.content`) alle soglie esatte e
+  stringendo la barra laterale; tetto `--content-max-wide` (1880 px, centrata oltre), schermata accanto alla barra,
+  Altro a una colonna. Movimenti a 1280, 1536, 1920 e 2560 px: importi in una riga, azioni rapide nella testata,
+  elenco a colonne allineato alle intestazioni, colonna sinistra col calendario (un giorno porta l'elenco a quel
+  giorno) e «Dove vanno i soldi», separatore che tiene conto della colonna in più; con pochi dati «Dove vanno i
+  soldi» a destra o la colonna di destra assente. Conti: colonna Categoria col dettaglio largo, terza colonna col saldo
+  del conto scelto e gli obiettivi. Analisi su due e tre colonne. Cerca: filtri sempre aperti, ultimi movimenti,
+  tabella con la data, riepilogo per categoria e mese che restringe la ricerca. Maniglia del separatore nascosta,
+  Cerca evidenziata nella barra. In chiaro e in scuro; sul telefono nulla di tutto questo. Uso come `collaudo.py`
+  (`QA_BASE` per un altro indirizzo).

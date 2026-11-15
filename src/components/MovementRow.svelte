@@ -12,6 +12,8 @@
     balanceAfter = null,
     muted = false,
     showDate = false,
+    columns = false,
+    dateCol = false,
     onclick,
   }: {
     t: Transaction
@@ -23,6 +25,10 @@
     /** Movimento che non incide sul saldo (precedente al saldo iniziale). */
     muted?: boolean
     showDate?: boolean
+    /** PC, area larga: categoria e conto in colonne proprie (.row-cols), allineate alle intestazioni. */
+    columns?: boolean
+    /** Con columns: la data in una colonna propria, prima dell'icona (Cerca). */
+    dateCol?: boolean
     onclick: () => void
   } = $props()
 
@@ -44,6 +50,21 @@
     return pieces.join(' · ')
   })
 
+  // Colonne (area larga): categoria e fonte nelle loro celle; sotto il nome restano solo ricorrente,
+  // data ed etichette
+  const from = $derived(t.parts.map((p) => mv.partLabel(p, refs.accountMap, refs.cardMap)).join(' + '))
+  const catCell = $derived(t.type === 'trasferimento' ? 'Trasferimento' : catText)
+  const fromCell = $derived(
+    t.type === 'trasferimento' ? `${from} → ${refs.accountMap.get(t.toAccountId ?? '')?.name ?? '—'}` : from,
+  )
+  const colSub = $derived(
+    [
+      ...(t.id.startsWith('rec-') ? ['↻ ricorrente'] : []),
+      ...(showDate && !dateCol ? [formatShortDay(t.date)] : []),
+      ...(t.tags ?? []).map((tag) => `#${tag}`),
+    ].join(' · '),
+  )
+
   const vouchers = $derived(t.parts.reduce((s, p) => s + (p.vouchers ?? 0), 0))
 
   // Icona della categoria (per un movimento ripartito, quella della parte più grande)
@@ -56,7 +77,10 @@
   })
 </script>
 
-<button class="list-row" class:muted {onclick}>
+<button class="list-row" class:muted class:row-cols={columns} class:with-date={columns && dateCol} {onclick}>
+  {#if columns && dateCol}
+    <span class="cell date num">{formatShortDay(t.date)}</span>
+  {/if}
   {#if t.type === 'trasferimento'}
     <CategoryIcon icon="arrow-left-right" />
   {:else if t.splits?.length}
@@ -66,8 +90,16 @@
   {/if}
   <span class="main">
     <span class="name">{title}</span>
-    <span class="sub">{subtitle}</span>
+    {#if !columns}
+      <span class="sub">{subtitle}</span>
+    {:else if colSub}
+      <span class="sub">{colSub}</span>
+    {/if}
   </span>
+  {#if columns}
+    <span class="cell" title={catCell}>{catCell}</span>
+    <span class="cell" title={fromCell}>{fromCell}</span>
+  {/if}
   <span class="end">
     <span
       class="num amount"
@@ -90,6 +122,15 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .cell {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
   }
 
   .end {

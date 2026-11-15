@@ -33,8 +33,11 @@
   let aligning = $state(false)
   let movementSheet = $state<{ movement?: Transaction } | null>(null)
 
-  /** Seconda riga della descrizione: categoria (se c'è una descrizione), fonte, ricorrente, etichette. */
-  function detail(t: Transaction): string {
+  /**
+   * Seconda riga della descrizione: categoria (se c'è una descrizione), fonte, ricorrente, etichette. Con la
+   * colonna Categoria (dettaglio largo) la categoria non si ripete: `withCat = false`.
+   */
+  function detail(t: Transaction, withCat = true): string {
     // La fonte si scrive solo se dice qualcosa in più del conto che si sta guardando (una carta, un altro conto)
     const others = t.parts.filter((p) => p.cardId || p.accountId !== account.id)
     const from = others.map((p) => mv.partLabel(p, refs.accountMap, refs.cardMap)).join(' + ')
@@ -43,7 +46,7 @@
     if (t.id.startsWith('rec-')) pieces.push('↻ ricorrente')
     if (t.type === 'trasferimento') pieces.push(`${all} → ${refs.accountMap.get(t.toAccountId ?? '')?.name ?? '—'}`)
     else {
-      if (t.description) pieces.push(mv.categoryText(t, refs.categoryMap))
+      if (t.description && withCat) pieces.push(mv.categoryText(t, refs.categoryMap))
       if (from) pieces.push(from)
     }
     for (const tag of t.tags ?? []) pieces.push(`#${tag}`)
@@ -115,6 +118,7 @@
         <colgroup>
           <col class="c-date" />
           <col />
+          <col class="c-cat cat" />
           <col class="c-amount" />
           <col class="c-amount bal" />
         </colgroup>
@@ -122,6 +126,7 @@
           <tr>
             <th scope="col">Data</th>
             <th scope="col">Descrizione</th>
+            <th scope="col" class="cat">Categoria</th>
             <th scope="col" class="r">Importo</th>
             <th scope="col" class="r bal">Saldo</th>
           </tr>
@@ -145,10 +150,12 @@
                   {/if}
                   <span class="text">
                     <span class="name">{mv.movementTitle(t, refs.categoryMap)}</span>
-                    <span class="sub">{detail(t)}</span>
+                    <span class="sub with-cat">{detail(t)}</span>
+                    <span class="sub no-cat">{detail(t, false)}</span>
                   </span>
                 </button>
               </td>
+              <td class="cat cat-cell">{t.type === 'trasferimento' ? 'Trasferimento' : mv.categoryText(t, refs.categoryMap)}</td>
               <td class="r num amount" class:income={e.effect > 0}>{signed(e.effect)}</td>
               <td class="r num bal">
                 {#if e.counted}
@@ -320,6 +327,42 @@
 
   .c-amount {
     width: calc(2 * var(--space-8) + var(--space-4));
+  }
+
+  .c-cat {
+    width: 30%;
+  }
+
+  /* Colonna Categoria: solo col dettaglio largo (area larga o molto larga); allora la seconda riga della
+     descrizione non la ripete */
+  .cat,
+  .sub.no-cat {
+    display: none;
+  }
+
+  .cat-cell {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-muted);
+  }
+
+  @container dettaglio (min-width: 820px) {
+    .cat {
+      display: table-cell;
+    }
+
+    col.cat {
+      display: table-column;
+    }
+
+    .sub.no-cat {
+      display: block;
+    }
+
+    .sub.with-cat {
+      display: none;
+    }
   }
 
   th {

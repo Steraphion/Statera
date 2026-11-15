@@ -361,6 +361,39 @@ a.list-row {
   white-space: nowrap;
 }
 
+/* Righe a colonne (PC, area larga): icona, descrizione, categoria, conto, importo. Stesse tracce per le
+   intestazioni e per ogni riga, così le colonne restano allineate (MovementRow con columns) */
+.row-cols {
+  display: grid;
+  grid-template-columns:
+    var(--size-cat) minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr)
+    var(--size-col-amount);
+  align-items: center;
+  column-gap: var(--space-3);
+}
+
+/* Intestazioni delle colonne (stesse tracce delle righe) */
+.cols-head {
+  padding: 0 0 var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.cols-head .r {
+  text-align: right;
+}
+
+/* Con la data in prima colonna (Cerca) */
+.row-cols.with-date {
+  grid-template-columns:
+    var(--size-col-date) var(--size-cat) minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr)
+    var(--size-col-amount);
+}
+
 .dot {
   flex: none;
   width: 12px;

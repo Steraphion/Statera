@@ -18,6 +18,7 @@
   import { formatEuro, formatMonth, monthOf, parseDay, shiftMonth } from '../lib/format'
   import { ui } from '../lib/ui.svelte'
   import { csvFileName, downloadText, movementsToCsv } from '../lib/data/csv'
+  import { columns } from '../lib/columns.svelte'
 
   const refs = useRefs()
   const all = live(() => db.transactions.toArray(), [] as Transaction[])
@@ -47,6 +48,16 @@
   )
 
   const title = $derived(a.kind === 'mese' ? formatMonth(parseDay(`${a.month}-01`)) : a.month.slice(0, 4))
+
+  // PC: schede su due colonne (tre da area molto larga), nello stesso ordine di lettura del telefono dove si
+  // può: a sinistra categorie e confronti, poi andamento e patrimonio, il budget a destra
+  type CardId = 'cat' | 'changes' | 'tags' | 'budget' | 'monthly' | 'worth'
+  const PHONE: CardId[] = ['cat', 'changes', 'tags', 'budget', 'monthly', 'worth']
+  const arrangement = $derived<CardId[][]>(
+    columns.at('molto')
+      ? [['cat', 'tags'], ['monthly', 'worth'], ['budget', 'changes']]
+      : [['cat', 'changes', 'tags'], ['monthly', 'budget', 'worth']],
+  )
 
   function shift(delta: number) {
     a.month = shiftMonth(a.month, a.kind === 'mese' ? delta : delta * 12)
@@ -128,6 +139,7 @@
   </p>
 {/if}
 
+{#snippet catCard()}
 <Card>
   <div class="card-head">
     <h2>{kind === 'uscita' ? 'Uscite' : 'Entrate'} per categoria</h2>
@@ -148,7 +160,9 @@
     onshow={showMovements}
   />
 </Card>
+{/snippet}
 
+{#snippet changesCard()}
 {#if changes.length}
   <Card>
     <div class="card-head">
@@ -176,7 +190,9 @@
     </ul>
   </Card>
 {/if}
+{/snippet}
 
+{#snippet tagsCard()}
 {#if tagTotals.length}
   <Card>
     <div class="card-head">
@@ -197,7 +213,9 @@
     </ul>
   </Card>
 {/if}
+{/snippet}
 
+{#snippet budgetCard()}
 {#if a.kind === 'mese'}
   <Card>
     <div class="card-head">
@@ -215,14 +233,18 @@
     {/if}
   </Card>
 {/if}
+{/snippet}
 
+{#snippet monthlyCard()}
 <Card>
   <div class="card-head">
     <h2>Andamento ultimi 12 mesi</h2>
   </div>
   <MonthlyColumns points={series} highlight={a.kind === 'mese' ? a.month : ''} />
 </Card>
+{/snippet}
 
+{#snippet worthCard()}
 {#if worth.some((p) => p.value !== null)}
   <Card>
     <div class="card-head">
@@ -230,6 +252,23 @@
     </div>
     <WorthLine points={worth} />
   </Card>
+{/if}
+{/snippet}
+
+{#snippet card(id: CardId)}
+  {#if id === 'cat'}{@render catCard()}{:else if id === 'changes'}{@render changesCard()}{:else if id === 'tags'}{@render tagsCard()}{:else if id === 'budget'}{@render budgetCard()}{:else if id === 'monthly'}{@render monthlyCard()}{:else}{@render worthCard()}{/if}
+{/snippet}
+
+{#if columns.at('media')}
+  <div class="acols" style:--n={arrangement.length}>
+    {#each arrangement as col, i (i)}
+      <div class="acol">
+        {#each col as id (id)}{@render card(id)}{/each}
+      </div>
+    {/each}
+  </div>
+{:else}
+  {#each PHONE as id (id)}{@render card(id)}{/each}
 {/if}
 
 <div class="export">
@@ -373,6 +412,45 @@
   .save {
     grid-column: 1 / -1;
     order: -1;
+  }
+
+  /* PC: schede in colonne (2, o 3 da area molto larga), ognuna una pila che non si allinea alle altre */
+  .acols {
+    display: grid;
+    grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+    gap: var(--space-4) var(--space-6);
+    align-items: start;
+  }
+
+  .acol {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    min-width: 0;
+  }
+
+  .acol > :global(*),
+  .acol > :global(.card) + :global(.card) {
+    margin: 0;
+  }
+
+  /* Area larga: risparmio, entrate e uscite in una riga, col risparmio più largo */
+  :global(.l-larga) .tiles {
+    grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  :global(.l-larga) .save {
+    grid-column: auto;
+  }
+
+  :global(.l-larga) .tile {
+    justify-content: center;
+    padding: var(--space-4) var(--space-5);
+  }
+
+  :global(.l-larga) .tile .value {
+    font-size: var(--amount-m);
+    letter-spacing: var(--tracking-tighter);
   }
 
   .card-head {

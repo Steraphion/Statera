@@ -28,7 +28,7 @@
   import { clock } from './lib/clock.svelte'
   import { screen, revealKind } from './lib/screen.svelte'
   import { columns } from './lib/columns.svelte'
-  import type { RouteId } from './lib/router.svelte'
+  import type { NavId, RouteId } from './lib/router.svelte'
 
   // Comparsa delle schermate: a ogni cambio di schermata (non per il modulo aperto sopra Movimenti) la
   // nuova resta nascosta finché i suoi dati non sono pronti, poi compare tutta insieme (screen.svelte.ts)
@@ -44,6 +44,14 @@
   })
 
   // Nuovo movimento da qualsiasi schermata: Movimenti apre il modulo (#/movimenti/nuovo)
+  // PC: schermate su più colonne, larghe fino a --content-max-wide (le altre restano a --content-max)
+  const WIDE_ROUTES = new Set<RouteId>(['movimenti', 'conti', 'conto', 'analisi', 'cerca'])
+
+  /** Voce evidenziata: su PC Cerca ha la sua voce, quindi Movimenti non resta accesa in Cerca. */
+  function isActive(id: NavId): boolean {
+    return router.section === id && !(columns.pc && router.current === 'cerca')
+  }
+
   // Stato della sincronizzazione in fondo alla barra laterale (PC)
   const syncState = $derived(syncLine(sync.view, clock.now))
   const syncIcon = $derived(
@@ -98,7 +106,7 @@
   class="shell"
   class:sub={router.current !== router.section}
   class:rail={columns.railNow}
-  class:wide={router.current === 'movimenti' || router.current === 'conti' || router.current === 'conto'}
+  class:wide={WIDE_ROUTES.has(router.current)}
 >
   <nav class="nav" aria-label="Sezioni">
     <div class="brand">
@@ -129,11 +137,11 @@
         <li>
           <a
             href="#/{r.id}"
-            class:active={router.section === r.id}
-            aria-current={router.section === r.id ? 'page' : undefined}
+            class:active={isActive(r.id)}
+            aria-current={isActive(r.id) ? 'page' : undefined}
             title={columns.railNow ? r.label : undefined}
           >
-            <Icon name={r.icon} size={22} stroke={router.section === r.id ? 2.2 : 1.8} />
+            <Icon name={r.icon} size={22} stroke={isActive(r.id) ? 2.2 : 1.8} />
             <span class="label">{r.label}</span>
           </a>
         </li>
@@ -188,7 +196,14 @@
     {/if}
   </nav>
 
-  <main class="content">
+  <!-- Classi di larghezza dell'area dei contenuti (PC): le schermate decidono le colonne da qui -->
+  <main
+    class="content"
+    use:columns.observe
+    class:l-media={columns.at('media')}
+    class:l-larga={columns.at('larga')}
+    class:l-molto={columns.at('molto')}
+  >
     <UpdateBanner />
     <SyncBanner />
     {#if startup.state === 'loading'}
@@ -534,14 +549,21 @@
       color: var(--color-text-muted);
     }
 
+    /* Schermate a una colonna: area larga al massimo --content-max, centrata. Schermate su più colonne: l'area
+       occupa tutto lo spazio accanto alla barra laterale (la sua larghezza decide le colonne, columns.observe)
+       e dentro schermata e avvisi arrivano fino a --content-max-wide, centrati solo oltre quel tetto */
     .content {
       width: 100%;
       padding: var(--space-4) var(--space-5) var(--space-8);
     }
 
-    /* Movimenti (e Conti) su due colonne: più larghi delle schermate a una colonna */
     .wide .content {
+      max-width: none;
+    }
+
+    .wide .content > :global(*) {
       max-width: var(--content-max-wide);
+      margin-inline: auto;
     }
 
     .sub .content {
