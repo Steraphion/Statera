@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { enterIf, leaveIf } from '../lib/motion'
   import Card from '../components/Card.svelte'
   import ScreenHeader from '../components/ScreenHeader.svelte'
   import AccountForm from '../components/AccountForm.svelte'
@@ -75,7 +76,8 @@
     <Card>
       <ul class="list">
         {#each g.entries as e (e.t.id)}
-          <li>
+          <!-- Movimento: solo le righe appena salvate, eliminate o ripristinate si aprono e si chiudono -->
+          <li class="fold" in:enterIf={e.t.id} out:leaveIf={e.t.id}>
             <MovementRow
               t={e.t}
               refs={refs.value}

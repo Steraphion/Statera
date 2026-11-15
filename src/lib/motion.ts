@@ -9,6 +9,10 @@
  * quando il sistema chiede di ridurre le animazioni.
  *
  * Uso: `<div in:enter out:leave>` oppure `out:leave={{ duration: '--duration-slow' }}`.
+ *
+ * Righe degli elenchi: si aprono e si chiudono solo quelle che l'utente ha appena salvato, eliminato o
+ * ripristinato (`markChanged(id)`), con `in:enterIf={id} out:leaveIf={id}` e la classe `.fold` di
+ * base.css. Così un elenco che cambia mese, o che si riempie all'apertura, non si anima.
  */
 
 export type DurationToken = '--duration-fast' | '--duration-base' | '--duration-slow'
@@ -54,4 +58,48 @@ export function leave(node: Element, { duration = '--duration-base' }: { duratio
     node.addEventListener('outrostart', () => node.setAttribute('data-leaving', ''))
   }
   return { duration: tokenDuration(duration, node) }
+}
+
+// ---------- Righe appena cambiate ----------
+
+/** Per quanto tempo una modifica fatta dall'utente fa animare la sua riga (millisecondi). */
+export const RECENT_MS = 2000
+
+const recent = new Map<string, number>()
+
+/** Da chiamare appena prima di salvare, eliminare o ripristinare un movimento dall'interfaccia. */
+export function markChanged(id: string, now = Date.now()) {
+  recent.set(id, now)
+}
+
+/**
+ * Vero se uno degli id è stato cambiato da poco; l'id viene consumato, così la stessa modifica
+ * anima una riga una volta sola (non di nuovo cambiando mese e tornando).
+ */
+export function takeChanged(ids: string | readonly string[], now = Date.now()): boolean {
+  let hit = false
+  for (const id of typeof ids === 'string' ? [ids] : ids) {
+    const at = recent.get(id)
+    if (at === undefined) continue
+    recent.delete(id)
+    if (now - at < RECENT_MS) hit = true
+  }
+  return hit
+}
+
+/** Entrata di una riga appena salvata o ripristinata: `data-entering` avvia l'animazione `.fold`. */
+export function enterIf(node: Element, ids: string | readonly string[]) {
+  node.removeAttribute('data-leaving')
+  if (takeChanged(ids)) {
+    node.setAttribute('data-entering', '')
+    node.addEventListener('animationend', () => node.removeAttribute('data-entering'), { once: true })
+  }
+  return { duration: 0 }
+}
+
+/** Uscita di una riga appena eliminata; le altre spariscono subito (es. cambiando mese). */
+export function leaveIf(node: Element, ids: string | readonly string[]) {
+  if (!takeChanged(ids)) return { duration: 0 }
+  node.removeAttribute('data-entering')
+  return leave(node)
 }

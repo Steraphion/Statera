@@ -305,6 +305,8 @@
     display: block;
     height: 100%;
     border-radius: var(--radius-2xs);
+    /* Movimento: scorre al nuovo valore quando cambia (es. dopo «Aggiungi») */
+    transition: width var(--duration-slow) var(--ease-standard);
   }
 
   .goal .sub {

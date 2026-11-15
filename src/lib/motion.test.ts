@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { exitDuration, parseDuration } from './motion'
+import { RECENT_MS, exitDuration, markChanged, parseDuration, takeChanged } from './motion'
 
 describe('parseDuration', () => {
   it('legge millisecondi e secondi', () => {
@@ -27,5 +27,19 @@ describe('exitDuration', () => {
   it('con «riduci animazioni» non aspetta', () => {
     expect(exitDuration('200ms', true)).toBe(0)
     expect(exitDuration('280ms', true)).toBe(0)
+  })
+})
+
+describe('righe appena cambiate', () => {
+  it('solo gli id segnati da poco, una volta sola', () => {
+    markChanged('a', 1000)
+    expect(takeChanged('b', 1100)).toBe(false)
+    expect(takeChanged(['b', 'a'], 1100)).toBe(true)
+    expect(takeChanged('a', 1200)).toBe(false)
+  })
+
+  it('una modifica vecchia non anima più', () => {
+    markChanged('c', 1000)
+    expect(takeChanged('c', 1000 + RECENT_MS)).toBe(false)
   })
 })

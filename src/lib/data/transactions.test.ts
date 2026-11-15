@@ -95,6 +95,19 @@ describe('movimenti', () => {
     expect(await mv.movementsOfMonth('2026-11', d)).toHaveLength(0)
   })
 
+  it('eliminato e poi ripristinato («Annulla»): torna com\'era, con una modifica più recente', async () => {
+    const t = await mv.createMovement(input({}), d)
+    await mv.deleteMovement(t.id, d)
+    const deleted = (await d.transactions.get(t.id))!
+    await new Promise((r) => setTimeout(r, 2))
+    await mv.restoreMovement(t.id, d)
+    const back = (await d.transactions.get(t.id))!
+    expect(back.deletedAt).toBeNull()
+    expect(back.updatedAt).toBeGreaterThan(deleted.updatedAt)
+    expect(back.parts).toEqual(t.parts)
+    expect(await mv.movementsOfMonth('2026-11', d)).toHaveLength(1)
+  })
+
   it('pagamento misto: buoni + carta, un\'unica spesa', async () => {
     const t = await mv.createMovement(
       input({ parts: [{ source: `a:${buoni.id}`, amount: 0, vouchers: 3 }, { source: `c:${bancomat.id}`, amount: 740, vouchers: null }] }),

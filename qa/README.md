@@ -72,4 +72,7 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
   Dalla v0.30.2: avviso a comparsa (da un preferito) che entra salendo ed esce in dissolvenza coi token, «Annulla» che
   lo sostituisce senza sovrapporne due; pannello e avviso riaperti mentre escono, poi richiusi, rifanno l'uscita;
   tastierino nel pannello che si apre in altezza e si chiude con «Fatto» in `--ease-exit`; in Cerca sale dal basso e
-  resta fermo passando da «Importo da» a «Importo a». Uso come `collaudo.py`.
+  resta fermo passando da «Importo da» a «Importo a».
+  Dalla v0.30.3: un movimento salvato apre la sua riga (o il giorno intero, se nuovo), uno eliminato la chiude in
+  `--ease-exit` e «Annulla» la riapre ripristinando il dato; una descrizione lunga non allarga la riga; cambiando mese
+  nessuna riga si anima; la barra del budget scorre al nuovo valore in `--duration-slow`. Uso come `collaudo.py`.

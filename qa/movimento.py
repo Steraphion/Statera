@@ -10,7 +10,10 @@ intera (nessun importo che cambia e nessun riquadro che si sposta dopo la compar
 sezioni, con spostamento verso il dettaglio conto e al ritorno. Avvisi e tastierino (v0.30.2): l'avviso a comparsa entra salendo (--duration-base, --ease-standard) ed esce
 in dissolvenza (--ease-exit); «Annulla» lo sostituisce senza sovrapporne due; il tastierino nel pannello si apre in
 altezza e si chiude con «Fatto» con --ease-exit, quello in fondo a Cerca sale dal basso e resta fermo passando
-da un importo all'altro. Poi le stesse prove con «riduci animazioni».
+da un importo all'altro.
+Righe e barre (v0.30.3): un movimento salvato apre la sua riga (o il suo giorno) in altezza, uno eliminato la chiude
+con --ease-exit e «Annulla» la riapre (dato ripristinato); cambiando mese nessuna riga si anima; la barra del
+budget scorre al nuovo valore in --duration-slow. Poi le stesse prove con «riduci animazioni».
 """
 import asyncio, re, json
 from playwright.async_api import async_playwright
@@ -275,6 +278,96 @@ async def run_notices(b, p, label, opts, phone, reduced=False):
     check(f"{label}: nessun errore", not errs, " | ".join(errs[:3]))
     await ctx.close()
 
+async def run_rows(b, p, label, opts, reduced=False):
+    import datetime
+    print(f"\n===== {label}: righe e barre{', riduci animazioni' if reduced else ''} =====")
+    ctx = await b.new_context(**opts, locale="it-IT", **({"reduced_motion": "reduce"} if reduced else {})); pg = await ctx.new_page(); errs = []
+    pg.on("pageerror", lambda e: errs.append(str(e))); pg.on("console", lambda m: errs.append(m.text) if m.type == "error" else None)
+    cdp = await ctx.new_cdp_session(pg); await cdp.send("Animation.enable")
+    slow = lambda r: cdp.send("Animation.setPlaybackRate", {"playbackRate": r})
+    await setup(pg)
+    tok = await pg.evaluate(TOKENS)
+    today = datetime.date.today(); other = today.replace(day=1 if today.day != 1 else 2)
+    async def save(amount, desc, day=None, watch=False):
+        await (await new_button(pg)).click(); await pg.wait_for_selector("dialog[open]"); await pg.wait_for_timeout(500)
+        await pg.get_by_label("Importo (€)").fill(amount); await pg.get_by_label("Descrizione").fill(desc)
+        await pg.locator(".cat-list").get_by_role("radio", name=re.compile("^Spesa alimentare")).click()
+        if day: await pg.locator("dialog input[type=date]").fill(day.isoformat())
+        if watch and not reduced: await slow(0.1)
+        await pg.get_by_role("button", name="Salva", exact=True).click()
+        await pg.wait_for_timeout(150 if watch else 700)
+    FOLD = """() => ({ entering: [...document.querySelectorAll('.fold[data-entering]')].map(e => e.className.split(' ').filter(c => c !== 'fold' && !c.startsWith('svelte'))[0] || e.tagName),
+      leaving: document.querySelectorAll('.fold[data-leaving]').length,
+      anims: document.getAnimations().filter(a => /grow-(in|out)/.test(a.animationName || '') && a.effect.target.closest('.screen')).map(a => ({ name: a.animationName, dur: a.effect.getTiming().duration, easing: (a.effect.getKeyframes()[0] || {}).easing })) })"""
+    await save("10,00", "Pane")  # il primo del mese crea l'elenco: nessuna animazione di riga
+    await save("12,50", "Latte", watch=True)
+    f = await pg.evaluate(FOLD)
+    if not reduced:
+        check(f"{label}: movimento salvato: la sua riga si apre (--duration-base)", f["entering"] == ["LI"] and any(a["dur"] == tok["base"] and norm(a["easing"]) == norm(tok["std"]) for a in f["anims"]), json.dumps(f))
+        await slow(1); await pg.wait_for_timeout(500)
+    else:
+        await pg.wait_for_timeout(500)
+    check(f"{label}: a fine animazione la riga è normale", (await pg.evaluate(FOLD))["entering"] == [] and await pg.locator(".screen li.fold").count() == 2)
+    await save("3,00", "Giornale", day=other, watch=True)
+    f = await pg.evaluate(FOLD)
+    if not reduced:
+        check(f"{label}: movimento in un giorno nuovo: si apre il giorno intero", f["entering"] == ["day-group"], json.dumps(f))
+        await slow(1)
+    await pg.wait_for_timeout(500)
+    # una descrizione lunga va coi puntini: la riga non si allarga oltre la scheda
+    await save("2,00", "Descrizione molto lunga di prova per controllare i puntini in fondo alla riga")
+    wide = await pg.evaluate("() => [...document.querySelectorAll('.screen li.fold')].filter(li => li.getBoundingClientRect().width > li.closest('ul').getBoundingClientRect().width + 1).length")
+    check(f"{label}: una descrizione lunga non allarga la riga", wide == 0, str(wide))
+    # cambio mese: nessuna riga si anima
+    await pg.get_by_role("button", name="Mese precedente").click(); await pg.wait_for_timeout(500)
+    await pg.evaluate("() => { window.__grow = 0; document.addEventListener('animationstart', e => { if (/grow/.test(e.animationName)) window.__grow++ }) }")
+    await pg.get_by_role("button", name="Mese successivo").click(); await pg.wait_for_timeout(600)
+    check(f"{label}: tornando al mese nessuna riga si anima", await pg.evaluate("window.__grow") == 0 and await pg.locator(".screen li.fold").count() == 4)
+    # eliminazione con «Annulla»
+    await pg.locator(".screen .list-row", has_text="Latte").click(); await pg.wait_for_selector("dialog[open]"); await pg.wait_for_timeout(500)
+    await pg.get_by_role("button", name="Elimina", exact=True).click()
+    if not reduced: await slow(0.1)
+    await pg.get_by_role("button", name="Conferma eliminazione").click(); await pg.wait_for_timeout(150)
+    f = await pg.evaluate(FOLD)
+    if not reduced:
+        check(f"{label}: movimento eliminato: la riga si chiude con --ease-exit", f["leaving"] == 1 and any("grow-out" in a["name"] and norm(a["easing"]) == norm(tok["exit"]) for a in f["anims"]), json.dumps(f))
+        await slow(1)
+    await pg.wait_for_timeout(500)
+    check(f"{label}: poi la riga è tolta e c'è «Annulla»", await pg.locator(".screen .list-row", has_text="Latte").count() == 0 and await pg.locator(".toast", has_text="Movimento eliminato").count() == 1)
+    if not reduced: await slow(0.1)
+    await pg.locator(".toast").get_by_role("button", name="Annulla").click(); await pg.wait_for_timeout(150)
+    f = await pg.evaluate(FOLD)
+    if not reduced:
+        check(f"{label}: «Annulla» riapre la riga", f["entering"] == ["LI"], json.dumps(f))
+        await slow(1)
+    await pg.wait_for_timeout(500)
+    alive = await pg.evaluate("""() => new Promise(res => { const q = indexedDB.open('statera-locale'); q.onsuccess = () => {
+      const r = q.result.transaction('transactions').objectStore('transactions').getAll();
+      r.onsuccess = () => { q.result.close(); res(r.result.filter(t => t.deletedAt === null).map(t => t.description)) } } })""")
+    check(f"{label}: «Annulla» ripristina il movimento", "Latte" in alive and len(alive) == 4 and await pg.locator(".screen .list-row", has_text="Latte").count() == 1, json.dumps(alive))
+    # barra del budget: scorre al nuovo valore
+    await pg.goto(BASE + "/#/analisi"); await pg.wait_for_timeout(600)
+    await pg.get_by_role("button", name="Imposta budget").click(); await pg.wait_for_selector("dialog[open]"); await pg.wait_for_timeout(400)
+    await pg.get_by_label("Budget Spesa alimentare (€)").fill("100")
+    await pg.get_by_role("button", name="Salva").click(); await pg.wait_for_timeout(800)
+    w1 = await pg.evaluate("() => document.querySelector('.meters .fill').getBoundingClientRect().width")
+    await pg.get_by_role("button", name="Modifica", exact=True).first.click()
+    await pg.wait_for_selector("dialog[open]"); await pg.wait_for_timeout(400)
+    await pg.get_by_label("Budget Spesa alimentare (€)").fill("50")
+    if not reduced: await slow(0.1)
+    await pg.get_by_role("button", name="Salva").click(); await pg.wait_for_timeout(250)
+    tr = await pg.evaluate("() => document.getAnimations().filter(a => a.transitionProperty === 'width' && a.effect.target.classList.contains('fill')).map(a => ({ dur: a.effect.getTiming().duration }))")
+    if not reduced:
+        check(f"{label}: la barra del budget scorre al nuovo valore (--duration-slow)", len(tr) == 1 and tr[0]["dur"] == tok["slow"], json.dumps(tr))
+        await slow(1)
+    else:
+        check(f"{label}: barra senza animazione", all(t["dur"] <= 0.01 for t in tr), json.dumps(tr))
+    await pg.wait_for_timeout(800)
+    w2 = await pg.evaluate("() => document.querySelector('.meters .fill').getBoundingClientRect().width")
+    check(f"{label}: e arriva al nuovo valore", w2 > w1 * 1.5, f"{w1} → {w2}")
+    check(f"{label}: nessun errore", not errs, " | ".join(errs[:3]))
+    await ctx.close()
+
 # Per ogni fotogramma dopo il tocco: schermata visibile?, importo del riquadro principale, sua posizione
 FRAMES = """() => { const r = window.__fr = []; const t0 = performance.now();
   const f = () => { const sc = document.querySelector('.screen'); const box = sc?.querySelector('.balance-box');
@@ -336,7 +429,10 @@ async def main():
         await run_screens(b, p, "PC", pc)
         await run_notices(b, p, "Android", phone, True)
         await run_notices(b, p, "PC", pc, False)
+        await run_rows(b, p, "Android", phone)
+        await run_rows(b, p, "PC", pc)
         await run_reduced(b, p, "Android", phone)
+        await run_rows(b, p, "Android", phone, reduced=True)
         await run_notices(b, p, "Android", phone, True, reduced=True)
         await run_screens(b, p, "Android", phone, reduced=True)
         await run_reduced(b, p, "PC", pc)

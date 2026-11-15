@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { markChanged } from '../lib/motion'
   import TemplatesSheet from './TemplatesSheet.svelte'
   import { db } from '../lib/data/db'
   import { live } from '../lib/data/live.svelte'
@@ -37,9 +38,11 @@
     busy = true
     try {
       const m = await withTimeout(tp.registerTemplate(t, today()))
+      markChanged(m.id) // la nuova riga si apre nell'elenco
       toast.show(`${t.name} registrato · ${amountOf(t)}`, {
         label: 'Annulla',
         run: async () => {
+          markChanged(m.id)
           await deleteMovement(m.id)
           toast.show(`${t.name}: registrazione annullata`)
         },

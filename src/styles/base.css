@@ -505,6 +505,37 @@ a.list-row {
   }
 }
 
+/* Righe che si aprono e si chiudono (movimento appena salvato, eliminato, ripristinato): come .grow, ma
+   solo con data-entering / data-leaving (enterIf e leaveIf di src/lib/motion.ts), così un elenco che cambia
+   mese non si anima. Un solo figlio; il ritaglio vale solo durante l'animazione (lascia visibile il focus). */
+.fold {
+  display: grid;
+  grid-template-rows: 1fr;
+}
+
+/* Senza, un testo lungo che non va a capo (descrizione con i puntini) allargherebbe la riga oltre la scheda */
+.fold > * {
+  min-width: 0;
+}
+
+.fold[data-entering],
+.fold[data-leaving] {
+  overflow: clip;
+}
+
+.fold.fold[data-entering] > *,
+.fold.fold[data-leaving] > * {
+  min-height: 0;
+}
+
+.fold[data-entering] {
+  animation: grow-in var(--duration-base) var(--ease-standard);
+}
+
+.fold[data-leaving] {
+  animation: grow-out var(--duration-base) var(--ease-exit) forwards;
+}
+
 /* Riduci animazioni: vale anche per lo sfondo delle finestre modali (::backdrop non è coperto da *) */
 @media (prefers-reduced-motion: reduce) {
   *,

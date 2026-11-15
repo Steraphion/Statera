@@ -224,6 +224,11 @@ export async function deleteMovement(id: string, d: StateraDB = db) {
   await d.transactions.update(id, { deletedAt: Date.now(), updatedAt: Date.now() })
 }
 
+/** Annulla un'eliminazione («Annulla» nell'avviso): il movimento torna com'era, anche negli altri dispositivi. */
+export async function restoreMovement(id: string, d: StateraDB = db) {
+  await d.transactions.update(id, { deletedAt: null, updatedAt: Date.now() })
+}
+
 // ---------- Ultima fonte usata (per proporla al prossimo inserimento) ----------
 
 type LastSources = Partial<Record<TransactionType, SourceKey>>

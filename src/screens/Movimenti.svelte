@@ -18,6 +18,7 @@
   import { formatDay, formatEuro, formatMonth, monthOf, parseDay, shiftMonth } from '../lib/format'
   import { ui } from '../lib/ui.svelte'
   import { screen } from '../lib/screen.svelte'
+  import { enterIf, leaveIf } from '../lib/motion'
 
   const refs = useRefs()
 
@@ -176,16 +177,24 @@
 {:else if shownDays.length}
   <!-- Un'unica scheda con i giorni come intestazioni -->
   <Card>
+    <!-- Movimento: si aprono e si chiudono solo le righe (o i giorni) appena salvati, eliminati o
+         ripristinati (enterIf / leaveIf e .fold) -->
     {#each shownDays as g (g.date)}
-      <h2 class="day">
-        <span>{formatDay(g.date)}</span>
-        <span class="num" class:amount-neg={g.net < 0}>{g.net === 0 ? '' : formatEuro(g.net)}</span>
-      </h2>
-      <ul class="list">
-        {#each g.items as t (t.id)}
-          <li><MovementRow {t} refs={refs.value} onclick={() => (sheet = { movement: t })} /></li>
-        {/each}
-      </ul>
+      <div class="fold day-group" in:enterIf={g.items.map((i) => i.id)} out:leaveIf={g.items.map((i) => i.id)}>
+        <div>
+          <h2 class="day">
+            <span>{formatDay(g.date)}</span>
+            <span class="num" class:amount-neg={g.net < 0}>{g.net === 0 ? '' : formatEuro(g.net)}</span>
+          </h2>
+          <ul class="list">
+            {#each g.items as t (t.id)}
+              <li class="fold" in:enterIf={t.id} out:leaveIf={t.id}>
+                <MovementRow {t} refs={refs.value} onclick={() => (sheet = { movement: t })} />
+              </li>
+            {/each}
+          </ul>
+        </div>
+      </div>
     {/each}
   </Card>
 {/if}
@@ -354,7 +363,7 @@
     color: var(--color-text-muted);
   }
 
-  .day:first-child {
+  .day-group:first-child .day {
     margin-top: var(--space-1);
   }
 

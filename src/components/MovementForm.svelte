@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { markChanged } from '../lib/motion'
+  import { toast } from '../lib/toast.svelte'
   import { amountKeys, HAS_KEYPAD } from '../lib/keypad.svelte'
   import { onMount, untrack } from 'svelte'
   import Sheet from './Sheet.svelte'
@@ -432,7 +434,7 @@
       else if (conf0) await withTimeout(rec.confirmOccurrence(conf0.r, input, conf0.date))
       else if (orig) await withTimeout(mv.updateMovement(orig.id, input))
       else if (repeat) await withTimeout(rec.createRecurring(input, schedule, today()))
-      else await withTimeout(mv.createMovement(input))
+      else markChanged((await withTimeout(mv.createMovement(input))).id) // la nuova riga si apre nell'elenco
       if (addAnother) {
         parts = [{ source: parts[0].source, amountText: '', vouchersText: '' }]
         description = ''
@@ -462,8 +464,17 @@
 
   async function remove() {
     if (!orig) return
+    const id = orig.id
     try {
-      await withTimeout(mv.deleteMovement(orig.id))
+      markChanged(id) // la riga si chiude nell'elenco
+      await withTimeout(mv.deleteMovement(id))
+      toast.show('Movimento eliminato', {
+        label: 'Annulla',
+        run: async () => {
+          markChanged(id)
+          await withTimeout(mv.restoreMovement(id))
+        },
+      })
       onclose()
     } catch (e) {
       error = errorMessage(e)

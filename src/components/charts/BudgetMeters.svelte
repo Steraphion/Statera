@@ -103,6 +103,10 @@
     height: 100%;
     border-radius: 0 var(--radius-2xs) var(--radius-2xs) 0;
     background: var(--chart-income);
+    /* Movimento: la barra scorre al nuovo valore quando cambia (non riparte da zero a ogni visita) */
+    transition:
+      width var(--duration-slow) var(--ease-standard),
+      background-color var(--duration-slow) var(--ease-standard);
   }
 
   .attenzione .fill {
