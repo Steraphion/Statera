@@ -8,7 +8,10 @@ per dispositivo e ritrovata dopo il riavvio, doppio clic e Invio per tornare all
 Conti (v0.31.1): elenco e dettaglio affiancati, movimenti del mese in tabella con saldo dopo ogni movimento, frecce
 ← → per il mese e ↑ ↓ per il conto, cambio di conto senza nascondere la schermata né tornare in cima, Indietro,
 elenco regolabile col dettaglio mai sotto --size-detail-min, colonna del saldo nascosta quando il dettaglio è stretto.
-Sul telefono (Pixel 7) nessuna di queste cose: il conto si apre nella sua schermata.
+Finestra del movimento (v0.31.2): larga e su due colonne da 900 px (importo, conto, data e descrizione a sinistra,
+categoria a destra; per i trasferimenti data a sinistra e altre scelte a destra), suggerimenti con frecce e Invio,
+Invio sulla categoria che salva, Invio nelle note che va a capo e Ctrl+Invio che salva, Esc; sotto i 900 px una colonna.
+Sul telefono (Pixel 7) nessuna di queste cose: il conto si apre nella sua schermata, il modulo resta in colonna.
 """
 import asyncio, re, json, datetime, os
 from playwright.async_api import async_playwright
@@ -228,6 +231,59 @@ async def conti(pg, label):
     await pg.screenshot(path="/tmp/pc-conti-960.png")
     await pg.set_viewport_size({"width": 1280, "height": 860})
 
+async def count_tx(pg):
+    return await pg.evaluate("""() => new Promise(res => { const q = indexedDB.open('statera-locale'); q.onsuccess = () => {
+      const r = q.result.transaction('transactions').objectStore('transactions').getAll();
+      r.onsuccess = () => { q.result.close(); res(r.result.filter(t => t.deletedAt === null).length) } } })""")
+
+async def finestra(pg, label):
+    await pg.set_viewport_size({"width": 1280, "height": 860})
+    await pg.goto(BASE + "/#/movimenti"); await pg.wait_for_timeout(600)
+    await pg.locator("body").click(position={"x": 5, "y": 5}); await pg.keyboard.press("n"); await pg.wait_for_selector("dialog[open]"); await pg.wait_for_timeout(500)
+    d = await box(pg, "dialog[open]")
+    check(f"{label}: finestra del movimento larga {await tok(pg, '--size-window-wide'):.0f} px", abs(d["width"] - await tok(pg, "--size-window-wide")) <= 1, str(d))
+    amount, cats = await box(pg, "#amount-input"), await box(pg, "dialog .cat-list")
+    check(f"{label}: importo a sinistra, categoria a destra alla stessa altezza", cats["x"] > amount["x"] + amount["width"] and abs(cats["y"] - amount["y"]) < 60, f"{amount} {cats}")
+    check(f"{label}: elenco delle categorie più lungo che sul telefono", cats["height"] > 300)
+    check(f"{label}: niente scorrimento orizzontale nella finestra", await pg.evaluate("(() => { const b = document.querySelector('dialog[open] .body'); return b.scrollWidth <= b.clientWidth })()"))
+    # suggerimenti mentre si scrive, frecce e Invio
+    await pg.get_by_label("Descrizione").fill("Caf"); await pg.wait_for_timeout(200)
+    lb = pg.get_by_role("listbox", name="Suggerimenti")
+    check(f"{label}: suggerimenti sotto la descrizione, nella colonna di sinistra", await lb.count() == 1 and (await lb.bounding_box())["x"] < cats["x"])
+    await pg.keyboard.press("ArrowDown"); await pg.keyboard.press("Enter"); await pg.wait_for_timeout(200)
+    checked = pg.locator(".cat-list").get_by_role("radio", checked=True)
+    check(f"{label}: suggerimento scelto: descrizione, categoria e importo dell'ultima volta",
+          await pg.get_by_label("Descrizione").input_value() == "Caffè" and "Pasti fuori" in await checked.inner_text() and await pg.get_by_label("Importo (€)").input_value() == "1,20")
+    check(f"{label}: Invio sul suggerimento non salva", await pg.locator("dialog[open]").count() == 1)
+    # Invio dalla categoria salva
+    n0 = await count_tx(pg)
+    await checked.focus(); await pg.keyboard.press("Enter"); await pg.wait_for_timeout(600)
+    check(f"{label}: Invio sulla categoria salva e chiude", await pg.locator("dialog[open]").count() == 0 and await count_tx(pg) == n0 + 1)
+    # Invio nelle note va a capo, Ctrl+Invio salva
+    await pg.keyboard.press("n"); await pg.wait_for_selector("dialog[open]"); await pg.wait_for_timeout(400)
+    await pg.get_by_label("Importo (€)").fill("3")
+    await pg.locator(".cat-list").get_by_role("radio", name=re.compile("^Svago")).click()
+    await pg.get_by_role("button", name="+ Aggiungi nota").click()
+    note = pg.get_by_label("Note"); await note.focus(); await pg.keyboard.type("riga uno"); await pg.keyboard.press("Enter"); await pg.keyboard.type("riga due")
+    check(f"{label}: Invio nelle note va a capo", await pg.locator("dialog[open]").count() == 1 and await note.input_value() == "riga uno\nriga due")
+    await pg.keyboard.press("Control+Enter"); await pg.wait_for_timeout(600)
+    check(f"{label}: Ctrl+Invio salva anche dalle note", await pg.locator("dialog[open]").count() == 0 and await count_tx(pg) == n0 + 2)
+    # trasferimento: la data a sinistra, le altre scelte a destra
+    await pg.keyboard.press("n"); await pg.wait_for_selector("dialog[open]"); await pg.wait_for_timeout(400)
+    await pg.get_by_role("radio", name="Trasferimento").click(); await pg.wait_for_timeout(200)
+    dt, rep = await box(pg, "dialog input[type=date]"), await box(pg, "dialog .repeat")
+    check(f"{label}: trasferimento: data a sinistra, ripetizione a destra", dt["x"] < rep["x"] and await pg.locator("dialog .cat-list").count() == 0)
+    await pg.keyboard.press("Escape"); await pg.wait_for_timeout(400)
+    check(f"{label}: Esc chiude la finestra", await pg.locator("dialog[open]").count() == 0)
+    # sotto i 900 px finestra a una colonna, come prima
+    await pg.set_viewport_size({"width": 800, "height": 860}); await pg.wait_for_timeout(300)
+    await pg.get_by_role("button", name="Nuovo movimento").locator("visible=true").first.click(); await pg.wait_for_selector("dialog[open]"); await pg.wait_for_timeout(500)
+    d = await box(pg, "dialog[open]")
+    amount, cats = await box(pg, "#amount-input"), await box(pg, "dialog .cat-list")
+    check(f"{label}: a 800 px finestra da {await tok(pg, '--size-window'):.0f} px a una colonna", abs(d["width"] - await tok(pg, "--size-window")) <= 1 and cats["y"] > amount["y"] + amount["height"], f"{d} {cats}")
+    await pg.keyboard.press("Escape"); await pg.wait_for_timeout(400)
+    await pg.set_viewport_size({"width": 1280, "height": 860})
+
 async def telefono(pg, label):
     await pg.goto(BASE + "/#/movimenti"); await pg.wait_for_timeout(600)
     check(f"{label}: niente separatore né budget nella schermata", await pg.locator(".splitter").count() == 0 and await pg.get_by_role("heading", name="Budget del mese").count() == 0)
@@ -236,6 +292,9 @@ async def telefono(pg, label):
     order = await pg.evaluate("""() => [...document.querySelectorAll('.layout h2, .layout .balance-box')].map(e => e.textContent.trim().slice(0, 14))""")
     check(f"{label}: «Da registrare» prima del saldo, come prima", order.index("Da registrare") < [i for i, t in enumerate(order) if t.startswith("Saldo")][0], str(order))
     check(f"{label}: niente scorrimento orizzontale", await no_hscroll(pg))
+    await pg.get_by_role("button", name="Nuovo movimento").locator("visible=true").first.click(); await pg.wait_for_selector("dialog[open]"); await pg.wait_for_timeout(400)
+    check(f"{label}: modulo del movimento in colonna, come prima", await pg.evaluate("getComputedStyle(document.querySelector('#movement-form')).display") == "flex")
+    await pg.get_by_role("button", name="Chiudi").click(); await pg.wait_for_timeout(500)
     await pg.goto(BASE + "/#/conti"); await pg.wait_for_timeout(600)
     check(f"{label}: Conti senza dettaglio accanto", await pg.locator(".detail-col").count() == 0 and await pg.locator(".splitter").count() == 0)
     await pg.locator(".list-row", has_text="Conto corrente").first.click(); await pg.wait_for_timeout(600)
@@ -259,6 +318,7 @@ async def main():
                 if scheme == "light":
                     await separatore(pg, label)
                     await conti(pg, label)
+                    await finestra(pg, label)
                     await barra(pg, label)
             check(f"{label}: nessun errore", not errs, str(errs[:3]))
             await ctx.close()

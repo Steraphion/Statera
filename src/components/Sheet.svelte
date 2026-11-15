@@ -10,7 +10,16 @@
     children,
     footer,
     error = '',
-  }: { title: string; onclose: () => void; children: Snippet; footer?: Snippet; error?: string } = $props()
+    wide = false,
+  }: {
+    title: string
+    onclose: () => void
+    children: Snippet
+    footer?: Snippet
+    error?: string
+    /** Su PC (da 900 px) finestra larga, per un contenuto su due colonne. */
+    wide?: boolean
+  } = $props()
 
   let dialog = $state<HTMLDialogElement>()
 
@@ -31,6 +40,7 @@
 
 <dialog
   bind:this={dialog}
+  class:wide
   in:enter
   out:leave
   aria-label={title}
@@ -168,7 +178,7 @@
 
   @media (min-width: 600px) {
     dialog {
-      width: min(560px, calc(100vw - 32px));
+      width: min(var(--size-window), 100vw - 2 * var(--space-4));
       margin: auto;
     }
 
@@ -203,6 +213,19 @@
 
     header {
       padding-top: var(--space-5);
+    }
+  }
+
+  @media (min-width: 900px) {
+    dialog.wide {
+      width: min(var(--size-window-wide), 100vw - 2 * var(--space-4));
+    }
+
+    .wide header,
+    .wide .body,
+    .wide footer {
+      padding-left: var(--space-6);
+      padding-right: var(--space-6);
     }
   }
 </style>

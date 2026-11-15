@@ -76,7 +76,8 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-hair);
-    max-height: 288px;
+    /* La finestra larga su PC (MovementForm) la allunga con --cat-list-max */
+    max-height: var(--cat-list-max, 288px);
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: var(--space-2);

@@ -81,6 +81,8 @@
   --size-pane-max: 520px;
   --size-main-min: 400px; /* la colonna principale non scende sotto questa larghezza */
   --size-detail-min: 480px; /* il dettaglio del conto accanto all'elenco, idem */
+  --size-window: 560px; /* finestra centrata (da 600 px) */
+  --size-window-wide: 840px; /* finestra del movimento su due colonne (PC, da 900 px) */
   /* Testo su PC (da 900 px): radice da 17 px invece di 16, così testo e importi (in rem) crescono insieme */
   --text-root-pc: 106.25%;
 

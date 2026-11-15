@@ -92,4 +92,9 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
   conto senza riempire la cronologia, clic su un altro conto con indirizzo `#/conto/…`, schermata che non si
   nasconde né torna in cima e dettaglio in dissolvenza in `--duration-base`, Indietro, riga della tabella che apre il
   movimento, elenco regolabile col dettaglio mai sotto `--size-detail-min`, colonna del saldo nascosta quando il
-  dettaglio è stretto (960 px). Sul telefono il conto si apre ancora nella sua schermata. Uso come `collaudo.py`.
+  dettaglio è stretto (960 px). Sul telefono il conto si apre ancora nella sua schermata. Dalla v0.31.2, finestra del
+  movimento: larga `--size-window-wide` e su due colonne da 900 px (importo, conto, data e descrizione a sinistra,
+  categoria a destra con l'elenco più lungo; per i trasferimenti data a sinistra e altre scelte a destra), suggerimenti
+  nella colonna di sinistra con frecce e Invio (che non salva), Invio sulla categoria che salva, Invio nelle note che va
+  a capo e Ctrl+Invio che salva, Esc; a 800 px finestra `--size-window` a una colonna; sul telefono modulo in colonna.
+  Uso come `collaudo.py`.

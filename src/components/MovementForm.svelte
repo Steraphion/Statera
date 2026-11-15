@@ -15,6 +15,7 @@
   import { db } from '../lib/data/db'
   import { errorMessage, today, withTimeout } from '../lib/data/util'
   import { centsToInput, evalAmount, formatEuro, isExpression } from '../lib/format'
+  import { columns } from '../lib/columns.svelte'
 
   let {
     movement,
@@ -499,16 +500,36 @@
         ? 'Modifica movimento'
         : 'Nuovo movimento'
   const sourceLabel = $derived(type === 'trasferimento' ? 'Da' : type === 'entrata' ? 'Su' : 'Con')
+
+  /**
+   * Invio salva da tutto il modulo (su PC): nei campi di testo lo fa già il browser; qui si aggiungono
+   * le scelte (categoria, conto, caselle). Non nelle note, dove va a capo, né sui pulsanti, che fanno
+   * la loro azione. Ctrl+Invio salva anche dalle note.
+   */
+  function onFormKey(e: KeyboardEvent) {
+    if (e.key !== 'Enter' || e.defaultPrevented || e.altKey || e.shiftKey || busy) return
+    const el = e.target as HTMLElement
+    const ctrl = e.ctrlKey || e.metaKey
+    if (ctrl || el.matches('select, input[type=radio], input[type=checkbox], [role=radio]')) {
+      e.preventDefault()
+      save(false)
+    }
+  }
 </script>
 
-<Sheet {title} {onclose} {error}>
+<Sheet {title} {onclose} {error} wide={columns.pc}>
   {#if options.length === 0}
     <p class="empty-note">Per registrare un movimento crea prima un conto nella sezione Conti.</p>
   {:else}
+    <!-- Il tasto Invio è gestito sul modulo intero (onFormKey): i singoli campi restano interattivi -->
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <form
       novalidate
       id="movement-form"
       class="form"
+      class:two={columns.pc}
+      class:transfer={type === 'trasferimento'}
+      onkeydown={onFormKey}
       onsubmit={(e) => {
         e.preventDefault()
         save(false)
@@ -524,6 +545,9 @@
         ]}
       />
 
+      <!-- PC: importo, conto, data e descrizione a sinistra; categoria a destra; il resto sotto a sinistra.
+           Telefono: i gruppi non contano (display: contents), tutto in colonna come prima -->
+      <div class="col col-a">
       {#if !mixed}
         {#if isVoucher(parts[0].source)}
           {@const preview = rowAmount(parts[0])}
@@ -696,7 +720,9 @@
           </ul>
         {/if}
       </div>
+      </div>
 
+      <div class="col col-b">
       {#if type === 'trasferimento'}
         <DateField bind:value={date} label={dateLabel} />
       {:else if splitMode}
@@ -748,7 +774,9 @@
           <button type="button" class="btn btn-ghost link" onclick={startSplit}>Dividi tra più categorie</button>
         {/if}
       {/if}
+      </div>
 
+      <div class="col col-c">
       {#if showTags}
         <div class="field">
           <label for="tag-input">Etichette</label>
@@ -875,6 +903,7 @@
           {savedCount === 1 ? 'Movimento salvato.' : `${savedCount} movimenti salvati.`} Inserisci il prossimo.
         </p>
       {/if}
+      </div>
     </form>
   {/if}
 
@@ -903,6 +932,63 @@
 </Sheet>
 
 <style>
+  /* Gruppi del modulo: sul telefono non esistono (i campi restano figli diretti del modulo) */
+  .col {
+    display: contents;
+  }
+
+  /* PC: finestra larga su due colonne (Sheet wide) */
+  .form.two {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr;
+    column-gap: var(--space-6);
+    row-gap: var(--space-4);
+    align-items: start;
+    /* La categoria ha tutta la colonna di destra: elenco più lungo */
+    --cat-list-max: calc(7 * var(--size-row));
+  }
+
+  .two > :global(:first-child) {
+    grid-column: 1 / -1;
+  }
+
+  .two .col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    min-width: 0;
+  }
+
+  .two .col-a {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .two .col-b {
+    grid-column: 2;
+    grid-row: 2 / span 2;
+  }
+
+  .two .col-c {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .two .col-c:not(:has(> *)) {
+    display: none;
+  }
+
+  /* Trasferimento: niente categoria, la data va sotto la descrizione e le altre scelte a destra */
+  .two.transfer .col-b {
+    grid-row: 3;
+    grid-column: 1;
+  }
+
+  .two.transfer .col-c {
+    grid-column: 2;
+    grid-row: 2 / span 2;
+  }
   .amount {
     min-height: var(--size-row);
     font-size: var(--text-xl);
