@@ -18,6 +18,8 @@
   import Keypad from './components/Keypad.svelte'
   import LockScreen from './components/LockScreen.svelte'
   import ShortcutsSheet from './components/ShortcutsSheet.svelte'
+  import PickerSheet from './components/PickerSheet.svelte'
+  import { picker } from './lib/picker.svelte'
   import { ui } from './lib/ui.svelte'
   import { lock } from './lib/lock.svelte'
   import { startup } from './lib/startup.svelte'
@@ -227,6 +229,12 @@
 {/if}
 <Toast />
 <Keypad />
+<!-- Elenchi a tendina e date sul telefono: pannello dell'app invece di quello di Android -->
+{#if picker.field}
+  {#key picker.field}
+    <PickerSheet />
+  {/key}
+{/if}
 <ErrorToast />
 {/if}
 </div>

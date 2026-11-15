@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { pickerAction } from '../lib/picker.svelte'
   import { amountKeys } from '../lib/keypad.svelte'
   import { untrack } from 'svelte'
   import Sheet from './Sheet.svelte'
@@ -84,7 +85,7 @@
 
     <label class="field">
       <span>Tipo</span>
-      <select class="input" bind:value={type}>
+      <select use:pickerAction class="input" bind:value={type}>
         {#each types as [value, label] (value)}
           <option {value}>{label}</option>
         {/each}
@@ -115,7 +116,7 @@
 
     <label class="field">
       <span>{type === 'buoni_pasto' ? 'Disponibili alla data' : 'Saldo alla data'}</span>
-      <input class="input" type="date" bind:value={initialDate} required />
+      <input class="input" type="date" use:pickerAction bind:value={initialDate} required />
       <span class="hint">
         Il saldo vale dall'inizio di questo giorno: i movimenti con questa data o successivi lo modificano, quelli
         precedenti no. Se il saldo comprende già entrate o spese che vuoi vedere nei totali del mese (es. l'ultimo

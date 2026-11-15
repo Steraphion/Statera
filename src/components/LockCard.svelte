@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { pickerAction } from '../lib/picker.svelte'
   import Card from './Card.svelte'
   import { lock } from '../lib/lock.svelte'
   import { pinProblem, TIMEOUTS } from '../lib/lock'
@@ -103,7 +104,7 @@
       {#if mode === 'enable'}
         <label class="field">
           <span>Blocca</span>
-          <select class="input" bind:value={timeout}>
+          <select use:pickerAction class="input" bind:value={timeout}>
             {#each TIMEOUTS as t (t.value)}<option value={t.value}>{t.label.toLowerCase()} che lasci l'app</option>{/each}
           </select>
           <span class="hint">All'apertura l'app chiede sempre il PIN.</span>
@@ -126,7 +127,7 @@
   {:else}
     <label class="field">
       <span>Blocca</span>
-      <select class="input" value={lock.config?.timeout} onchange={(e) => lock.setTimeout(Number(e.currentTarget.value))}>
+      <select use:pickerAction class="input" value={lock.config?.timeout} onchange={(e) => lock.setTimeout(Number(e.currentTarget.value))}>
         {#each TIMEOUTS as t (t.value)}<option value={t.value}>{t.label.toLowerCase()} che lasci l'app</option>{/each}
       </select>
     </label>

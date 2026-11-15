@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { pickerAction } from '../lib/picker.svelte'
   import { amountKeys } from '../lib/keypad.svelte'
   import Card from '../components/Card.svelte'
   import ScreenHeader from '../components/ScreenHeader.svelte'
@@ -88,11 +89,11 @@
       <div class="row-2">
         <label class="field">
           <span>Dal</span>
-          <input class="input" type="date" bind:value={f.from} />
+          <input class="input" type="date" use:pickerAction bind:value={f.from} />
         </label>
         <label class="field">
           <span>Al</span>
-          <input class="input" type="date" bind:value={f.to} />
+          <input class="input" type="date" use:pickerAction bind:value={f.to} />
         </label>
       </div>
       <div class="row-2">
@@ -108,7 +109,7 @@
       {#if badAmount}<p class="bad" role="alert">Importo non valido: scrivi ad esempio 50 o 12,50.</p>{/if}
       <label class="field">
         <span>Conto o carta</span>
-        <select class="input" bind:value={f.source}>
+        <select use:pickerAction class="input" bind:value={f.source}>
           <option value="">Tutti</option>
           {#each sources as o (o.key)}
             <option value={o.key}>{o.label}{o.account.archived ? ' (archiviato)' : ''}</option>
@@ -117,7 +118,7 @@
       </label>
       <label class="field">
         <span>Categoria</span>
-        <select class="input" bind:value={f.categoryId}>
+        <select use:pickerAction class="input" bind:value={f.categoryId}>
           <option value="">Tutte</option>
           {#each ['uscita', 'entrata'] as kind (kind)}
             <optgroup label={kind === 'uscita' ? 'Uscite' : 'Entrate'}>
@@ -134,7 +135,7 @@
       {#if tagList.length || f.tag}
         <label class="field">
           <span>Etichetta</span>
-          <select class="input" bind:value={f.tag}>
+          <select use:pickerAction class="input" bind:value={f.tag}>
             <option value="">Tutte</option>
             {#each tagList as t (t)}<option value={t}>#{t}</option>{/each}
           </select>

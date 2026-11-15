@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { pickerAction } from '../lib/picker.svelte'
   import { untrack } from 'svelte'
   import Sheet from './Sheet.svelte'
   import DeleteButton from './DeleteButton.svelte'
@@ -52,7 +53,7 @@
 
       <label class="field">
         <span>Conto collegato</span>
-        <select class="input" bind:value={accountId}>
+        <select use:pickerAction class="input" bind:value={accountId}>
           {#each accounts as a (a.id)}
             <option value={a.id}>{a.name}</option>
           {/each}

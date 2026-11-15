@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { pickerAction } from '../lib/picker.svelte'
   import { today } from '../lib/data/util'
 
   // Campo data con scorciatoie "Ieri" e "Oggi"
@@ -19,7 +20,7 @@
       <button type="button" class:on={value === today()} onclick={() => (value = today())}>Oggi</button>
     </span>
   </span>
-  <input id="date-field" class="input" type="date" bind:value required />
+  <input id="date-field" class="input" type="date" use:pickerAction bind:value required />
 </div>
 
 <style>

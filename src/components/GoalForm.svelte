@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { pickerAction } from '../lib/picker.svelte'
   import { amountKeys } from '../lib/keypad.svelte'
   import Sheet from './Sheet.svelte'
   import ColorPicker from './ColorPicker.svelte'
@@ -73,7 +74,7 @@
     </label>
     <label class="field">
       <span>Dove accantoni</span>
-      <select class="input" bind:value={accountId}>
+      <select use:pickerAction class="input" bind:value={accountId}>
         <option value="">Lo segno io a mano</option>
         {#each choices as a (a.id)}<option value={a.id}>Il saldo del conto {a.name}</option>{/each}
       </select>
@@ -91,7 +92,7 @@
     {/if}
     <label class="field">
       <span>Entro il (facoltativo)</span>
-      <input class="input" type="date" bind:value={dueDate} />
+      <input class="input" type="date" use:pickerAction bind:value={dueDate} />
     </label>
     <div class="field">
       <span>Colore</span>

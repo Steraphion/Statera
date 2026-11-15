@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { pickerAction } from '../lib/picker.svelte'
   import { markChanged } from '../lib/motion'
   import { toast } from '../lib/toast.svelte'
   import { amountKeys, HAS_KEYPAD } from '../lib/keypad.svelte'
@@ -601,7 +602,7 @@
         <div class="row-2">
           <label class="field">
             <span>{sourceLabel}</span>
-            <select class="input" bind:value={parts[0].source}>
+            <select use:pickerAction class="input" bind:value={parts[0].source}>
               {#each options as o (o.key)}
                 <option value={o.key}>{o.label}</option>
               {/each}
@@ -611,7 +612,7 @@
           {#if type === 'trasferimento'}
             <label class="field">
               <span>A</span>
-              <select class="input" bind:value={toAccountId}>
+              <select use:pickerAction class="input" bind:value={toAccountId}>
                 {#each destinations as a (a.id)}
                   <option value={a.id}>{a.name}</option>
                 {/each}
@@ -631,7 +632,7 @@
           <div class="parts">
             {#each parts as r, i (i)}
               <div class="part">
-                <select
+                <select use:pickerAction
                   class="input"
                   aria-label="Fonte {i + 1}"
                   value={r.source}
@@ -731,7 +732,7 @@
           <div class="parts">
             {#each splitRows as r, i (i)}
               <div class="part">
-                <select class="input" aria-label="Categoria {i + 1}" bind:value={r.categoryId}>
+                <select use:pickerAction class="input" aria-label="Categoria {i + 1}" bind:value={r.categoryId}>
                   <option value="" disabled>Scegli…</option>
                   {#each catOptions as o (o.id)}
                     <option value={o.id} disabled={o.id !== r.categoryId && splitRows.some((x) => x.categoryId === o.id)}>{o.label}</option>
@@ -854,7 +855,7 @@
         <div class="repeat">
           <label class="field">
             <span>Ripeti</span>
-            <select class="input" bind:value={repeat}>
+            <select use:pickerAction class="input" bind:value={repeat}>
               {#if !rec0}<option value="">Non si ripete</option>{/if}
               <option value="settimanale">Ogni settimana</option>
               <option value="mensile">Ogni mese</option>
@@ -886,7 +887,7 @@
             </div>
             <label class="field">
               <span>Fino al (facoltativo)</span>
-              <input class="input" type="date" bind:value={endDate} />
+              <input class="input" type="date" use:pickerAction bind:value={endDate} />
             </label>
           {/if}
         </div>

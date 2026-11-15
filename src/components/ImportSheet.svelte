@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { pickerAction } from '../lib/picker.svelte'
   import Sheet from './Sheet.svelte'
   import { db } from '../lib/data/db'
   import * as im from '../lib/data/csvImport'
@@ -120,7 +121,7 @@
           {#each FIELDS as f (f)}
             <label class="field">
               <span>{im.FIELD_LABELS[f]}{f === 'date' || f === 'amount' ? ' *' : ''}</span>
-              <select class="input" value={mapping[f] ?? ''} onchange={(e) => setField(f, e.currentTarget.value)}>
+              <select use:pickerAction class="input" value={mapping[f] ?? ''} onchange={(e) => setField(f, e.currentTarget.value)}>
                 <option value="">—</option>
                 {#each columns as c, i (i)}<option value={i}>{c}</option>{/each}
               </select>
@@ -132,7 +133,7 @@
 
       <label class="field">
         <span>Sul conto</span>
-        <select class="input" bind:value={accountId}>
+        <select use:pickerAction class="input" bind:value={accountId}>
           {#each accounts as a (a.id)}<option value={a.id}>{a.name}</option>{/each}
         </select>
       </label>

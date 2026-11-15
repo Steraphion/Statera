@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { pickerAction } from '../lib/picker.svelte'
   import { untrack } from 'svelte'
   import Sheet from './Sheet.svelte'
   import ColorPicker from './ColorPicker.svelte'
@@ -108,7 +109,7 @@
     {#if !hasChildren}
       <label class="field">
         <span>Dentro a</span>
-        <select class="input" bind:value={parentId}>
+        <select use:pickerAction class="input" bind:value={parentId}>
           <option value="">— Nessuna (categoria principale) —</option>
           {#each parents as p (p.id)}
             <option value={p.id}>{p.name}</option>

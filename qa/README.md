@@ -103,3 +103,7 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
   Analisi ← → cambiano periodo. Con «riduci animazioni» barra laterale, dettaglio del conto e linea del separatore a
   0,01 ms. Passaggio 0.30.4 → 0.31.3 verificato con `aggiornamento.py` (avviso «Aggiorna», dati intatti).
   Uso come `collaudo.py`.
+- `scelte.py` — v0.33: su telefono elenchi a tendina e date nel pannello dell'app invece di quello di Android
+  (tocco annullato, voci e voce attuale, Esc senza cambiare, calendario con mesi e anni, Oggi, Cancella per le
+  date facoltative, pannello sopra il modulo del movimento e in Cerca), in chiaro e in scuro; su PC restano i
+  campi del sistema. Uso come `collaudo.py` (con una cartella come argomento salva anche le foto).
