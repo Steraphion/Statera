@@ -141,8 +141,21 @@ USAGE = {
  'size-fab': 'Pulsante + al centro della barra.',
  'size-hero-icon': 'Icona grande della schermata di blocco.',
  'nav-height': 'Altezza della barra flottante del telefono.',
- 'size-sidebar': 'Larghezza della barra laterale su PC.',
- 'content-max': 'Larghezza massima dei contenuti e delle finestre su PC.',
+ 'size-sidebar': 'Larghezza della BarraLaterale intera su PC (da 1200 px).',
+ 'size-rail': 'Larghezza della BarraLaterale stretta, solo icone: PC tra 900 e 1199 px, o da 1200 se la si stringe.',
+ 'content-max': 'Larghezza massima delle schermate a una colonna su PC (Analisi, Cerca, Altro, Categorie, Ricorrenti).',
+ 'content-max-wide': 'Larghezza massima delle schermate su due colonne su PC (Movimenti, Conti).',
+ 'size-aside': 'Colonna di destra di Movimenti su PC (preferiti, da registrare, budget): larghezza iniziale.',
+ 'size-aside-min': 'Colonna di destra di Movimenti: la più stretta a cui la porta il Separatore.',
+ 'size-aside-max': 'Colonna di destra di Movimenti: la più larga a cui la porta il Separatore.',
+ 'size-main-min': 'La colonna dell\'elenco dei movimenti non scende sotto questa larghezza: il massimo della colonna di destra si riduce (anche nel CSS, con min()).',
+ 'size-pane': 'Elenco dei conti accanto al dettaglio (Conti su PC): larghezza iniziale.',
+ 'size-pane-min': 'Elenco dei conti: il più stretto a cui lo porta il Separatore.',
+ 'size-pane-max': 'Elenco dei conti: il più largo a cui lo porta il Separatore.',
+ 'size-detail-min': 'Il dettaglio del conto accanto all\'elenco non scende sotto questa larghezza; sotto i 560 px la TabellaConto nasconde la colonna del saldo.',
+ 'size-window': 'Larghezza della Finestra centrata (da 600 px).',
+ 'size-window-wide': 'Finestra larga su due colonne (PC, da 900 px): modulo del movimento, ElencoScorciatoie.',
+ 'text-root-pc': 'Radice del testo su PC (da 900 px): 17 px invece di 16, così ogni dimensione in rem (testo e importi) cresce di 1/16; gli spazi in px restano uguali.',
  'opacity-disabled': 'Comandi disattivati: opacità, niente ombra né movimento.',
  'focus-width': 'Spessore dell\'anello del focus; anello dell\'icona scelta.',
  'focus-offset': 'Distanza dell\'anello dal comando.',
@@ -161,7 +174,7 @@ def family(name):
     if name.startswith('space-'): return 'spacing'
     if name.startswith('radius-'): return 'radius'
     if name.startswith(('text-', 'amount-', 'leading-', 'tracking-')): return 'testo'
-    if name.startswith('size-') or name in ('nav-height', 'content-max'): return 'dimensioni'
+    if name.startswith('size-') or name in ('nav-height', 'content-max', 'content-max-wide'): return 'dimensioni'
     if name in ('opacity-disabled', 'focus-width', 'focus-offset', 'cat-tint'): return 'stati'
     if name.startswith(('duration-', 'ease-')): return 'animazione'
     if name.startswith('font-'): return 'font'
@@ -283,6 +296,13 @@ CSS = r'''/* Statera — componenti di riferimento. Tutti i valori vengono da to
   display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-fab); cursor: pointer; flex-shrink: 0; padding: 0; }
 
 /* Barra laterale (PC) */
+.st-side--rail { width: var(--size-rail); padding: var(--space-4) var(--space-2); align-items: center; }
+.st-side--rail .st-side__brand { padding: 0; }
+.st-side--rail .st-side__link, .st-side--rail .st-side__new, .st-side--rail .st-side__toggle { width: var(--size-fab); padding: 0; justify-content: center; }
+.st-side--rail .st-side__new { height: var(--size-fab); }
+.st-side--rail .st-side__status { padding: var(--space-3) 0; justify-content: center; width: var(--size-fab); }
+.st-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.st-side__toggle { height: var(--size-btn-s); padding: 0 var(--space-3); border: 0; border-radius: var(--radius-full); background: transparent; color: var(--color-text-muted); display: inline-flex; align-items: center; gap: var(--space-2); font: inherit; font-size: var(--text-sm); font-weight: 800; cursor: pointer; }
 .st-side { width: var(--size-sidebar); background: var(--color-surface); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-3); display: flex; flex-direction: column; gap: var(--space-4); box-shadow: var(--shadow-2); }
 .st-side__brand { display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-2); font-size: var(--text-lg); font-weight: 800; letter-spacing: var(--tracking-tight); }
 .st-side__links { display: flex; flex-direction: column; gap: var(--space-1); }
@@ -444,11 +464,43 @@ CSS = r'''/* Statera — componenti di riferimento. Tutti i valori vengono da to
 .st-backdrop { position: absolute; inset: 0; background: var(--color-backdrop); }
 .st-sheet { position: relative; background: var(--color-bg); border-radius: var(--radius-xl) var(--radius-xl) 0 0; padding: var(--space-3) var(--space-5) var(--space-5); box-shadow: var(--shadow-3); display: flex; flex-direction: column; gap: var(--space-4); }
 .st-sheet__grip { align-self: center; width: 40px; height: 4px; border-radius: var(--radius-full); background: var(--color-border); }
-.st-dialog { position: relative; width: 100%; max-width: var(--content-max); background: var(--color-bg); border-radius: var(--radius-xl); padding: var(--space-5) var(--space-6) var(--space-6); box-shadow: var(--shadow-3); display: flex; flex-direction: column; gap: var(--space-4); }
+.st-dialog { position: relative; width: 100%; max-width: var(--size-window-wide); background: var(--color-bg); border-radius: var(--radius-xl); padding: var(--space-5) var(--space-6) var(--space-6); box-shadow: var(--shadow-3); display: flex; flex-direction: column; gap: var(--space-4); }
 .st-dialog__head { display: flex; align-items: center; gap: var(--space-3); }
 .st-dialog__head h2 { flex: 1; }
 .st-dialog__foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--color-border); }
 .st-danger-icon { width: 64px; height: 64px; border-radius: var(--radius-full); background: color-mix(in srgb, var(--color-danger) 14%, transparent); color: var(--color-danger); display: flex; align-items: center; justify-content: center; align-self: center; }
+
+/* Separatore tra due colonne */
+.st-cols { display: grid; grid-template-columns: minmax(0, 1fr) var(--space-6) 220px; align-items: stretch; width: 100%; min-height: 220px; }
+.st-split { position: relative; display: flex; justify-content: center; cursor: col-resize; outline: none; }
+.st-split::before { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: var(--focus-width); translate: -50% 0; border-radius: var(--radius-full); background: var(--color-accent); opacity: 0; transition: opacity var(--duration-fast) var(--ease-standard); }
+.st-split__grip { align-self: center; width: var(--space-1); height: var(--space-7); border-radius: var(--radius-full); background: var(--color-border); transition: background-color var(--duration-fast) var(--ease-standard); }
+.st-split:hover::before, .st-split.is-hover::before, .st-split:focus-visible::before { opacity: 1; }
+.st-split:hover .st-split__grip, .st-split.is-hover .st-split__grip, .st-split:focus-visible .st-split__grip { background: var(--color-accent); }
+
+/* Tabella del conto */
+.st-mbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-5); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); background: var(--color-bg); }
+.st-mbar dl { display: flex; gap: var(--space-5); margin: 0; }
+.st-mbar dl div { display: flex; flex-direction: column; }
+.st-mbar dd { margin: 0; }
+.st-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+.st-table col.st-col-date { width: calc(var(--space-8) + var(--space-4)); }
+.st-table col.st-col-amount { width: calc(2 * var(--space-8) + var(--space-4)); }
+.st-table th { padding: var(--space-2); text-align: left; color: var(--color-text-muted); }
+.st-table td { padding: var(--space-1) var(--space-2); border-top: 1px solid var(--color-border); vertical-align: middle; }
+.st-table tr.is-hover td { background: color-mix(in srgb, var(--color-surface-2) 60%, transparent); }
+.st-table .st-r { text-align: right; }
+.st-table__desc { display: flex; align-items: center; gap: var(--space-2); min-height: var(--size-touch); min-width: 0; }
+.st-table__desc > span:last-child { display: flex; flex-direction: column; min-width: 0; }
+.st-table__desc .secondario { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-opening { display: flex; justify-content: space-between; align-items: baseline; padding: var(--space-3) var(--space-2) 0; border-top: 1px dashed var(--color-border); }
+
+/* Elenco delle scorciatoie */
+.st-keys { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5) var(--space-6); width: 100%; }
+.st-keys dl { margin: var(--space-2) 0 0; }
+.st-keys dl > div { display: grid; grid-template-columns: calc(2 * var(--space-8) + var(--space-6)) minmax(0, 1fr); align-items: center; gap: var(--space-3); padding: var(--space-2) 0; border-top: 1px solid var(--color-border); }
+.st-keys dt { display: flex; gap: var(--space-1); align-items: center; }
+.st-keys dd { margin: 0; }
 
 /* Tasto */
 .st-kbd { min-width: 24px; height: 24px; padding: 0 6px; border-radius: var(--radius-xs); background: var(--color-surface-2); color: var(--color-text-muted); border: 1px solid var(--color-border); display: inline-flex; align-items: center; justify-content: center; font-family: inherit; }
@@ -581,25 +633,40 @@ comp('BarraNavigazione', 'Navigazione', 170, '''La barra flottante del telefono:
 # --- BarraLaterale
 side_links = [('list', 'Movimenti', True), ('wallet', 'Conti', False), ('chart-column', 'Analisi', False), ('ellipsis', 'Altro', False), ('search', 'Cerca', False)]
 sl = ''.join(f'<a href="#" class="st-side__link corpo-forte{" is-hover" if lab == "Conti" else ""}"{" aria-current=\"page\"" if on else ""}{" aria-keyshortcuts=\"/\" title=\"Scorciatoia: tasto /\"" if lab == "Cerca" else ""}>{ai(i, 22, 2.2 if on else 1.8)}<span>{lab}</span></a>' for i, lab, on in side_links)
-comp('BarraLaterale', 'Navigazione', 560, '''La navigazione su PC: logo, «Nuovo movimento», sezioni, Cerca e stato della sincronizzazione.
+rail_links = ''.join(f'<a href="#" class="st-side__link" title="{lab}"{" aria-current=\"page\"" if on else ""}>{ai(i, 22, 2.2 if on else 1.8)}<span class="st-vh">{lab}</span></a>' for i, lab, on in side_links)
+comp('BarraLaterale', 'Navigazione', 600, '''La navigazione su PC: logo, «Nuovo movimento», sezioni, Cerca e stato della sincronizzazione. Intera o stretta (solo icone).
 
 ## Struttura
 `<nav aria-label="Sezioni" class="st-side">` largo `size-sidebar`, color-surface, `radius-lg`, `shadow-2`, a tutta altezza (fissa mentre il contenuto scorre). Dentro, dall'alto:
 - il marchio: Logo a 36 px e «Statera» in `text-lg`, peso 800, `tracking-tight`;
 - il Pulsante principale «Nuovo movimento» con il +, allineato a sinistra;
 - le voci `st-side__link` (Movimenti, Conti, Analisi, Altro, poi Cerca), icone da 22 px, la corrente con `aria-current="page"` (color-accent-soft e color-accent);
-- in fondo lo stato della sincronizzazione (`st-side__status`, color-bg): icona `cloud-check` in color-income, «Sincronizzato» e «Google Drive, cifrato»; senza sincronizzazione `smartphone` in color-text-muted, «Solo su questo dispositivo». Porta ad Altro.
+- in fondo lo stato della sincronizzazione (`st-side__status`, color-bg): icona `cloud-check` in color-income, «Sincronizzato» e «Google Drive, cifrato»; senza sincronizzazione `smartphone` in color-text-muted, «Solo su questo dispositivo». Porta ad Altro;
+- da 1200 px, sotto, «Stringi la barra» (`st-side__toggle`, `aria-pressed`) per passare alla barra stretta e tornare indietro.
+
+## Barra stretta
+`st-side--rail`, larga `size-rail` (72 px): solo il logo, il + in un cerchio da `size-fab`, le icone delle voci e quella dello stato. I nomi restano per gli screen reader (nascosti alla vista, non tolti) e nel suggerimento al passaggio del puntatore (`title`). È automatica tra 900 e 1199 px, perché accanto alle due colonne di Movimenti e Conti la barra intera non ci sta; da 1200 px si sceglie con «Stringi la barra», e la scelta vale per il dispositivo.
+
+## Movimento
+Passando da intera a stretta la colonna cambia larghezza in `duration-base` con `ease-standard` (transizione su `grid-template-columns`).
 
 ## Regole
 - Niente lettere delle scorciatoie scritte sulle voci: N e / funzionano ancora e sono nel suggerimento al passaggio del puntatore («Scorciatoia: tasto N») e in `aria-keyshortcuts`.
 - Compare da 900 px; sotto, la BarraNavigazione flottante.
-''', f'''<div class="st st-stage"><nav aria-label="Sezioni" class="st-side" style="min-height: 520px">
+''', f'''<div class="st st-stage" style="align-items: stretch"><nav aria-label="Sezioni" class="st-side" style="min-height: 540px">
 <div class="st-side__brand">{APP.logo_svg(36)}<span>Statera</span></div>
-<button type="button" class="st-btn st-btn--primary pulsante" aria-keyshortcuts="N" title="Scorciatoia: tasto N" style="justify-content: flex-start; padding: 0 var(--space-4)">{ai('plus', 20, 2.4)}<span style="flex: 1; text-align: left">Nuovo movimento</span></button>
+<button type="button" class="st-btn st-btn--primary pulsante st-side__new" aria-keyshortcuts="N" title="Scorciatoia: tasto N" style="justify-content: flex-start; padding: 0 var(--space-4)">{ai('plus', 20, 2.4)}<span style="flex: 1; text-align: left">Nuovo movimento</span></button>
 <div class="st-side__links">{sl}</div>
 <span style="flex: 1"></span>
-<a href="#" class="st-side__status">{ai('cloud-check', 20)}<span><b>Sincronizzato</b><small>Google Drive, cifrato</small></span></a></nav>
-<nav aria-label="Sezioni, senza sincronizzazione" class="st-side" style="min-height: 0; align-self: flex-end"><a href="#" class="st-side__status is-off">{ai('smartphone', 20)}<span><b>Solo su questo dispositivo</b><small>Sincronizzazione non attiva</small></span></a></nav></div>''')
+<a href="#" class="st-side__status">{ai('cloud-check', 20)}<span><b>Sincronizzato</b><small>Google Drive, cifrato</small></span></a>
+<button type="button" class="st-side__toggle" aria-pressed="false">{ai('chevron-left', 18)}Stringi la barra</button></nav>
+<nav aria-label="Sezioni, barra stretta" class="st-side st-side--rail" style="min-height: 540px">
+<div class="st-side__brand">{APP.logo_svg(36)}<span class="st-vh">Statera</span></div>
+<button type="button" class="st-btn st-btn--primary st-side__new" title="Nuovo movimento (tasto N)" aria-label="Nuovo movimento">{ai('plus', 20, 2.4)}</button>
+<div class="st-side__links">{rail_links}</div>
+<span style="flex: 1"></span>
+<a href="#" class="st-side__status is-off" title="Solo su questo dispositivo">{ai('smartphone', 20)}<span class="st-vh">Solo su questo dispositivo</span></a>
+<button type="button" class="st-side__toggle" aria-pressed="true" aria-label="Allarga la barra laterale" title="Allarga la barra laterale">{ai('chevron-right', 18)}</button></nav></div>''')
 
 # --- IconaCategoria
 cats = [('shopping-cart', 's1'), ('utensils', 's2'), ('fuel', 's3'), ('bus', 's4'), ('heart-pulse', 's5'), ('house', 's6'), ('zap', 's7'), ('sprout', 's8')]
@@ -803,7 +870,10 @@ comp('Finestra', 'Stato e messaggi', 560, '''I contenitori modali: il pannello c
 - La `<dialog>` ha `overflow: clip`: senza, il focus sul primo comando la faceva scorrere col pannello ancora fuori schermo.
 
 ## Finestra (PC)
-`st-dialog`, larga al massimo `content-max`, a `space-8` dal bordo alto, contenuto su due colonne. Intestazione con titolo `titolo-2` e Chiudi con il Tasto Esc; in fondo `st-dialog__foot` con le azioni a destra e il Tasto Invio sul pulsante principale.
+`st-dialog`, centrata: larga `size-window` (560 px) da 600 px, una colonna. Da 900 px il modulo del movimento e l'ElencoScorciatoie usano la **finestra larga**, `size-window-wide` (840 px), su due colonne: a sinistra importo, conto, data e descrizione coi suggerimenti; a destra la categoria, con l'elenco più lungo; sotto a sinistra etichette, note, preferiti e ripetizione (per i trasferimenti, che non hanno categoria, la data va a sinistra e queste scelte a destra). Intestazione con titolo `titolo-2` e Chiudi; in fondo `st-dialog__foot` con le azioni a destra. Niente tasti scritti sui pulsanti (Esc, Invio): sono nel suggerimento e nell'ElencoScorciatoie.
+
+## Tastiera (PC)
+Esc chiude. Invio salva da tutto il modulo: nei campi di testo, ma anche dalla categoria, dal conto e dalle caselle; non nelle note, dove va a capo (lì Ctrl+Invio). Nella descrizione ↑ ↓ scorrono i suggerimenti e Invio ne sceglie uno senza salvare.
 
 ## Conferma
 Per ciò che non si annulla: icona di pericolo (`st-danger-icon`), domanda come titolo («Eliminare questa spesa?»), che cosa si elimina, una frase sulle conseguenze, poi Elimina (Pulsante di pericolo pieno, `st-btn--confirm`) e Annulla. `role="alertdialog"`.
@@ -820,15 +890,98 @@ Usa `<dialog>` aperto con `showModal()`: il focus resta dentro, Esc chiude, il f
 <div class="st-stack"><button type="button" class="st-btn st-btn--l st-btn--confirm pulsante-l">{ic('u-trash', 20, 2.2)}Elimina</button><button type="button" class="st-btn st-btn--l st-btn--secondary pulsante-l" style="background: var(--color-surface)">Annulla</button></div></div></div></div>''')
 
 # --- Tasto
-comp('Tasto', 'Azioni', 150, '''Un tasto della tastiera, per mostrare le scorciatoie su PC accanto ai comandi.
+comp('Tasto', 'Azioni', 150, '''Un tasto della tastiera, per mostrare le scorciatoie su PC.
 
 ## Struttura
-`<kbd class="st-kbd tasto">`: color-surface-2, bordo color-border, `radius-xs`. Su un pulsante principale: `st-kbd--on-primary`.
+`<kbd class="st-kbd tasto">`: color-surface-2, bordo color-border, `radius-xs`, testo color-text-muted. Più tasti insieme con «+» (Ctrl + Invio).
+
+## Dove
+- In fondo alla colonna di destra di Movimenti, una riga di promemoria: N nuovo · / cerca · ← → mese · «? tutte le scorciatoie» (che apre l'ElencoScorciatoie).
+- Nell'ElencoScorciatoie.
+- Non sui pulsanti né sulle voci della BarraLaterale: lì la scorciatoia è nel suggerimento al passaggio del puntatore e in `aria-keyshortcuts`.
 
 ## Scorciatoie
-N nuovo movimento · / cerca · ← → mese precedente e successivo · ? elenco delle scorciatoie · Esc chiude · Invio salva. Non si attivano mentre si scrive in un campo.
-''', f'''<div class="st st-stage"><span class="st-line corpo st-muted" style="gap: 6px"><kbd class="st-kbd tasto">N</kbd>nuovo <kbd class="st-kbd tasto">/</kbd>cerca <kbd class="st-kbd tasto">←</kbd><kbd class="st-kbd tasto">→</kbd>mese <kbd class="st-kbd tasto">?</kbd>tutte</span>
-<button type="button" class="st-btn st-btn--primary pulsante" style="padding-right: var(--space-3)">Salva spesa<kbd class="st-kbd st-kbd--on-primary tasto">Invio</kbd></button></div>''')
+N nuovo movimento · / cerca · ? elenco delle scorciatoie · Esc chiude · ← → mese (Movimenti, Conti, Analisi) · ↑ ↓ conto (Conti) · Invio salva · Ctrl+Invio salva dalle note. Non si attivano mentre si scrive in un campo né con un'altra finestra aperta.
+''', f'''<div class="st st-stage"><span class="st-line secondario st-muted" style="gap: 6px; flex-wrap: wrap"><kbd class="st-kbd tasto">N</kbd>nuovo · <kbd class="st-kbd tasto">/</kbd>cerca · <kbd class="st-kbd tasto">←</kbd><kbd class="st-kbd tasto">→</kbd>mese · <a href="#" class="st-line corpo-forte" style="gap: 6px; color: var(--color-accent); text-decoration: none"><kbd class="st-kbd tasto">?</kbd>tutte le scorciatoie</a></span>
+<span class="st-line" style="gap: 4px"><kbd class="st-kbd tasto">Ctrl</kbd><span class="secondario st-muted">+</span><kbd class="st-kbd tasto">Invio</kbd></span></div>''')
+
+# --- Separatore
+comp('Separatore', 'Impaginazione', 300, '''Il separatore tra due colonne su PC: si trascina per cambiare la larghezza di una colonna.
+
+## Struttura
+`<div role="separator" aria-orientation="vertical" tabindex="0" class="st-split">` nello spazio tra le colonne (`space-6`), a tutta altezza, con `aria-controls` (la colonna che cambia), `aria-valuenow`, `aria-valuemin`, `aria-valuemax` in px e `aria-valuetext`. Dentro la maniglia `st-split__grip` (4 × 32 px, `radius-full`, color-border), che resta a metà schermo mentre si scorre. Col puntatore sopra, col focus o mentre si trascina compare la linea in color-accent e la maniglia passa a color-accent. Il separatore non ruba larghezza: è lo spazio che c'era già.
+
+## Colonne regolabili
+| Colonna | Iniziale | Minimo | Massimo | L'altra non scende sotto |
+|---|---|---|---|---|
+| Destra di Movimenti | `size-aside` | `size-aside-min` | `size-aside-max` | `size-main-min` |
+| Elenco dei conti | `size-pane` | `size-pane-min` | `size-pane-max` | `size-detail-min` |
+
+## Uso
+- Trascinare col mouse. Da tastiera le frecce spostano il separatore di 16 px (con Maiuscole 64), Pagina su e giù di 64, Inizio e Fine portano la colonna al minimo e al massimo. Le frecce spostano il separatore, non la colonna: con la colonna a destra, freccia a sinistra = più larga.
+- Doppio clic o Invio: larghezza iniziale.
+- La scelta vale per il dispositivo (`statera.colonne` in localStorage) e non si sincronizza.
+- Mentre si trascina il puntatore è `col-resize` ovunque e il testo non si seleziona.
+- Il massimo scende se l'altra colonna resterebbe sotto il suo minimo: anche nel CSS, con `min()`, così una finestra più stretta non rompe l'impaginazione.
+
+## Movimento
+Linea e maniglia cambiano colore in `duration-fast`; la colonna segue il puntatore senza animazioni.
+''', f'''<div class="st st-stage"><div class="st-cols">
+<div class="st-card"><span class="titolo-3">Movimenti</span><span class="secondario st-muted">Elenco del mese</span></div>
+<div class="st-split is-hover" role="separator" aria-orientation="vertical" tabindex="0" aria-label="Larghezza della colonna di destra" aria-valuenow="320" aria-valuemin="260" aria-valuemax="460" aria-valuetext="320 pixel"><span class="st-split__grip" aria-hidden="true"></span></div>
+<div class="st-card"><span class="titolo-3">Colonna di destra</span><span class="secondario st-muted">Preferiti, da registrare, budget</span></div></div></div>''')
+
+# --- TabellaConto
+trows = [('20 nov', 'abbigliamento', 's6', 'Vestiti', 'Abbigliamento', '−120,00 €', '9.169,70 €', False, True),
+         ('14 nov', 'pasti', 's2', 'Caffè', 'Pasti fuori · Bancomat', '−1,20 €', '9.289,70 €', False, False),
+         ('12 nov', 'stipendio', 's6', 'Stipendio', 'Stipendio', '+1.650,00 €', '9.290,90 €', True, False),
+         ('2 nov', 'bollette', 's7', 'Luce e gas', 'Casa › Bollette', '−60,00 €', 'non incide', False, False)]
+def trow(d, k, c, n, sub, a, bal, inc, hover):
+    balc = f'<span class="st-badge badge">non incide</span>' if bal == 'non incide' else f'<span class="st-muted">{bal}</span>'
+    return (f'<tr{" class=\"is-hover\"" if hover else ""}><td class="secondario st-muted">{d}</td><td><span class="st-table__desc"><span class="st-cat st-cat--s st-cat--{c}" aria-hidden="true">{ic(k, 16)}</span>'
+            f'<span><span class="corpo-forte">{n}</span><span class="secondario st-muted">{sub}</span></span></span></td>'
+            f'<td class="st-r corpo-forte"{" style=\"color: var(--color-income)\"" if inc else ""}>{a}</td><td class="st-r secondario">{balc}</td></tr>')
+comp('TabellaConto', 'Dati', 470, '''Il dettaglio di un conto accanto all'elenco dei conti (Conti su PC): i movimenti di un mese in tabella, col saldo dopo ognuno.
+
+## Struttura
+- In alto IconaCategoria grande, nome del conto (`titolo-2`), tipo e carte; a destra «Saldo di oggi» in `importo-m`. Sotto le azioni: Allinea al saldo reale (tenue), + Movimento, Modifica.
+- La barra del mese `st-mbar` (color-bg, `radius-md`): frecce e mese, poi Entrate, Uscite e Trasferimenti del mese su questo conto.
+- `<table class="st-table">` con caption nascosta, `table-layout: fixed`: Data (`14 nov`, color-text-muted, larga `space-8` + `space-4`), Descrizione (IconaCategoria piccola, nome in `corpo-forte`, seconda riga con categoria e carta o altro conto, coi puntini), Importo (vero segno meno, entrate in color-income) e Saldo dopo il movimento (color-text-muted), larghi `2 × space-8 + space-4`. Un movimento con data precedente al saldo iniziale ha la pillola «non incide» al posto del saldo.
+- In fondo, sopra una linea tratteggiata, il **saldo a inizio mese** (o il saldo iniziale, nel suo mese).
+
+## Regole
+- Tutta la riga apre il movimento col mouse; da tastiera c'è il pulsante della descrizione. Passando col puntatore, velo color-surface-2 al 60%.
+- Il nome del conto che si sta guardando non si ripete nella seconda riga: si scrive la fonte solo se è una carta o un altro conto.
+- Dettaglio stretto (sotto i 560 px, container query): la colonna del saldo si nasconde.
+- ← → cambiano mese, ↑ ↓ conto. Cambiando conto la schermata resta e il dettaglio compare in dissolvenza (`duration-base`); cambiando mese la tabella resta ferma.
+''', f'''<div class="st st-stage st-stage--col"><div class="st-card" style="gap: var(--space-3)">
+<div class="st-mbar"><span class="st-line titolo-3" style="gap: var(--space-2)">{ai('chevron-left', 20)}Novembre 2026{ai('chevron-right', 20)}</span><dl><div><dt class="secondario st-muted">Entrate</dt><dd class="corpo-forte" style="color: var(--color-income)">+1.650,00 €</dd></div><div><dt class="secondario st-muted">Uscite</dt><dd class="corpo-forte">−181,20 €</dd></div></dl></div>
+<table class="st-table secondario"><caption class="st-vh">Movimenti di Conto corrente, novembre 2026</caption><colgroup><col class="st-col-date"><col><col class="st-col-amount"><col class="st-col-amount"></colgroup>
+<thead><tr><th scope="col" class="etichetta-campo">Data</th><th scope="col" class="etichetta-campo">Descrizione</th><th scope="col" class="etichetta-campo st-r">Importo</th><th scope="col" class="etichetta-campo st-r">Saldo</th></tr></thead>
+<tbody>{''.join(trow(*r) for r in trows)}</tbody></table>
+<div class="st-opening"><span class="corpo-forte">Saldo a inizio mese</span><span class="corpo-forte">7.700,90 €</span></div></div></div>''')
+
+# --- ElencoScorciatoie
+def krow(keys, what):
+    k = ''.join((f'<span class="secondario st-muted">+</span>' if i else '') + f'<kbd class="st-kbd tasto">{x}</kbd>' for i, x in enumerate(keys.split('+'))) if '+' in keys else ''.join(f'<kbd class="st-kbd tasto">{x}</kbd>' for x in keys.split())
+    return f'<div><dt>{k}</dt><dd class="secondario" style="font-weight: 600">{what}</dd></div>'
+kgroups = [('Ovunque', [('N', 'Nuovo movimento'), ('/', 'Cerca'), ('?', 'Questo elenco'), ('Esc', 'Chiude la finestra')]),
+           ('Movimenti, Conti, Analisi', [('← →', 'Mese precedente e successivo'), ('↑ ↓', 'Conto precedente e successivo (Conti)')]),
+           ('Nelle finestre', [('Invio', 'Salva (nelle note va a capo)'), ('Ctrl+Invio', 'Salva anche dalle note'), ('Tab', 'Campo successivo')]),
+           ('Colonne (separatore)', [('← →', 'Sposta il separatore; con Maiuscole di più'), ('Inizio Fine', 'Colonna più stretta o più larga'), ('Invio', 'Larghezza iniziale')])]
+comp('ElencoScorciatoie', 'Stato e messaggi', 520, '''L'elenco delle scorciatoie da tastiera (PC), in una Finestra larga.
+
+## Struttura
+Titolo «Scorciatoie da tastiera» e Chiudi; quattro gruppi su due colonne (una sotto i 600 px), ciascuno con il titolo in `etichetta` maiuscola: **Ovunque**, **Movimenti, Conti, Analisi**, **Nelle finestre**, **Colonne (separatore)**. Ogni voce: i Tasti a sinistra (colonna larga `2 × space-8 + space-6`), cosa fanno a destra in `secondario` peso 600, righe separate da color-border. In fondo: «Mentre scrivi in un campo le lettere restano lettere: N, / e ? funzionano solo fuori dai campi.»
+
+## Come si apre
+Col tasto ? (fuori dai campi e senza altre finestre aperte), da «tutte le scorciatoie» in fondo alla colonna di destra di Movimenti e da Altro → Gestione (solo su PC). Esc la chiude.
+
+## Regole
+Una scorciatoia nuova dell'app va anche in questo elenco.
+''', f'''<div class="st st-stage"><div class="st-dialog"><div class="st-dialog__head"><h2 class="titolo-2">Scorciatoie da tastiera</h2><button type="button" class="st-btn st-btn--s st-btn--link pulsante">Chiudi</button></div>
+<div class="st-keys">{''.join(f'<section><h3 class="etichetta st-caption">{t}</h3><dl>{"".join(krow(k, w) for k, w in items)}</dl></section>' for t, items in kgroups)}</div>
+<p class="secondario st-muted">Mentre scrivi in un campo le lettere restano lettere: N, / e ? funzionano solo fuori dai campi.</p></div></div>''')
 
 # --- Grafico
 months = [('Giu', 2010, 1420), ('Lug', 2010, 1610), ('Ago', 2240, 1980), ('Set', 2010, 1240), ('Ott', 2050, 1380), ('Nov', 2010, 684)]
@@ -1085,6 +1238,7 @@ Il riferimento è l'app pubblicata (versione {APP.version}): token, icone, logo 
 - Un solo carattere: Plus Jakarta Sans (licenza OFL), incluso nel pacchetto dell'app, mai caricato da internet. Peso variabile 200–800; si usano 400, 500, 600, 700, 800. `font-num` è lo stesso carattere, con le cifre tabulari.
 - Cifre tabulari ovunque (`font-variant-numeric: tabular-nums`), così le colonne di importi si allineano. Crenatura del carattere attiva, dimensioni ottiche automatiche.
 - Scala: `text-2xs` 11 · `text-xs` 12 · `text-sm` 13 · `text-md` 15 · `text-input` 16 · `text-lg` 17 · `text-xl` 22 · `text-2xl` 26 px; importi `amount-s` 20 · `amount-m` 34 · `amount-l` 46 · `amount-xl` 56 px. Gli stili di testo (`importo-*`, `titolo-*`, `corpo`, `secondario`…) sono fatti con questi token.
+- **Su PC (da 900 px) il testo è più grande**: la radice passa a `text-root-pc` (17 px invece di 16) e, siccome testo e importi sono in rem, crescono tutti di 1/16 (testo corrente 15 → 16 px, seconde righe 13 → 13,8, saldo del mese 46 → 49). Gli spazi e le dimensioni fisse (in px) non cambiano.
 - **Interlinea**: `leading-tight` {TL['leading-tight']} per titoli e importi grandi, `leading-snug` {TL['leading-snug']} per i titoli, `leading-compact` {TL['leading-compact']} per le seconde righe che vanno a capo, `leading-normal` {TL['leading-normal']} per il testo corrente.
 - **Spaziatura delle lettere**: titoli `tracking-tight` (−0,02 em), importi grandi `tracking-tighter` (−0,03 em), etichette in maiuscolo `tracking-caps` (+0,06 em), chiave di recupero `tracking-code` (+0,04 em), cifre nascoste del PIN `tracking-pin` (+0,4 em).
 - **A capo**: titoli bilanciati (`text-wrap: balance`), paragrafi senza una parola sola sull'ultima riga (`text-wrap: pretty`). Righe dei movimenti: categoria e conto su una riga, con i puntini se non ci stanno.
@@ -1096,7 +1250,7 @@ Il riferimento è l'app pubblicata (versione {APP.version}): token, icone, logo 
 ## Spazi, forme e ombre
 - Griglia di 4 px: `space-1` (4) … `space-8` (48), più il mezzo passo `space-hair` (2 px) per le distanze minime tra due righe. Nessuna misura scritta a mano nei componenti.
 - **Ritmo verticale**: `space-4` tra le schede, `space-6` sopra i titoli di sezione in maiuscolo, `space-5` sotto il blocco del saldo con le azioni rapide. Margine laterale del telefono `space-5`, interno delle schede `space-5` (su PC, da 900 px, 20 × 24 px), tra le colonne su PC `space-6`.
-- **Dimensioni fisse**: riga di elenco `size-row` (56 px), campo `size-field` (52), area di tocco minima `size-touch` (44), tasto del tastierino `size-key` (52), numeri dei passi `size-step` (28), icona della schermata di blocco `size-hero-icon` (72), barra flottante `nav-height` (66), barra laterale `size-sidebar` (248).
+- **Dimensioni fisse**: riga di elenco `size-row` (56 px), campo `size-field` (52), area di tocco minima `size-touch` (44), tasto del tastierino `size-key` (52), numeri dei passi `size-step` (28), icona della schermata di blocco `size-hero-icon` (72), barra flottante `nav-height` (66), barra laterale `size-sidebar` (248) o stretta `size-rail` (72), finestre `size-window` (560) e `size-window-wide` (840).
 - Raggi: `radius-lg` per schede e riquadri, `radius-md` per campi, tasti e righe evidenziate, `radius-xl` per pannelli e finestre, `radius-full` per pulsanti, chip, cerchi e barra flottante, `radius-xs` per tasti e caselle, `radius-2xs` per le barre dei grafici.
 - Ombre solo per ciò che galleggia: `shadow-2` per barra flottante, barra laterale e avvisi; `shadow-3` per pannelli, finestre e tastierino fuori da un pannello; `shadow-fab` per il +; `shadow-1` per il pomello dell'interruttore. Le schede non hanno ombra.
 
@@ -1105,11 +1259,13 @@ Il riferimento è l'app pubblicata (versione {APP.version}): token, icone, logo 
 - **ElencoVoci** per voci e valori: voce sopra il valore sul telefono, affiancati da 600 px.
 - **Pulsanti-collegamento a fine riga** (Ordina, + Carta, Imposta budget, Tabella): allineato al bordo della scheda è il testo, non la pillola.
 - **«Elimina» dentro una scheda**: pillola rosata (Pulsante di pericolo).
+- **Colonna di destra** (Movimenti su PC): Da registrare, riepilogo del mese, preferiti (in una scheda, che vanno a capo), Budget del mese e la riga dei Tasti; larga `size-aside`, regolabile col Separatore. Saldo e azioni rapide si affiancano secondo la larghezza della colonna dell'elenco (container query), non della finestra.
+- **Elenco e dettaglio** (Conti su PC): l'elenco dei conti a sinistra (`size-pane`, regolabile), il conto scelto evidenziato (color-accent-soft) e, a destra, il suo dettaglio con la TabellaConto.
 - **Analisi**: importi delle categorie allineati al nome; nei confronti con la media la riga di dettaglio parte dal nome, non dall'icona.
 
 ## Impaginazione
 - **Telefono**: barra flottante con il + al centro (BarraNavigazione) nelle quattro sezioni Movimenti, Conti, Analisi, Altro. Le schermate aperte da un'altra hanno la freccia indietro in alto e niente barra. I moduli salgono dal basso in un pannello (Finestra), col Tastierino degli importi sopra i pulsanti.
-- **PC (da 900 px)**: BarraLaterale larga `size-sidebar` al posto della barra flottante, col Logo in cima; contenuto largo al massimo `content-max`; i moduli si aprono in una finestra centrata. Le scorciatoie (N nuovo movimento, / cerca, frecce per il mese, Esc chiude) sono nel suggerimento dei comandi, non scritte sulle voci.
+- **PC (da 900 px)**: BarraLaterale al posto della barra flottante, col Logo in cima: stretta (`size-rail`, solo icone) tra 900 e 1199 px, intera (`size-sidebar`) da 1200, dove la si può stringere. Testo un po' più grande (`text-root-pc`). Schermate su due colonne larghe al massimo `content-max-wide` (1200 px): **Movimenti** con la colonna di destra, **Conti** con elenco e dettaglio affiancati (`#/conti` e `#/conto/<id>` sono la stessa schermata; cambiando conto non torna in cima). Le altre schermate al massimo `content-max` (760 px). Le colonne si regolano col Separatore; la colonna principale non scende sotto `size-main-min` (il dettaglio del conto sotto `size-detail-min`). I moduli si aprono in una Finestra centrata, quella del movimento larga e su due colonne. Le scorciatoie (N, /, ?, Esc, frecce) sono nel suggerimento dei comandi e nell'ElencoScorciatoie, non scritte sulle voci.
 
 ## Stati dei comandi
 - Passaggio del puntatore (solo PC): velo del colore del testo all'8%, o color-surface-2 per righe e voci.
@@ -1132,8 +1288,11 @@ Il movimento accompagna, non decora: dice da dove arriva una cosa e dove va, poi
 | Tastierino | nel pannello si apre in altezza, in fondo alla pagina sale dal basso, `duration-base`; fermo passando da un importo all'altro | al contrario, `duration-base` |
 | Riga di movimento | solo se appena salvata o ripristinata: si apre in altezza, `duration-base` | solo se appena eliminata: si chiude, `duration-base` (Annulla la riapre) |
 | Barre di budget e obiettivi | scorrono al nuovo valore quando cambia, `duration-slow` | — |
+| BarraLaterale (PC) | da intera a stretta e ritorno: larghezza in `duration-base` | — |
+| Dettaglio del conto (PC) | cambiando conto, dissolvenza in `duration-base` (la schermata resta) | nessuna |
+| Separatore | linea e maniglia cambiano colore in `duration-fast` | — |
 
-**Fermi, di proposito**: i grafici di Analisi (un grafico che si riempie a ogni visita fa aspettare prima di leggerlo); la schermata di blocco (deve coprire tutto subito); gli elenchi che cambiano mese o si riempiono all'apertura; gli importi, che cambiano senza contare.
+**Fermi, di proposito**: i grafici di Analisi (un grafico che si riempie a ogni visita fa aspettare prima di leggerlo); la schermata di blocco (deve coprire tutto subito); gli elenchi che cambiano mese o si riempiono all'apertura (anche la TabellaConto); gli importi, che cambiano senza contare; le colonne mentre si trascinano (seguono il puntatore).
 
 **Le schermate compaiono intere.** Una schermata nuova resta nascosta finché i suoi dati non sono pronti (di solito poche decine di millisecondi, al massimo mezzo secondo), poi compare tutta insieme: mai importi a zero che diventano valori, mai riquadri che spingono giù il resto.
 
