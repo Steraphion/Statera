@@ -334,8 +334,8 @@
     margin: -26px var(--space-2) 0;
     border: 4px solid var(--color-bg);
     border-radius: var(--radius-full);
-    background: var(--color-primary);
-    color: var(--color-on-primary);
+    background: var(--color-fab);
+    color: var(--color-on-fab);
     box-shadow: var(--shadow-fab);
     cursor: pointer;
     transition: transform var(--duration-fast) var(--ease-standard);
@@ -385,6 +385,9 @@
       display: flex;
       justify-content: flex-start;
       padding: 0 var(--space-4);
+      /* Stesso colore del + del telefono (in alcune palette diverso dal principale) */
+      background: var(--color-fab);
+      color: var(--color-on-fab);
     }
 
     .new-pc .new-label {

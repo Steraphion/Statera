@@ -97,17 +97,6 @@
   --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
 
   /* Colori — tema chiaro */
-  --color-bg: #f4f5fb;
-  --color-surface: #ffffff;
-  --color-surface-2: #e7e9f3;
-  --color-border: #dddfeb;
-  --color-text: #171928;
-  --color-text-muted: #5f6275;
-  --color-primary: #535aa6; /* pulsante +, pulsanti principali, segmento attivo */
-  --color-on-primary: #ffffff;
-  --color-accent: #535aa6; /* link, icone d'accento, voce attiva */
-  --color-accent-soft: #e3e8ff;
-  --color-income: #037e52;
   /* Importi in uscita: col colore del testo, mai in rosso */
   --color-expense: var(--color-text);
   --color-expense-icon: #ca4c03;
@@ -118,12 +107,9 @@
   --shadow-1: 0 1px 3px rgb(23 25 40 / 0.18);
   --shadow-2: 0 6px 24px rgb(23 25 40 / 0.1);
   --shadow-3: 0 24px 64px rgb(23 25 40 / 0.28);
-  --shadow-fab: 0 8px 20px rgb(83 90 166 / 0.35);
+  --shadow-fab: 0 8px 20px color-mix(in srgb, var(--color-fab) 35%, transparent);
   --color-backdrop: rgb(20 22 40 / 0.5);
   /* Avviso breve in basso (es. "Registrato · Annulla"): colori invertiti */
-  --toast-bg: #171928;
-  --toast-text: #ffffff;
-  --toast-action: #a9b3ee;
 
   /* Grafici: coppia verificata anche per daltonismo (non il verde/rosso dei testi) */
   --chart-income: #2a78d6;
@@ -153,6 +139,55 @@
 
 /* Tema scuro: attivo con data-theme="dark" su <html> (scelta in Altro → Aspetto, o automatico come il sistema) */
 :root[data-theme='dark'] {
+  --color-expense-icon: #ff8f5a;
+  --color-danger: #f58b84;
+  --color-on-danger: #0e0f16;
+  --shadow-1: 0 1px 3px rgb(0 0 0 / 0.5);
+  --shadow-2: 0 6px 24px rgb(0 0 0 / 0.45);
+  --shadow-3: 0 24px 64px rgb(0 0 0 / 0.6);
+  --shadow-fab: 0 8px 20px rgb(0 0 0 / 0.5);
+  --color-backdrop: rgb(0 0 0 / 0.6);
+
+  --chart-income: #3987e5;
+  --chart-expense: #d95926;
+  --status-warning: #f2b13c;
+
+  /* In scuro il cerchio è più pieno e l'icona bianca */
+  --cat-tint: 45%;
+  --cat-icon-dark: #fff;
+
+  color-scheme: dark;
+}
+
+/* ------------------------------------------------------------------------------------------------
+   Palette (Altro → Aspetto → Colori). L'attributo data-palette su <html> sceglie i colori di base;
+   ogni palette ha i suoi valori chiari e scuri. Le stesse regole valgono per qualsiasi elemento con
+   data-palette (le anteprime della scelta mostrano così i colori veri, nel tema in uso).
+   Tinte delle categorie, grafici, pericolo e attenzione sono uguali in tutte le palette.
+   Valori e contrasti verificati (WCAG AA) per ogni palette, in chiaro e in scuro.
+   ------------------------------------------------------------------------------------------------ */
+/* Indaco morbido: calma e tecnologica (quella scelta) */
+:root,
+[data-palette='indaco'] {
+  --color-bg: #f4f5fb;
+  --color-surface: #ffffff;
+  --color-surface-2: #e7e9f3;
+  --color-border: #dddfeb;
+  --color-text: #171928;
+  --color-text-muted: #5f6275;
+  --color-primary: #535aa6;
+  --color-on-primary: #ffffff;
+  --color-accent: #535aa6;
+  --color-accent-soft: #e3e8ff;
+  --color-income: #037e52;
+  --color-fab: #535aa6;
+  --color-on-fab: #ffffff;
+  --toast-bg: #171928;
+  --toast-text: #ffffff;
+  --toast-action: #a9b3ee;
+}
+:root[data-theme='dark'],
+:root[data-theme='dark'] [data-palette='indaco'] {
   --color-bg: #0e0f16;
   --color-surface: #171923;
   --color-surface-2: #212330;
@@ -164,25 +199,204 @@
   --color-accent: #b0baf2;
   --color-accent-soft: #2c305e;
   --color-income: #31d78c;
-  --color-expense-icon: #ff8f5a;
-  --color-danger: #f58b84;
-  --color-on-danger: #0e0f16;
-  --shadow-1: 0 1px 3px rgb(0 0 0 / 0.5);
-  --shadow-2: 0 6px 24px rgb(0 0 0 / 0.45);
-  --shadow-3: 0 24px 64px rgb(0 0 0 / 0.6);
-  --shadow-fab: 0 8px 20px rgb(0 0 0 / 0.5);
-  --color-backdrop: rgb(0 0 0 / 0.6);
+  --color-fab: #a9b3ee;
+  --color-on-fab: #0e0f16;
   --toast-bg: #eef0f6;
   --toast-text: #0e0f16;
   --toast-action: #535aa6;
+}
 
-  --chart-income: #3987e5;
-  --chart-expense: #d95926;
-  --status-warning: #f2b13c;
+/* Blu, oliva e zafferano: blu sereno, + color zafferano */
+[data-palette='zafferano'] {
+  --color-bg: #f2f6f9;
+  --color-surface: #ffffff;
+  --color-surface-2: #e3edf4;
+  --color-border: #d6e3ec;
+  --color-text: #16293a;
+  --color-text-muted: #526577;
+  --color-primary: #33658a;
+  --color-on-primary: #ffffff;
+  --color-accent: #33658a;
+  --color-accent-soft: #ddebf5;
+  --color-income: #506b2b;
+  --color-fab: #f6ae2d;
+  --color-on-fab: #16293a;
+  --toast-bg: #16293a;
+  --toast-text: #ffffff;
+  --toast-action: #86bbd8;
+}
+:root[data-theme='dark'][data-palette='zafferano'],
+:root[data-theme='dark'] [data-palette='zafferano'] {
+  --color-bg: #0d1822;
+  --color-surface: #16242f;
+  --color-surface-2: #20323f;
+  --color-border: #2a3e4d;
+  --color-text: #eef4f8;
+  --color-text-muted: #a1b3c2;
+  --color-primary: #86bbd8;
+  --color-on-primary: #0d1822;
+  --color-accent: #93c4de;
+  --color-accent-soft: #1e3a50;
+  --color-income: #afcb7a;
+  --color-fab: #f6ae2d;
+  --color-on-fab: #0d1822;
+  --toast-bg: #eef4f8;
+  --toast-text: #0d1822;
+  --toast-action: #33658a;
+}
 
-  /* In scuro il cerchio è più pieno e l'icona bianca */
-  --cat-tint: 45%;
-  --cat-icon-dark: #fff;
+/* Petrolio: fresca, tra il blu e il verde */
+[data-palette='petrolio'] {
+  --color-bg: #eff4f4;
+  --color-surface: #ffffff;
+  --color-surface-2: #e2ebeb;
+  --color-border: #d7e2e2;
+  --color-text: #0c1b1e;
+  --color-text-muted: #52656a;
+  --color-primary: #0a6670;
+  --color-on-primary: #ffffff;
+  --color-accent: #0a6670;
+  --color-accent-soft: #daeff0;
+  --color-income: #17803b;
+  --color-fab: #0a6670;
+  --color-on-fab: #ffffff;
+  --toast-bg: #0c1b1e;
+  --toast-text: #ffffff;
+  --toast-action: #4cc9d3;
+}
+:root[data-theme='dark'][data-palette='petrolio'],
+:root[data-theme='dark'] [data-palette='petrolio'] {
+  --color-bg: #071214;
+  --color-surface: #0f1d20;
+  --color-surface-2: #18292d;
+  --color-border: #22363a;
+  --color-text: #ecf5f5;
+  --color-text-muted: #9db2b5;
+  --color-primary: #4cc9d3;
+  --color-on-primary: #04181b;
+  --color-accent: #5ad3dc;
+  --color-accent-soft: #113539;
+  --color-income: #7adf8e;
+  --color-fab: #4cc9d3;
+  --color-on-fab: #04181b;
+  --toast-bg: #ecf5f5;
+  --toast-text: #071214;
+  --toast-action: #0a6670;
+}
 
-  color-scheme: dark;
+/* Ciclamino: calda ed energica */
+[data-palette='ciclamino'] {
+  --color-bg: #f7f2f5;
+  --color-surface: #ffffff;
+  --color-surface-2: #efe6ec;
+  --color-border: #e8dce4;
+  --color-text: #1c0f17;
+  --color-text-muted: #695a63;
+  --color-primary: #b0216b;
+  --color-on-primary: #ffffff;
+  --color-accent: #b0216b;
+  --color-accent-soft: #fbe3ef;
+  --color-income: #0e7a57;
+  --color-fab: #b0216b;
+  --color-on-fab: #ffffff;
+  --toast-bg: #1c0f17;
+  --toast-text: #ffffff;
+  --toast-action: #f27ab8;
+}
+:root[data-theme='dark'][data-palette='ciclamino'],
+:root[data-theme='dark'] [data-palette='ciclamino'] {
+  --color-bg: #120c10;
+  --color-surface: #1d161b;
+  --color-surface-2: #2a2128;
+  --color-border: #372c34;
+  --color-text: #f7eef3;
+  --color-text-muted: #b4a4ae;
+  --color-primary: #f27ab8;
+  --color-on-primary: #1a0812;
+  --color-accent: #f58cc2;
+  --color-accent-soft: #3e1a2f;
+  --color-income: #4fd9a0;
+  --color-fab: #f27ab8;
+  --color-on-fab: #1a0812;
+  --toast-bg: #f7eef3;
+  --toast-text: #120c10;
+  --toast-action: #b0216b;
+}
+
+/* Ardesia e ottone: classica, i colori della bilancia */
+[data-palette='ottone'] {
+  --color-bg: #f4f1ea;
+  --color-surface: #ffffff;
+  --color-surface-2: #eae5da;
+  --color-border: #e0d9cb;
+  --color-text: #1c2a31;
+  --color-text-muted: #5b676c;
+  --color-primary: #1c2a31;
+  --color-on-primary: #f4f1ea;
+  --color-accent: #7e5615;
+  --color-accent-soft: #f3e6c9;
+  --color-income: #1c7546;
+  --color-fab: #c08a2e;
+  --color-on-fab: #1b1408;
+  --toast-bg: #1c2a31;
+  --toast-text: #ffffff;
+  --toast-action: #d9a955;
+}
+:root[data-theme='dark'][data-palette='ottone'],
+:root[data-theme='dark'] [data-palette='ottone'] {
+  --color-bg: #101518;
+  --color-surface: #1a2125;
+  --color-surface-2: #242d32;
+  --color-border: #303a40;
+  --color-text: #eeeae2;
+  --color-text-muted: #a0a8ac;
+  --color-primary: #d9a955;
+  --color-on-primary: #1b1408;
+  --color-accent: #e0b465;
+  --color-accent-soft: #3b3021;
+  --color-income: #62c990;
+  --color-fab: #d9a955;
+  --color-on-fab: #1b1408;
+  --toast-bg: #eeeae2;
+  --toast-text: #101518;
+  --toast-action: #1c2a31;
+}
+
+/* Notte e lime: contrasto forte, verde acido sul + */
+[data-palette='lime'] {
+  --color-bg: #f3f3ef;
+  --color-surface: #ffffff;
+  --color-surface-2: #e9e9e3;
+  --color-border: #e2e2da;
+  --color-text: #121410;
+  --color-text-muted: #5c5f57;
+  --color-primary: #15171c;
+  --color-on-primary: #ffffff;
+  --color-accent: #4b6600;
+  --color-accent-soft: #e8f6c4;
+  --color-income: #0e7a57;
+  --color-fab: #c5f04a;
+  --color-on-fab: #15171c;
+  --toast-bg: #121410;
+  --toast-text: #ffffff;
+  --toast-action: #c5f04a;
+}
+:root[data-theme='dark'][data-palette='lime'],
+:root[data-theme='dark'] [data-palette='lime'] {
+  --color-bg: #0c0d0b;
+  --color-surface: #171915;
+  --color-surface-2: #22251f;
+  --color-border: #2e3229;
+  --color-text: #f1f3ec;
+  --color-text-muted: #a4a99c;
+  --color-primary: #c5f04a;
+  --color-on-primary: #121410;
+  --color-accent: #cdf262;
+  --color-accent-soft: #2a3414;
+  --color-income: #6fe3b0;
+  --color-fab: #c5f04a;
+  --color-on-fab: #121410;
+  --toast-bg: #f1f3ec;
+  --toast-text: #0c0d0b;
+  --toast-action: #15171c;
 }

@@ -207,8 +207,8 @@
     height: var(--size-fab);
     border: none;
     border-radius: var(--radius-full);
-    background: var(--color-primary);
-    color: var(--color-on-primary);
+    background: var(--color-fab);
+    color: var(--color-on-fab);
     box-shadow: var(--shadow-fab);
     cursor: pointer;
   }

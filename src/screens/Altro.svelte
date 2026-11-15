@@ -9,6 +9,7 @@
   import { sync } from '../lib/sync/sync.svelte'
   import { statusLabel } from '../lib/sync/labels'
   import Segmented from '../components/Segmented.svelte'
+  import PalettePicker from '../components/PalettePicker.svelte'
   import { theme } from '../lib/theme.svelte'
   import type { ThemePref } from '../lib/theme'
   import { columns } from '../lib/columns.svelte'
@@ -49,7 +50,9 @@
 
 <Card>
   <h2>Aspetto</h2>
-  <p class="muted theme-hint">Colori chiari o scuri. "Automatico" segue l'impostazione del telefono o del PC. La scelta vale per questo dispositivo.</p>
+  <p class="muted theme-hint">Le scelte valgono per questo dispositivo.</p>
+  <h3 class="sub-h">Tema</h3>
+  <p class="muted theme-hint">Chiaro o scuro; "Automatico" segue l'impostazione del telefono o del PC.</p>
   <Segmented
     label="Tema"
     bind:value={themePref}
@@ -59,6 +62,9 @@
       { value: 'dark', label: 'Scuro' },
     ]}
   />
+  <h3 class="sub-h">Colori</h3>
+  <p class="muted theme-hint">Ogni palette ha la sua versione chiara e scura. I colori di conti e categorie restano gli stessi.</p>
+  <PalettePicker />
 </Card>
 
 <Card>
@@ -177,5 +183,11 @@
 
   .theme-hint {
     margin-bottom: var(--space-3);
+  }
+
+  .sub-h {
+    margin: var(--space-5) 0 var(--space-1);
+    font-size: var(--text-md);
+    font-weight: 800;
   }
 </style>

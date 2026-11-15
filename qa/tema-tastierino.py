@@ -16,6 +16,22 @@ async def state(pg):
 async def pick_theme(pg, name):
     await pg.goto(BASE + "/#/altro"); await pg.wait_for_timeout(300)
     await pg.get_by_role("radiogroup", name="Tema").get_by_role("radio", name=name).click(); await pg.wait_for_timeout(200)
+PALETTES = ["indaco", "zafferano", "petrolio", "ciclamino", "ottone", "lime"]
+TOKENS_JS = """() => { const c = getComputedStyle(document.documentElement); const o = {};
+  for (const n of ['bg','surface','surface-2','text','text-muted','primary','on-primary','accent','accent-soft','income','fab','on-fab'])
+    o[n] = c.getPropertyValue('--color-' + n).trim();
+  o['toast-bg'] = c.getPropertyValue('--toast-bg').trim(); o['toast-action'] = c.getPropertyValue('--toast-action').trim(); return o }"""
+PAIRS = [("text", "bg", 4.5), ("text", "surface", 4.5), ("text-muted", "surface", 4.5), ("text-muted", "bg", 4.5),
+         ("on-primary", "primary", 4.5), ("accent", "surface", 4.5), ("accent", "accent-soft", 4.5),
+         ("income", "surface", 4.5), ("on-fab", "fab", 4.5), ("toast-action", "toast-bg", 4.5), ("primary", "bg", 3)]
+def _lum(h):
+    h = h.lstrip("#")
+    if len(h) == 3: h = "".join(x * 2 for x in h)  # il CSS compilato accorcia #ffffff in #fff
+    c = [int(h[i:i + 2], 16) / 255 for i in (0, 2, 4)]
+    c = [x / 12.92 if x <= 0.03928 else ((x + 0.055) / 1.055) ** 2.4 for x in c]
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+def contrast(a, b):
+    la, lb = sorted([_lum(a), _lum(b)], reverse=True); return (la + 0.05) / (lb + 0.05)
 LIGHT_BG, DARK_BG = "rgb(244, 245, 251)", "rgb(14, 15, 22)"
 async def main():
     async with async_playwright() as p:
@@ -39,6 +55,30 @@ async def main():
             await pick_theme(pg, "Automatico")
             st = await state(pg)
             check(f"{label}: 'Automatico' torna al sistema", st["theme"] == sys_theme and st["saved"] is None, json.dumps(st))
+            # palette: scelta, anteprime, riavvio e contrasti di ognuna nei due temi
+            await pg.goto(BASE + "/#/altro"); await pg.wait_for_timeout(300)
+            colori = pg.get_by_role("radiogroup", name="Colori")
+            n_pal = await colori.get_by_role("radio").count()
+            check(f"{label}: sei palette tra cui scegliere, Indaco morbido scelta", n_pal == 6 and await colori.get_by_role("radio", name="Indaco morbido").get_attribute("aria-checked") == "true")
+            prev = await colori.locator("[data-palette=petrolio] .box").evaluate("e => getComputedStyle(e).backgroundColor")
+            check(f"{label}: ogni anteprima mostra i colori della sua palette", prev in ("rgb(10, 102, 112)", "rgb(76, 201, 211)"), prev)
+            await colori.get_by_role("radio", name="Petrolio").click(); await pg.wait_for_timeout(200)
+            st = await pg.evaluate("() => [document.documentElement.dataset.palette, localStorage.getItem('statera.colori'), getComputedStyle(document.body).backgroundColor]")
+            check(f"{label}: Petrolio applicata subito e salvata", st[0] == "petrolio" and st[1] == "petrolio" and st[2] in ("rgb(239, 244, 244)", "rgb(7, 18, 20)"), json.dumps(st))
+            await pg.reload(); await pg.wait_for_timeout(300)
+            check(f"{label}: la palette resta dopo il riavvio", await pg.evaluate("() => document.documentElement.dataset.palette") == "petrolio")
+            low = []
+            for pal in PALETTES:
+                for th in ("light", "dark"):
+                    await pg.evaluate("([p, t]) => { document.documentElement.dataset.palette = p; document.documentElement.dataset.theme = t }", [pal, th])
+                    v = await pg.evaluate(TOKENS_JS)
+                    for a_, b_, need in PAIRS:
+                        r = contrast(v[a_], v[b_])
+                        if r < need: low.append(f"{pal}/{th} {a_} su {b_} {r:.2f}")
+            check(f"{label}: contrasti a norma in tutte le palette, chiare e scure", not low, "; ".join(low[:4]))
+            await colori.get_by_role("radio", name="Indaco morbido").click(); await pg.wait_for_timeout(200)
+            check(f"{label}: tornando a Indaco morbido la scelta salvata si cancella", await pg.evaluate("() => localStorage.getItem('statera.colori')") is None)
+            await pg.reload(); await pg.wait_for_timeout(300)
             # conto di esempio
             await pg.goto(BASE + "/#/conti"); await pg.wait_for_timeout(300)
             await pg.get_by_role("button", name="Conto").first.click()
