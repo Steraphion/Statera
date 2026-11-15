@@ -27,18 +27,8 @@
   } = $props()
 
   /** Categoria, o le categorie di un movimento ripartito ("Spesa alimentare + Casa"). */
-  const catText = $derived(
-    mv
-      .categoryShares(t)
-      .map((sp) => mv.categoryLabel(sp.categoryId, refs.categoryMap))
-      .join(' + '),
-  )
-
-  const title = $derived.by(() => {
-    if (t.description) return t.description
-    if (t.type === 'trasferimento') return 'Trasferimento'
-    return catText
-  })
+  const catText = $derived(mv.categoryText(t, refs.categoryMap))
+  const title = $derived(mv.movementTitle(t, refs.categoryMap))
 
   const subtitle = $derived.by(() => {
     const from = t.parts.map((p) => mv.partLabel(p, refs.accountMap, refs.cardMap)).join(' + ')

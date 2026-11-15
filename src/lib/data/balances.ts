@@ -84,3 +84,42 @@ export function accountLedger(account: Account, transactions: Transaction[]): Le
   }
   return out.reverse()
 }
+
+/** Un mese dell'estratto conto (dettaglio del conto su PC, un mese alla volta). */
+export interface LedgerMonth {
+  /** Movimenti del mese, dal più recente. */
+  entries: LedgerEntry[]
+  /** Entrate e uscite del mese su questo conto (trasferimenti esclusi); uscite negative. */
+  income: number
+  expense: number
+  /** Effetto netto dei trasferimenti (in entrata positivi, in uscita negativi). */
+  transfers: number
+  /**
+   * Da dove parte il saldo: 'inizio' = saldo a inizio mese; 'iniziale' = il mese del saldo iniziale;
+   * 'prima' = mese precedente al saldo iniziale (i movimenti non incidono).
+   */
+  opening: { kind: 'inizio' | 'iniziale'; amount: number } | { kind: 'prima' }
+}
+
+/** Estratto conto di un mese 'AAAA-MM', dall'elenco di accountLedger (dal più recente). */
+export function ledgerMonth(account: Account, ledger: LedgerEntry[], month: string): LedgerMonth {
+  const entries = ledger.filter((e) => e.t.date.startsWith(month))
+  let income = 0
+  let expense = 0
+  let transfers = 0
+  for (const e of entries) {
+    if (e.t.type === 'trasferimento') transfers += e.effect
+    else if (e.effect > 0) income += e.effect
+    else expense += e.effect
+  }
+  const initMonth = account.initialDate.slice(0, 7)
+  let opening: LedgerMonth['opening']
+  if (month < initMonth) opening = { kind: 'prima' }
+  else if (month === initMonth) opening = { kind: 'iniziale', amount: account.initialBalance }
+  else {
+    // Il primo movimento prima del mese (l'elenco va dal più recente) porta il saldo di fine mese precedente
+    const before = ledger.find((e) => e.t.date < `${month}-01`)
+    opening = { kind: 'inizio', amount: before && before.counted ? before.balanceAfter : account.initialBalance }
+  }
+  return { entries, income, expense, transfers, opening }
+}

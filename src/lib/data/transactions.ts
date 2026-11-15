@@ -336,6 +336,20 @@ export function categoryLabel(id: string | null, categories: Map<string, Categor
   return parent ? `${parent.name} › ${c.name}` : c.name
 }
 
+/** Categoria di un movimento, o le categorie di uno ripartito ("Spesa alimentare + Casa"). */
+export function categoryText(t: Transaction, categories: Map<string, Category>): string {
+  return categoryShares(t)
+    .map((sp) => categoryLabel(sp.categoryId, categories))
+    .join(' + ')
+}
+
+/** Titolo di un movimento negli elenchi: la descrizione, altrimenti "Trasferimento" o la categoria. */
+export function movementTitle(t: Transaction, categories: Map<string, Category>): string {
+  if (t.description) return t.description
+  if (t.type === 'trasferimento') return 'Trasferimento'
+  return categoryText(t, categories)
+}
+
 // ---------- Ricerca ----------
 
 export interface Filters {

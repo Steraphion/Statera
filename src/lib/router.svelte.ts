@@ -20,6 +20,9 @@ const SUBROUTES: Record<string, NavId> = { categorie: 'altro', conto: 'conti', c
 
 const DEFAULT_ROUTE: RouteId = 'movimenti'
 
+/** Su PC sono una schermata sola: elenco dei conti e dettaglio del conto scelto. */
+const PANE_ROUTES = new Set<RouteId>(['conti', 'conto'])
+
 function parse(hash: string): { id: RouteId; param: string } {
   const [id = '', param = ''] = hash.replace(/^#\/?/, '').split('/')
   if (ROUTES.some((r) => r.id === id) || id in SUBROUTES) {
@@ -38,8 +41,11 @@ class Router {
 
   constructor() {
     window.addEventListener('hashchange', () => {
+      const before = this.#route.id
       this.#route = parse(location.hash)
-      window.scrollTo(0, 0)
+      // Su PC, passando da un conto all'altro accanto all'elenco, la pagina resta dov'era
+      const sameScreen = PANE_ROUTES.has(before) && PANE_ROUTES.has(this.#route.id) && matchMedia('(min-width: 900px)').matches
+      if (!sameScreen) window.scrollTo(0, 0)
     })
   }
 

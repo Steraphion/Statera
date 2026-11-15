@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { accountBalance, accountLedger, netWorth } from './balances'
+import { accountBalance, accountLedger, ledgerMonth, netWorth } from './balances'
 import type { Account, Transaction, TransactionPart } from './types'
 
 const base = { createdAt: 0, updatedAt: 0, deletedAt: null }
@@ -76,5 +76,53 @@ describe('accountLedger', () => {
       ['t1', 5000, 10000, false],
     ])
     expect(l[0].balanceAfter).toBe(accountBalance(conto, txs).amount)
+  })
+})
+
+describe('ledgerMonth', () => {
+  const conto = account({ id: 'cc', initialBalance: 100000, initialDate: '2026-02-10' })
+  const txs = [
+    tx({ id: 'vecchio', date: '2026-02-05', parts: [part('cc', 500)], accountIds: ['cc'] }), // prima del saldo iniziale
+    tx({ id: 'f1', date: '2026-02-20', type: 'entrata', parts: [part('cc', 20000)], accountIds: ['cc'] }),
+    tx({ id: 'm1', date: '2026-03-02', parts: [part('cc', 3000)], accountIds: ['cc'] }),
+    tx({ id: 'm2', date: '2026-03-15', type: 'trasferimento', toAccountId: 'cash', parts: [part('cc', 10000)], accountIds: ['cc', 'cash'] }),
+    tx({ id: 'm3', date: '2026-03-20', type: 'trasferimento', toAccountId: 'cc', parts: [part('cash', 2500)], accountIds: ['cash', 'cc'] }),
+    tx({ id: 'm4', date: '2026-03-25', type: 'entrata', parts: [part('cc', 4000)], accountIds: ['cc'] }),
+    tx({ id: 'x', date: '2026-03-26', parts: [part('cc', 999)], accountIds: ['cc'], deletedAt: 5 }),
+  ]
+  const ledger = accountLedger(conto, txs)
+
+  it('mese del saldo iniziale: parte dal saldo iniziale, i movimenti di prima non incidono ma contano nei totali', () => {
+    const m = ledgerMonth(conto, ledger, '2026-02')
+    expect(m.entries.map((e) => e.t.id)).toEqual(['f1', 'vecchio'])
+    expect(m.opening).toEqual({ kind: 'iniziale', amount: 100000 })
+    expect(m.income).toBe(20000)
+    expect(m.expense).toBe(-500)
+    expect(m.entries.find((e) => e.t.id === 'vecchio')?.counted).toBe(false)
+  })
+
+  it('mese successivo: saldo a inizio mese, entrate, uscite e trasferimenti nei due sensi', () => {
+    const m = ledgerMonth(conto, ledger, '2026-03')
+    expect(m.entries.map((e) => e.t.id)).toEqual(['m4', 'm3', 'm2', 'm1'])
+    expect(m.opening).toEqual({ kind: 'inizio', amount: 120000 })
+    expect(m.income).toBe(4000)
+    expect(m.expense).toBe(-3000)
+    expect(m.transfers).toBe(-10000 + 2500)
+    expect(m.entries[0].balanceAfter).toBe(120000 - 3000 - 10000 + 2500 + 4000)
+  })
+
+  it('mese senza movimenti dopo altri mesi: parte dal saldo raggiunto', () => {
+    const m = ledgerMonth(conto, ledger, '2026-05')
+    expect(m.entries).toEqual([])
+    expect(m.opening).toEqual({ kind: 'inizio', amount: 113500 })
+  })
+
+  it('mese prima del saldo iniziale', () => {
+    expect(ledgerMonth(conto, ledger, '2026-01').opening).toEqual({ kind: 'prima' })
+  })
+
+  it('conto senza movimenti: saldo iniziale', () => {
+    const vuoto = account({ id: 'v', initialBalance: 700, initialDate: '2026-01-01' })
+    expect(ledgerMonth(vuoto, [], '2026-04').opening).toEqual({ kind: 'inizio', amount: 700 })
   })
 })

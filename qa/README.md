@@ -73,6 +73,8 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
   lo sostituisce senza sovrapporne due; pannello e avviso riaperti mentre escono, poi richiusi, rifanno l'uscita;
   tastierino nel pannello che si apre in altezza e si chiude con «Fatto» in `--ease-exit`; in Cerca sale dal basso e
   resta fermo passando da «Importo da» a «Importo a».
+  Dalla v0.31.1 su PC il conto si apre accanto all'elenco: si controlla che la schermata non si nasconda e che il
+  dettaglio compaia in dissolvenza (`pane-in`) invece dello spostamento.
   Dalla v0.30.3: un movimento salvato apre la sua riga (o il giorno intero, se nuovo), uno eliminato la chiude in
   `--ease-exit` e «Annulla» la riapre ripristinando il dato; una descrizione lunga non allarga la riga; cambiando mese
   nessuna riga si anima; la barra del budget scorre al nuovo valore in `--duration-slow`. Uso come `collaudo.py`.
@@ -85,4 +87,9 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
   ritrovata dopo il riavvio, frecce (con Maiuscole), Inizio, Invio e doppio clic per la larghezza iniziale, frecce che
   non cambiano mese, finestra ristretta che non toglie spazio all'elenco. Barra laterale da stringere da 1200 px in su
   (in `--duration-base`, salvata, voci ancora trovabili per nome). Sul telefono nessuna di queste cose e lo stesso
-  ordine di prima. Uso come `collaudo.py`.
+  ordine di prima. Dalla v0.31.1, Conti: elenco e dettaglio affiancati (primo conto scelto, saldo di oggi,
+  movimenti del mese in tabella col saldo dopo ognuno e il saldo a inizio mese), frecce ← → per il mese e ↑ ↓ per il
+  conto senza riempire la cronologia, clic su un altro conto con indirizzo `#/conto/…`, schermata che non si
+  nasconde né torna in cima e dettaglio in dissolvenza in `--duration-base`, Indietro, riga della tabella che apre il
+  movimento, elenco regolabile col dettaglio mai sotto `--size-detail-min`, colonna del saldo nascosta quando il
+  dettaglio è stretto (960 px). Sul telefono il conto si apre ancora nella sua schermata. Uso come `collaudo.py`.

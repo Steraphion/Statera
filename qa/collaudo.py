@@ -169,7 +169,8 @@ async def run_flow(b, label, ctx_opts, m):
 
     # dettaglio conto
     await tap(pg.get_by_role("link", name=re.compile("^Conto")), m); await pg.wait_for_timeout(400)
-    check(f"{label}: dettaglio conto si apre", "2.437,60" in await pg.locator(".summary .value").text_content())
+    # Telefono: schermata del conto (.summary); PC (v0.31.1): dettaglio accanto all'elenco (.today)
+    check(f"{label}: dettaglio conto si apre", "2.437,60" in await pg.locator(".summary .value, .today .value").first.text_content())
 
     # modifica ed eliminazione
     await pg.goto(BASE + "/#/movimenti"); await pg.wait_for_timeout(300)

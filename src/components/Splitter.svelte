@@ -13,6 +13,7 @@
     controls,
     grows,
     token,
+    other = '--size-main-min',
   }: {
     id: ColumnId
     /** Nome per gli screen reader, es. "Larghezza della colonna di destra". */
@@ -23,6 +24,8 @@
     grows: 'left' | 'right'
     /** Token della larghezza iniziale; minimo e massimo sono lo stesso nome con -min e -max. */
     token: string
+    /** Token della larghezza minima dell'altra colonna. */
+    other?: string
   } = $props()
 
   let el = $state<HTMLElement>()
@@ -39,8 +42,7 @@
     const max = token$(`${token}-max`, 600)
     const host = el?.parentElement
     if (!host || !el) return { min, max }
-    const other = host.clientWidth - el.offsetWidth - token$('--size-main-min', 400)
-    return limits(min, max, other)
+    return limits(min, max, host.clientWidth - el.offsetWidth - token$(other, 400))
   }
 
   function current(): number {

@@ -61,7 +61,7 @@ async def main():
             await pg.get_by_label("Saldo reale (€)").fill("867,45")
             check(f"{label}: anteprima della differenza", "12,55" in await pg.get_by_role("status").filter(has_text="Differenza").inner_text())
             await pg.get_by_role("button", name="Allinea", exact=True).click(); await pg.wait_for_timeout(500)
-            check(f"{label}: saldo allineato", "867,45" in await pg.locator(".summary .value").inner_text())
+            check(f"{label}: saldo allineato", "867,45" in await pg.locator(".summary .value, .today .value").first.inner_text())
             tx = await store(pg, "transactions")
             adj = [x for x in tx if x["description"] == "Allineamento saldo"]
             check(f"{label}: movimento di rettifica", len(adj) == 1 and adj[0]["type"] == "uscita" and adj[0]["parts"][0]["amount"] == 1255)

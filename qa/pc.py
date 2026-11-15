@@ -5,7 +5,10 @@ scelta da 1200, testo da 16 px, contenuti larghi al massimo 1200 px nelle scherm
 scorrimento orizzontale. Movimenti con la colonna di destra (preferiti, da registrare, budget, suggerimento
 delle scorciatoie). Colonne regolabili: separatore trascinabile e da tastiera, limiti dai token, scelta salvata
 per dispositivo e ritrovata dopo il riavvio, doppio clic e Invio per tornare alla larghezza iniziale.
-Sul telefono (Pixel 7) nessuna di queste cose.
+Conti (v0.31.1): elenco e dettaglio affiancati, movimenti del mese in tabella con saldo dopo ogni movimento, frecce
+← → per il mese e ↑ ↓ per il conto, cambio di conto senza nascondere la schermata né tornare in cima, Indietro,
+elenco regolabile col dettaglio mai sotto --size-detail-min, colonna del saldo nascosta quando il dettaglio è stretto.
+Sul telefono (Pixel 7) nessuna di queste cose: il conto si apre nella sua schermata.
 """
 import asyncio, re, json, datetime, os
 from playwright.async_api import async_playwright
@@ -37,6 +40,10 @@ async def prepara(pg):
     await pg.goto(BASE + "/#/conti"); await pg.wait_for_selector("nav"); await pg.wait_for_timeout(400)
     await pg.get_by_role("button", name="Conto").first.click()
     await pg.get_by_label("Nome").fill("Conto corrente"); await pg.get_by_label("Saldo iniziale (€)").fill("3000")
+    await pg.locator("dialog input[type=date]").fill("2025-12-01")
+    await pg.get_by_role("button", name="Salva").click(); await pg.wait_for_timeout(400)
+    await pg.get_by_role("button", name="Conto").first.click()
+    await pg.get_by_label("Nome").fill("Contanti"); await pg.get_by_label("Tipo").select_option("contanti"); await pg.get_by_label("Saldo iniziale (€)").fill("150")
     await pg.locator("dialog input[type=date]").fill("2025-12-01")
     await pg.get_by_role("button", name="Salva").click(); await pg.wait_for_timeout(400)
     await pg.evaluate(SAMPLE)
@@ -158,6 +165,69 @@ async def barra(pg, label):
     check(f"{label}: sotto i 1200 px la barra è stretta e il pulsante non c'è", abs((await box(pg, "nav.nav"))["width"] - await tok(pg, "--size-rail")) <= 1 and await pg.get_by_role("button", name="Stringi la barra").count() == 0)
     await pg.set_viewport_size({"width": 1280, "height": 860})
 
+async def conti(pg, label):
+    await pg.set_viewport_size({"width": 1280, "height": 860})
+    await pg.evaluate("localStorage.removeItem('statera.colonne')")
+    await pg.goto(BASE + "/#/conti"); await pg.reload(); await pg.wait_for_selector("nav"); await pg.wait_for_timeout(800)
+    lst, det = await box(pg, "#conti-list"), await box(pg, ".detail-col")
+    check(f"{label}: Conti con elenco a sinistra e dettaglio a destra", det["x"] > lst["x"] + lst["width"] and abs(lst["width"] - await tok(pg, "--size-pane")) <= 1, f"{lst} {det}")
+    check(f"{label}: Conti largo al massimo {await tok(pg, '--content-max-wide'):.0f} px", (await box(pg, "main.content"))["width"] <= await tok(pg, "--content-max-wide"))
+    sel = pg.locator("#conti-list a[aria-current=true]")
+    check(f"{label}: all'inizio è scelto il primo conto", await sel.count() == 1 and "Conto corrente" in await sel.inner_text())
+    panel = pg.locator("section[aria-label='Dettaglio di Conto corrente']")
+    check(f"{label}: dettaglio del conto con saldo di oggi", await panel.count() == 1 and "Saldo di oggi" in await panel.inner_text())
+    rows = panel.locator("tbody tr")
+    n_nov = await rows.count()
+    heads = await panel.locator("thead th").all_text_contents()
+    check(f"{label}: movimenti di novembre in tabella", n_nov >= 9 and heads == ["Data", "Descrizione", "Importo", "Saldo"], f"{n_nov} {heads}")
+    check(f"{label}: saldo dopo ogni movimento", re.search(r"\d\s€$", (await rows.first.locator("td").last.inner_text()).strip()) is not None)
+    check(f"{label}: saldo a inizio mese in fondo", "Saldo a inizio mese" in await panel.locator(".opening").inner_text())
+    await pg.locator("body").click(position={"x": 5, "y": 5}); await pg.keyboard.press("ArrowLeft"); await pg.wait_for_timeout(200)
+    check(f"{label}: freccia a sinistra = ottobre nel dettaglio", await panel.locator("h3").inner_text() == "Ottobre 2026" and await rows.count() >= 7)
+    await pg.keyboard.press("ArrowRight"); await pg.wait_for_timeout(200)
+    check(f"{label}: e di nuovo novembre", await panel.locator("h3").inner_text() == "Novembre 2026" and await rows.count() == n_nov)
+    # un altro conto: cambia solo il dettaglio, in dissolvenza, senza nascondere la schermata né tornare in cima
+    await pg.evaluate("window.scrollTo(0, 120)")
+    hist = await pg.evaluate("history.length")
+    await pg.evaluate("""() => { window.__anims = []; window.__reveal = []
+      document.addEventListener('animationstart', (e) => window.__anims.push([e.animationName, getComputedStyle(e.target).animationDuration]))
+      new MutationObserver(() => window.__reveal.push(document.querySelector('.screen').dataset.reveal)).observe(document.querySelector('.screen'), { attributes: true }) }""")
+    await pg.locator("#conti-list").get_by_role("link", name=re.compile("Contanti")).click(); await pg.wait_for_timeout(400)
+    reveal = await pg.evaluate("window.__reveal")
+    anim = [d for n, d in await pg.evaluate("window.__anims") if n.endswith("pane-in")]
+    base = await pg.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--duration-base').trim()")
+    check(f"{label}: clic su Contanti: indirizzo del conto", (await pg.evaluate("location.hash")).startswith("#/conto/") and await pg.locator("section[aria-label='Dettaglio di Contanti']").count() == 1)
+    check(f"{label}: la schermata resta visibile, il dettaglio compare in --duration-base", "wait" not in reveal and len(anim) == 1 and float(anim[0].rstrip("ms")) * (1 if anim[0].endswith("ms") else 1000) == float(base.rstrip("ms")) * (1 if base.endswith("ms") else 1000), f"{reveal} {anim} {base}")
+    check(f"{label}: la pagina non torna in cima", await pg.evaluate("scrollY") > 0)
+    check(f"{label}: Contanti evidenziato nell'elenco", "Contanti" in await pg.locator("#conti-list a[aria-current=true]").inner_text())
+    check(f"{label}: conto senza movimenti nel mese: avviso", "Nessun movimento su questo conto" in await pg.locator(".detail-col").inner_text())
+    await pg.go_back(); await pg.wait_for_timeout(400)
+    check(f"{label}: Indietro torna al conto di prima", await pg.locator("section[aria-label='Dettaglio di Conto corrente']").count() == 1)
+    await pg.locator("body").click(position={"x": 5, "y": 5}); await pg.keyboard.press("ArrowDown"); await pg.wait_for_timeout(300)
+    check(f"{label}: freccia giù passa al conto successivo senza riempire la cronologia", await pg.locator("section[aria-label='Dettaglio di Contanti']").count() == 1 and await pg.evaluate("history.length") == hist + 1)
+    await pg.keyboard.press("ArrowUp"); await pg.wait_for_timeout(300)
+    check(f"{label}: freccia su torna al primo", await pg.locator("section[aria-label='Dettaglio di Conto corrente']").count() == 1)
+    # un movimento della tabella si apre
+    await panel.locator("tbody tr").first.locator("button.desc").click(); await pg.wait_for_selector("dialog[open]")
+    check(f"{label}: clic su una riga apre il movimento", await pg.get_by_label("Importo (€)").input_value() != "")
+    await pg.keyboard.press("Escape"); await pg.wait_for_timeout(400)
+    # separatore dell'elenco
+    sp = pg.get_by_role("separator", name="Larghezza dell'elenco dei conti")
+    b = await sp.bounding_box(); x, y = b["x"] + b["width"] / 2, b["y"] + 200
+    start = (await box(pg, "#conti-list"))["width"]
+    await pg.mouse.move(x, y); await pg.mouse.down(); await pg.mouse.move(x + 60, y, steps=5); await pg.mouse.up(); await pg.wait_for_timeout(100)
+    check(f"{label}: trascinando a destra l'elenco si allarga", abs((await box(pg, "#conti-list"))["width"] - (start + 60)) <= 1 and (await prefs(pg))["widths"]["pane"] == int(start + 60))
+    await pg.mouse.move(x + 60, y); await pg.mouse.down(); await pg.mouse.move(x + 900, y, steps=5); await pg.mouse.up(); await pg.wait_for_timeout(100)
+    check(f"{label}: il dettaglio resta largo almeno --size-detail-min", (await box(pg, ".detail-col"))["width"] >= await tok(pg, "--size-detail-min") - 1)
+    await sp.dblclick(); await pg.wait_for_timeout(100)
+    check(f"{label}: doppio clic: elenco alla larghezza iniziale", abs((await box(pg, "#conti-list"))["width"] - start) <= 1)
+    # finestra stretta
+    await pg.set_viewport_size({"width": 960, "height": 800}); await pg.wait_for_timeout(300)
+    check(f"{label}: a 960 px dettaglio largo almeno il minimo e niente scorrimento", (await box(pg, ".detail-col"))["width"] >= await tok(pg, "--size-detail-min") - 1 and await no_hscroll(pg))
+    check(f"{label}: dettaglio stretto: la colonna del saldo si nasconde", not await panel.locator("thead th").last.is_visible() and await panel.locator("thead th").nth(2).is_visible())
+    await pg.screenshot(path="/tmp/pc-conti-960.png")
+    await pg.set_viewport_size({"width": 1280, "height": 860})
+
 async def telefono(pg, label):
     await pg.goto(BASE + "/#/movimenti"); await pg.wait_for_timeout(600)
     check(f"{label}: niente separatore né budget nella schermata", await pg.locator(".splitter").count() == 0 and await pg.get_by_role("heading", name="Budget del mese").count() == 0)
@@ -166,6 +236,10 @@ async def telefono(pg, label):
     order = await pg.evaluate("""() => [...document.querySelectorAll('.layout h2, .layout .balance-box')].map(e => e.textContent.trim().slice(0, 14))""")
     check(f"{label}: «Da registrare» prima del saldo, come prima", order.index("Da registrare") < [i for i, t in enumerate(order) if t.startswith("Saldo")][0], str(order))
     check(f"{label}: niente scorrimento orizzontale", await no_hscroll(pg))
+    await pg.goto(BASE + "/#/conti"); await pg.wait_for_timeout(600)
+    check(f"{label}: Conti senza dettaglio accanto", await pg.locator(".detail-col").count() == 0 and await pg.locator(".splitter").count() == 0)
+    await pg.locator(".list-row", has_text="Conto corrente").first.click(); await pg.wait_for_timeout(600)
+    check(f"{label}: il conto si apre nella sua schermata, con la freccia indietro", await pg.get_by_role("link", name="Torna a Conti").count() == 1 and await pg.locator("table").count() == 0)
 
 async def main():
     async with async_playwright() as p:
@@ -184,6 +258,7 @@ async def main():
                     await movimenti(pg, label, w, scheme)
                 if scheme == "light":
                     await separatore(pg, label)
+                    await conti(pg, label)
                     await barra(pg, label)
             check(f"{label}: nessun errore", not errs, str(errs[:3]))
             await ctx.close()

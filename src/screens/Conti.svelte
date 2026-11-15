@@ -17,7 +17,15 @@
   import { accountBalance, cardEligible, netWorth } from '../lib/data/balances'
   import { ACCOUNT_TYPE_LABELS, SWATCHES, type Account, type Card as CardT } from '../lib/data/types'
   import { alive, byOrder } from '../lib/data/util'
-  import { formatEuro, formatVouchers } from '../lib/format'
+  import { formatEuro, formatVouchers, monthOf, shiftMonth } from '../lib/format'
+  import { columns } from '../lib/columns.svelte'
+  import Splitter from '../components/Splitter.svelte'
+  import AccountPanel from '../components/AccountPanel.svelte'
+  import { useRefs } from '../lib/data/refs.svelte'
+
+  /** PC: conto mostrato accanto all'elenco (#/conto/<id>); senza, il primo conto attivo. */
+  let { selected = null }: { selected?: string | null } = $props()
+  const refs = useRefs()
 
   const data = live(
     async () => {
@@ -50,7 +58,47 @@
   let goalSheet = $state<{ goal?: Goal } | null>(null)
   let goalAdd = $state<Goal | null>(null)
   const now = today()
+
+  // --- PC: elenco e dettaglio affiancati ---
+  /** Mese del dettaglio: resta lo stesso passando da un conto all'altro. */
+  let detailMonth = $state(monthOf(today()))
+  const shownList = $derived([...active, ...(showArchived ? archived : [])])
+  const current = $derived(
+    columns.pc && data.ready ? (data.value.accounts.find((a) => a.id === selected) ?? active[0] ?? null) : null,
+  )
+
+  // Conto eliminato (o indirizzo sbagliato): si torna all'elenco, col primo conto
+  $effect(() => {
+    if (columns.pc && data.ready && selected && !data.value.accounts.some((a) => a.id === selected)) {
+      location.replace('#/conti')
+    }
+  })
+
+  /** Mostra un altro conto senza riempire la cronologia (frecce ↑ ↓). */
+  function show(id: string) {
+    location.replace(`#/conto/${encodeURIComponent(id)}`)
+  }
+
+  // Scorciatoie (PC): ↑ ↓ cambiano conto, ← → il mese del dettaglio
+  function onKey(e: KeyboardEvent) {
+    if (!columns.pc || !current || e.ctrlKey || e.metaKey || e.altKey) return
+    if ((e.target as HTMLElement).closest('input, textarea, select, [contenteditable]')) return
+    if (document.querySelector('dialog[open]')) return
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault()
+      detailMonth = shiftMonth(detailMonth, e.key === 'ArrowLeft' ? -1 : 1)
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      const i = shownList.findIndex((a) => a.id === current.id)
+      const next = shownList[i + (e.key === 'ArrowUp' ? -1 : 1)]
+      if (next) {
+        e.preventDefault()
+        show(next.id)
+      }
+    }
+  }
 </script>
+
+<svelte:window onkeydown={onKey} />
 
 <ScreenHeader title="Conti">
   <button class="btn btn-primary btn-small" onclick={() => (accountSheet = {})}>
@@ -58,6 +106,10 @@
   </button>
 </ScreenHeader>
 
+<!-- Telefono: elenco (il dettaglio è una schermata a parte). PC: elenco a sinistra, largo a piacere, e
+     dettaglio del conto scelto a destra -->
+<div class="split" style:--col-w={columns.width('pane') === null ? null : `${columns.width('pane')}px`}>
+<div class="list-col" id="conti-list">
 <section class="total balance-box" aria-label="Patrimonio">
   <span class="bb-label">Patrimonio</span>
   <span class="num bb-amount">{formatEuro(total)}</span>
@@ -66,8 +118,9 @@
 
 {#snippet accountRow(a: Account)}
   {@const b = accountBalance(a, data.value.transactions)}
+  {@const sel = current?.id === a.id}
   <li>
-    <a class="list-row" href="#/conto/{a.id}">
+    <a class="list-row" class:selected={sel} aria-current={sel ? 'true' : undefined} href="#/conto/{a.id}">
       <CategoryIcon icon={ACCOUNT_ICONS[a.type]} color={a.color} />
       <span class="main">
         <span class="name">{a.name}</span>
@@ -208,6 +261,24 @@
   {/if}
 {/if}
 
+</div>
+
+{#if columns.pc}
+  <Splitter id="pane" token="--size-pane" other="--size-detail-min" grows="right" controls="conti-list" label="Larghezza dell'elenco dei conti" />
+  <div class="detail-col">
+    {#if current}
+      {#key current.id}
+        <div class="pane-in">
+          <AccountPanel account={current} transactions={data.value.transactions} refs={refs.value} bind:month={detailMonth} />
+        </div>
+      {/key}
+    {:else if data.ready}
+      <Card><p class="empty-note">Aggiungi un conto per vederne qui il dettaglio.</p></Card>
+    {/if}
+  </div>
+{/if}
+</div>
+
 {#if accountSheet}
   <AccountForm
     account={accountSheet.account}
@@ -240,6 +311,67 @@
 {/if}
 
 <style>
+  /* PC: elenco e dettaglio affiancati. L'elenco ha la larghezza scelta (o quella iniziale), mai tanta da
+     lasciare il dettaglio sotto --size-detail-min; il separatore sta nello spazio tra i due */
+  @media (min-width: 900px) {
+    .split {
+      display: grid;
+      grid-template-columns:
+        min(
+          clamp(var(--size-pane-min), var(--col-w, var(--size-pane)), var(--size-pane-max)),
+          max(var(--size-pane-min), 100% - var(--size-detail-min) - var(--space-6))
+        )
+        var(--space-6) minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .list-col {
+      min-width: 0;
+    }
+
+    .list-col > :first-child {
+      margin-top: 0;
+    }
+
+    .list-col :global(.card) {
+      padding: var(--space-4) var(--space-5);
+    }
+
+    .detail-col {
+      min-width: 0;
+      /* Il dettaglio adatta la tabella alla sua larghezza (AccountPanel) */
+      container: dettaglio / inline-size;
+    }
+
+    /* Conto scelto evidenziato; passando col puntatore, un velo */
+    .list-row.selected,
+    .list-row:hover {
+      margin: 0 calc(-1 * var(--space-3));
+      padding-left: var(--space-3);
+      padding-right: var(--space-3);
+      width: calc(100% + 2 * var(--space-3));
+    }
+
+    .list-row:hover {
+      background: color-mix(in srgb, var(--color-surface-2) 60%, transparent);
+    }
+
+    .list-row.selected {
+      background: var(--color-accent-soft);
+    }
+  }
+
+  /* Cambiando conto, il dettaglio compare in dissolvenza (design system: Movimento) */
+  .pane-in {
+    animation: pane-in var(--duration-base) var(--ease-standard);
+  }
+
+  @keyframes pane-in {
+    from {
+      opacity: 0;
+    }
+  }
+
   .goals {
     list-style: none;
     margin: 0;

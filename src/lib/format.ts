@@ -139,6 +139,13 @@ export function formatShortDay(day: string): string {
   return shortDayFmt.format(parseDay(day))
 }
 
+const dayMonthFmt = new Intl.DateTimeFormat('it-IT', { day: 'numeric', month: 'short' })
+
+/** 'AAAA-MM-GG' → '14 nov' (colonna Data delle tabelle, dove il mese è già scritto sopra) */
+export function formatDayMonth(day: string): string {
+  return dayMonthFmt.format(parseDay(day))
+}
+
 const dateTimeFmt = new Intl.DateTimeFormat('it-IT', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
 /** Istante (ms o ISO) → '13 novembre 2026, 21:30' */

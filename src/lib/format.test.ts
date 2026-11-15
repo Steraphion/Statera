@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { centsToInput, parseEuro } from './format'
+import { centsToInput, parseEuro, formatDayMonth } from './format'
 
 describe('parseEuro', () => {
   it.each([
@@ -39,5 +39,12 @@ describe('formatEuro', () => {
     expect(formatEuro(123456)).toBe('1.234,56 €')
     expect(formatEuro(-12000)).toBe('−120,00 €')
     expect(parseEuro(formatEuro(-12000))).toBe(-12000)
+  })
+})
+
+describe('formatDayMonth', () => {
+  it('giorno e mese abbreviato, senza anno', () => {
+    expect(formatDayMonth('2026-11-14')).toBe('14 nov')
+    expect(formatDayMonth('2026-01-02')).toBe('2 gen')
   })
 })

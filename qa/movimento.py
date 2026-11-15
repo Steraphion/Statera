@@ -404,8 +404,17 @@ async def run_screens(b, p, label, opts, reduced=False):
     for tab in ["Conti", "Analisi", "Altro", "Movimenti"]:
         await go(nav(tab), f"scheda {tab}", "screen-fade")
     await nav("Conti")(); await pg.wait_for_timeout(1500)
-    await go(lambda: pg.locator(".screen a.list-row[href^='#/conto/']").first.click(), "dettaglio conto", "screen-forward")
-    await go(lambda: pg.get_by_role("link", name="Torna a Conti").first.click(), "ritorno a Conti", "screen-back")
+    if label.startswith("PC"):
+        # Da v0.31.1 su PC il conto si apre accanto all'elenco: la schermata resta, il dettaglio compare in dissolvenza
+        await pg.evaluate(FRAMES); await pg.locator(".screen a.list-row[href^='#/conto/']").first.click(); await pg.wait_for_timeout(1600)
+        fr = await pg.evaluate("window.__fr")
+        check(f"{label}: dettaglio conto accanto all'elenco: la schermata non si nasconde", all(f["state"] != "wait" for f in fr))
+        if not reduced:
+            an = await pg.evaluate("() => [...document.querySelectorAll('.pane-in')].map(e => getComputedStyle(e).animationName)")
+            check(f"{label}: dettaglio conto in dissolvenza (pane-in)", bool(an) and all("pane-in" in a for a in an), json.dumps(an))
+    else:
+        await go(lambda: pg.locator(".screen a.list-row[href^='#/conto/']").first.click(), "dettaglio conto", "screen-forward")
+        await go(lambda: pg.get_by_role("link", name="Torna a Conti").first.click(), "ritorno a Conti", "screen-back")
     # il modulo aperto sopra Movimenti non rifà comparire la schermata
     await nav("Movimenti")(); await pg.wait_for_timeout(1500)
     await pg.evaluate(FRAMES); await (await new_button(pg)).click(); await pg.wait_for_timeout(800)

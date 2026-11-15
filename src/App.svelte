@@ -31,7 +31,8 @@
   $effect.pre(() => {
     if (startup.state !== 'ready') return
     const id = router.current
-    const key = id === 'conto' ? `conto/${router.param}` : id
+    // Su PC Conti e il dettaglio di un conto sono la stessa schermata: cambia solo il dettaglio
+    const key = columns.pc && (id === 'conti' || id === 'conto') ? 'conti' : id === 'conto' ? `conto/${router.param}` : id
     if (shownRoute?.key === key) return
     screen.start(revealKind(shownRoute?.id ?? null, id, shownRoute?.id === id))
     shownRoute = { id, key }
@@ -84,7 +85,7 @@
   class="shell"
   class:sub={router.current !== router.section}
   class:rail={columns.railNow}
-  class:wide={router.current === 'movimenti'}
+  class:wide={router.current === 'movimenti' || router.current === 'conti' || router.current === 'conto'}
 >
   <nav class="nav" aria-label="Sezioni">
     <div class="brand">
@@ -163,8 +164,8 @@
     <div class="screen" data-reveal={screen.shown ? screen.kind : 'wait'}>
     {#if router.current === 'movimenti'}
       <Movimenti />
-    {:else if router.current === 'conti'}
-      <Conti />
+    {:else if router.current === 'conti' || (router.current === 'conto' && columns.pc)}
+      <Conti selected={router.current === 'conto' ? router.param : null} />
     {:else if router.current === 'conto'}
       {#key router.param}
         <ContoDettaglio id={router.param} />
