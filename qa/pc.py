@@ -344,6 +344,20 @@ async def telefono(pg, label):
     await pg.locator(".list-row", has_text="Conto corrente").first.click(); await pg.wait_for_timeout(600)
     check(f"{label}: il conto si apre nella sua schermata, con la freccia indietro", await pg.get_by_role("link", name="Torna a Conti").count() == 1 and await pg.locator("table").count() == 0)
 
+async def ridotte(b):
+    """Con «riduci animazioni» anche barra laterale, dettaglio del conto e linea del separatore sono istantanei."""
+    print("\n===== PC, riduci animazioni =====")
+    ctx = await b.new_context(viewport={"width": 1280, "height": 860}, locale="it-IT", reduced_motion="reduce")
+    pg = await ctx.new_page(); await pg.clock.set_fixed_time(datetime.datetime(2026, 11, 14, 10, 0))
+    await prepara(pg)
+    await pg.goto(BASE + "/#/conti"); await pg.wait_for_timeout(600)
+    ms = lambda v: float(v.rstrip("ms")) * (1 if v.endswith("ms") else 1000)
+    d = await pg.evaluate("""() => ({ side: getComputedStyle(document.querySelector('.shell')).transitionDuration,
+      pane: getComputedStyle(document.querySelector('.pane-in')).animationDuration,
+      line: getComputedStyle(document.querySelector('.splitter'), '::before').transitionDuration })""")
+    check("PC ridotte: barra laterale, dettaglio e separatore a 0,01 ms", all(ms(v.split(",")[0]) <= 0.01 for v in d.values()), str(d))
+    await ctx.close()
+
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
@@ -367,6 +381,7 @@ async def main():
                     await barra(pg, label)
             check(f"{label}: nessun errore", not errs, str(errs[:3]))
             await ctx.close()
+        await ridotte(b)
         await b.close()
     print(f"\n{sum(results)}/{len(results)} superati")
 

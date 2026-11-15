@@ -99,4 +99,6 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
   a capo e Ctrl+Invio che salva, Esc; a 800 px finestra `--size-window` a una colonna; sul telefono modulo in colonna.
   Dalla v0.31.3, scorciatoie: ? apre l'elenco (quattro gruppi, tasti come `<kbd>`), non dentro un campo né sopra
   un'altra finestra, Esc lo chiude, si apre anche dalla colonna di destra di Movimenti e da Altro (solo su PC); in
-  Analisi ← → cambiano periodo. Uso come `collaudo.py`.
+  Analisi ← → cambiano periodo. Con «riduci animazioni» barra laterale, dettaglio del conto e linea del separatore a
+  0,01 ms. Passaggio 0.30.4 → 0.31.3 verificato con `aggiornamento.py` (avviso «Aggiorna», dati intatti).
+  Uso come `collaudo.py`.
