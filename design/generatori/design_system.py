@@ -145,8 +145,14 @@ USAGE = {
  'nav-height': 'Altezza della barra flottante del telefono.',
  'size-sidebar': 'Larghezza della BarraLaterale intera su PC (da 1200 px).',
  'size-rail': 'Larghezza della BarraLaterale stretta, solo icone: PC tra 900 e 1199 px, o da 1200 se la si stringe.',
- 'content-max': 'Larghezza massima delle schermate a una colonna su PC (Analisi, Cerca, Altro, Categorie, Ricorrenti).',
- 'content-max-wide': 'Larghezza massima delle schermate su due colonne su PC (Movimenti, Conti).',
+ 'content-max': 'Larghezza massima delle schermate a una colonna su PC (Altro, Categorie, Ricorrenti).',
+ 'content-max-wide': 'Tetto delle schermate su più colonne su PC (Movimenti, Conti, Analisi, Cerca): fino a qui riempiono l\'area dei contenuti accanto alla barra laterale, oltre restano centrate.',
+ 'size-cal': 'Colonna sinistra di Movimenti quando l\'area è molto larga (da 1440 px): calendario del mese e «Dove vanno i soldi».',
+ 'size-extra': 'Terza colonna di Conti quando l\'area è molto larga: saldo del conto a fine mese e obiettivi di risparmio.',
+ 'size-filters': 'Filtri di Cerca, sempre aperti a sinistra su PC.',
+ 'size-summary': 'Riepilogo dei risultati di Cerca (per categoria e per mese), a destra quando l\'area è molto larga.',
+ 'size-col-amount': 'Colonna degli importi nell\'ElencoAColonne: uguale in ogni riga, così le colonne restano allineate.',
+ 'size-col-date': 'Colonna della data nell\'ElencoAColonne di Cerca.',
  'size-aside': 'Colonna di destra di Movimenti su PC (preferiti, da registrare, budget): larghezza iniziale.',
  'size-aside-min': 'Colonna di destra di Movimenti: la più stretta a cui la porta il Separatore.',
  'size-aside-max': 'Colonna di destra di Movimenti: la più larga a cui la porta il Separatore.',
@@ -476,9 +482,17 @@ CSS = r'''/* Statera — componenti di riferimento. Tutti i valori vengono da to
 .st-cols { display: grid; grid-template-columns: minmax(0, 1fr) var(--space-6) 220px; align-items: stretch; width: 100%; min-height: 220px; }
 .st-split { position: relative; display: flex; justify-content: center; cursor: col-resize; outline: none; }
 .st-split::before { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: var(--focus-width); translate: -50% 0; border-radius: var(--radius-full); background: var(--color-accent); opacity: 0; transition: opacity var(--duration-fast) var(--ease-standard); }
-.st-split__grip { align-self: center; width: var(--space-1); height: var(--space-7); border-radius: var(--radius-full); background: var(--color-border); transition: background-color var(--duration-fast) var(--ease-standard); }
+.st-split__grip { align-self: center; width: var(--space-1); height: var(--space-7); border-radius: var(--radius-full); background: var(--color-accent); opacity: 0; transition: opacity var(--duration-fast) var(--ease-standard); }
 .st-split:hover::before, .st-split.is-hover::before, .st-split:focus-visible::before { opacity: 1; }
-.st-split:hover .st-split__grip, .st-split.is-hover .st-split__grip, .st-split:focus-visible .st-split__grip { background: var(--color-accent); }
+.st-split:hover .st-split__grip, .st-split.is-hover .st-split__grip, .st-split:focus-visible .st-split__grip { opacity: 1; }
+
+/* Elenco a colonne */
+.st-rowcols { display: grid; grid-template-columns: var(--size-cat) minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) var(--size-col-amount); align-items: center; column-gap: var(--space-3); }
+.st-rowcols.st-rowcols--date { grid-template-columns: var(--size-col-date) var(--size-cat) minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) var(--size-col-amount); }
+.st-rowcols__head { padding-bottom: var(--space-2); border-bottom: 1px solid var(--color-border); color: var(--color-text-muted); text-transform: uppercase; }
+.st-rowcols__row { min-height: var(--size-row); padding: var(--space-2) 0; }
+.st-rowcols .st-cell { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-text-muted); }
+.st-rowcols .st-r { text-align: right; }
 
 /* Tabella del conto */
 .st-mbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-5); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); background: var(--color-bg); }
@@ -838,7 +852,7 @@ comp('Avviso', 'Stato e messaggi', 470, '''Messaggi all'utente: la conferma a co
 ## Avviso in cima
 `st-banner` sopra il contenuto di ogni schermata, solo quando serve un intervento: testo `text-sm` a sinistra, Pulsante piccolo a destra.
 - **Nuova versione** (`st-banner--update`, con bordo color-border): «È disponibile una nuova versione di Statera.» · Aggiorna.
-- **Accesso a Google scaduto**: «Sincronizzazione in pausa: l'accesso a Google è scaduto.» · Riconnetti. Compare **solo se il rinnovo automatico non riesce**: il permesso di Google dura un'ora e, senza un server, non si rinnova in sottofondo; l'app lo rinnova al primo tocco su un pulsante o un link (vedi il manuale, Accesso a Google).
+- **Accesso a Google scaduto**: «Sincronizzazione in pausa: l'accesso a Google è scaduto.» · Riconnetti. Compare **solo se il rinnovo automatico non riesce**: il permesso di Google dura un'ora e, senza un server, non si rinnova in sottofondo; l'app lo rinnova al primo tocco solo se ci sono modifiche da inviare (vedi il manuale, Accesso a Google).
 - **Bloccata**: «Sincronizzazione bloccata: serve la password di Statera.» · Apri.
 - **Errore** (`st-banner--error`, `role="alert"`): «Sincronizzazione non riuscita: …» · Riprova (Pulsante secondario).
 
@@ -911,7 +925,7 @@ N nuovo movimento · / cerca · ? elenco delle scorciatoie · Esc chiude · ← 
 comp('Separatore', 'Impaginazione', 300, '''Il separatore tra due colonne su PC: si trascina per cambiare la larghezza di una colonna.
 
 ## Struttura
-`<div role="separator" aria-orientation="vertical" tabindex="0" class="st-split">` nello spazio tra le colonne (`space-6`), a tutta altezza, con `aria-controls` (la colonna che cambia), `aria-valuenow`, `aria-valuemin`, `aria-valuemax` in px e `aria-valuetext`. Dentro la maniglia `st-split__grip` (4 × 32 px, `radius-full`, color-border), che resta a metà schermo mentre si scorre. Col puntatore sopra, col focus o mentre si trascina compare la linea in color-accent e la maniglia passa a color-accent. Il separatore non ruba larghezza: è lo spazio che c'era già.
+`<div role="separator" aria-orientation="vertical" tabindex="0" class="st-split">` nello spazio tra le colonne (`space-6`), a tutta altezza, con `aria-controls` (la colonna che cambia), `aria-valuenow`, `aria-valuemin`, `aria-valuemax` in px e `aria-valuetext`. Dentro la maniglia `st-split__grip` (4 × 32 px, `radius-full`, color-accent), che resta a metà schermo mentre si scorre. **Linea e maniglia si vedono solo quando servono**: col puntatore sopra, col focus o mentre si trascina (dalla 0.34; una maniglia sempre visibile a metà altezza sembrava fuori posto). Il separatore non ruba larghezza: è lo spazio che c'era già.
 
 ## Colonne regolabili
 | Colonna | Iniziale | Minimo | Massimo | L'altra non scende sotto |
@@ -924,10 +938,10 @@ comp('Separatore', 'Impaginazione', 300, '''Il separatore tra due colonne su PC:
 - Doppio clic o Invio: larghezza iniziale.
 - La scelta vale per il dispositivo (`statera.colonne` in localStorage) e non si sincronizza.
 - Mentre si trascina il puntatore è `col-resize` ovunque e il testo non si seleziona.
-- Il massimo scende se l'altra colonna resterebbe sotto il suo minimo: anche nel CSS, con `min()`, così una finestra più stretta non rompe l'impaginazione.
+- Il massimo scende se l'altra colonna resterebbe sotto il suo minimo: anche nel CSS, con `min()`, così una finestra più stretta non rompe l'impaginazione. Con altre colonne fisse accanto (`size-cal` in Movimenti, `size-extra` in Conti, quando l'area è molto larga) si toglie anche il loro spazio.
 
 ## Movimento
-Linea e maniglia cambiano colore in `duration-fast`; la colonna segue il puntatore senza animazioni.
+Linea e maniglia compaiono in `duration-fast`; la colonna segue il puntatore senza animazioni.
 ''', f'''<div class="st st-stage"><div class="st-cols">
 <div class="st-card"><span class="titolo-3">Movimenti</span><span class="secondario st-muted">Elenco del mese</span></div>
 <div class="st-split is-hover" role="separator" aria-orientation="vertical" tabindex="0" aria-label="Larghezza della colonna di destra" aria-valuenow="320" aria-valuemin="260" aria-valuemax="460" aria-valuetext="320 pixel"><span class="st-split__grip" aria-hidden="true"></span></div>
@@ -954,7 +968,7 @@ comp('TabellaConto', 'Dati', 470, '''Il dettaglio di un conto accanto all'elenco
 ## Regole
 - Tutta la riga apre il movimento col mouse; da tastiera c'è il pulsante della descrizione. Passando col puntatore, velo color-surface-2 al 60%.
 - Il nome del conto che si sta guardando non si ripete nella seconda riga: si scrive la fonte solo se è una carta o un altro conto.
-- Dettaglio stretto (sotto i 560 px, container query): la colonna del saldo si nasconde.
+- Dettaglio stretto (sotto i 560 px, container query): la colonna del saldo si nasconde. Dettaglio largo (da 820 px): compare la colonna **Categoria** e la seconda riga della descrizione non la ripete.
 - ← → cambiano mese, ↑ ↓ conto. Cambiando conto la schermata resta e il dettaglio compare in dissolvenza (`duration-base`); cambiando mese la tabella resta ferma.
 ''', f'''<div class="st st-stage st-stage--col"><div class="st-card" style="gap: var(--space-3)">
 <div class="st-mbar"><span class="st-line titolo-3" style="gap: var(--space-2)">{ai('chevron-left', 20)}Novembre 2026{ai('chevron-right', 20)}</span><dl><div><dt class="secondario st-muted">Entrate</dt><dd class="corpo-forte" style="color: var(--color-income)">+1.650,00 €</dd></div><div><dt class="secondario st-muted">Uscite</dt><dd class="corpo-forte">−181,20 €</dd></div></dl></div>
@@ -962,6 +976,34 @@ comp('TabellaConto', 'Dati', 470, '''Il dettaglio di un conto accanto all'elenco
 <thead><tr><th scope="col" class="etichetta-campo">Data</th><th scope="col" class="etichetta-campo">Descrizione</th><th scope="col" class="etichetta-campo st-r">Importo</th><th scope="col" class="etichetta-campo st-r">Saldo</th></tr></thead>
 <tbody>{''.join(trow(*r) for r in trows)}</tbody></table>
 <div class="st-opening"><span class="corpo-forte">Saldo a inizio mese</span><span class="corpo-forte">7.700,90 €</span></div></div></div>''')
+
+# --- ElencoAColonne
+crow = [('shirt', 's6', 'Vestiti', 'Abbigliamento', 'Conto corrente', '−120,00 €', False, '20 nov 2026'),
+        ('utensils', 's2', 'Caffè', 'Pasti fuori', 'Bancomat', '−1,20 €', False, '14 nov 2026'),
+        ('briefcase-business', 's5', 'Stipendio', 'Stipendio', 'Conto corrente', '+1.650,00 €', True, '1 nov 2026')]
+def colrow(i, c, n, cat, src, a, inc, d, date=False):
+    return (f'<div class="st-rowcols st-rowcols__row{" st-rowcols--date" if date else ""}">'
+            + (f'<span class="st-cell secondario">{d}</span>' if date else '')
+            + f'<span class="st-cat st-cat--{c}" aria-hidden="true">{ai(i, 20)}</span><span class="corpo-forte" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{n}</span>'
+            f'<span class="st-cell secondario">{cat}</span><span class="st-cell secondario">{src}</span>'
+            f'<span class="st-r corpo-forte"{" style=\"color: var(--color-income)\"" if inc else ""}>{a}</span></div>')
+comp('ElencoAColonne', 'Dati', 330, '''L'elenco dei movimenti con categoria e conto in colonne proprie, quando l'area dei contenuti è larga (da 1100 px): Movimenti, e Cerca con la data in prima colonna.
+
+## Struttura
+- Intestazioni `st-rowcols__head` in `etichetta` maiuscola color-text-muted, sopra una linea color-border: (icona), Descrizione, Categoria, Conto o carta, Importo (allineato a destra). In Cerca prima la Data.
+- Ogni riga è la stessa griglia `st-rowcols` delle intestazioni, così le colonne restano allineate: IconaCategoria (`size-cat`), descrizione in `corpo-forte`, categoria e conto in `secondario` color-text-muted coi puntini, importo largo `size-col-amount` (vero segno meno, entrate in color-income). La data, in Cerca, larga `size-col-date`.
+- Sotto la descrizione restano solo ricorrente ed etichette; categoria e conto non si ripetono.
+- In Movimenti i giorni restano intestazioni tra le righe, come sul telefono.
+
+## Regole
+- Sotto i 1100 px di area, e sempre sul telefono, si torna alla RigaMovimento su due livelli.
+- Tutta la riga apre il movimento (è un pulsante).
+''', f'''<div class="st st-stage st-stage--col"><div class="st-card">
+<div class="st-rowcols st-rowcols__head etichetta"><span></span><span>Descrizione</span><span>Categoria</span><span>Conto o carta</span><span class="st-r">Importo</span></div>
+{''.join(colrow(*r) for r in crow)}</div>
+<div class="st-card">
+<div class="st-rowcols st-rowcols--date st-rowcols__head etichetta"><span>Data</span><span></span><span>Descrizione</span><span>Categoria</span><span>Conto o carta</span><span class="st-r">Importo</span></div>
+{''.join(colrow(*r, date=True) for r in crow[:2])}</div></div>''')
 
 # --- ElencoScorciatoie
 def krow(keys, what):
@@ -1221,9 +1263,10 @@ Il riferimento è l'app pubblicata (versione {APP.version}): token, icone, logo 
 - Entrate col «+» e color-income; uscite col «−» e color-expense (il colore del testo, mai rosso). Il saldo positivo del mese ha il «+».
 
 ## Accesso a Google
-- Il permesso di Google dura un'ora e, senza un server, non si rinnova in sottofondo. L'app lo **rinnova da sola al primo tocco** su un pulsante o un link dopo la scadenza: di solito non si vede niente, al massimo la finestrella di Google che si apre e si chiude.
+- Il permesso di Google dura un'ora e, senza un server, non si rinnova in sottofondo; ogni rinnovo apre per un attimo la finestrella di Google, che si richiude da sola.
+- Dalla 0.32.1 l'app lo **rinnova da sola al primo tocco** su un pulsante o un link **solo se ci sono modifiche fatte sul dispositivo e non ancora inviate**, oppure toccando un comando che legge Drive (backup, cambio password, ripristino da file). Mai dentro il modulo del movimento né sui comandi che lo aprono (il +, Nuovo movimento, le azioni rapide: `data-no-autoauth`): chi registra una spesa non deve aspettare Google.
+- Senza modifiche da inviare la sincronizzazione resta in pausa, senza avvisi: in fondo alla BarraLaterale (PC) e in cima a Movimenti (telefono, una pillola color-surface-2) si legge **«Aggiornato alle 14:32 · Sincronizza»**, con «Sincronizza» in color-accent; il tocco rinnova il permesso e porta i dati degli altri dispositivi. Con modifiche in attesa: «Modifiche da inviare · Sincronizza». Nessuna modifica va persa: resta sul dispositivo finché non parte.
 - L'Avviso «Sincronizzazione in pausa: l'accesso a Google è scaduto» con Riconnetti compare **solo se il rinnovo automatico non riesce**. I dati intanto restano al sicuro sul dispositivo.
-- I comandi che aprono il modulo del movimento (il +, Nuovo movimento, le azioni rapide) non fanno partire il rinnovo (`data-no-autoauth`): chi registra una spesa non deve aspettare Google.
 
 ## Colore
 - Sfondo color-bg, contenuti in schede color-surface; dentro una scheda, i comandi secondari sono color-surface-2 e i campi color-bg. Bordi color-border solo come linee sottili, mai intorno alle schede.
@@ -1261,13 +1304,16 @@ Il riferimento è l'app pubblicata (versione {APP.version}): token, icone, logo 
 - **ElencoVoci** per voci e valori: voce sopra il valore sul telefono, affiancati da 600 px.
 - **Pulsanti-collegamento a fine riga** (Ordina, + Carta, Imposta budget, Tabella): allineato al bordo della scheda è il testo, non la pillola.
 - **«Elimina» dentro una scheda**: pillola rosata (Pulsante di pericolo).
-- **Colonna di destra** (Movimenti su PC): Da registrare, riepilogo del mese, preferiti (in una scheda, che vanno a capo), Budget del mese e la riga dei Tasti; larga `size-aside`, regolabile col Separatore. Saldo e azioni rapide si affiancano secondo la larghezza della colonna dell'elenco (container query), non della finestra.
-- **Elenco e dettaglio** (Conti su PC): l'elenco dei conti a sinistra (`size-pane`, regolabile), il conto scelto evidenziato (color-accent-soft) e, a destra, il suo dettaglio con la TabellaConto.
-- **Analisi**: importi delle categorie allineati al nome; nei confronti con la media la riga di dettaglio parte dal nome, non dall'icona.
+- **Colonna di destra** (Movimenti su PC): Da registrare, riepilogo del mese, preferiti (in una scheda, che vanno a capo), Budget del mese (senza budget: **«Dove vanno i soldi»**, le prime cinque categorie di uscita del mese) e in fondo la riga dei Tasti; larga `size-aside`, regolabile col Separatore. **Mai vuota**: se non ha schede non c'è, e l'elenco prende il suo spazio. Saldo e azioni rapide si affiancano secondo la larghezza della colonna dell'elenco (container query), non della finestra.
+- **Colonna sinistra** (Movimenti, area molto larga): calendario del mese sempre visibile (toccando un giorno l'elenco ci va) e «Dove vanno i soldi», larga `size-cal`; la scelta Elenco/Calendario sparisce.
+- **ElencoAColonne** (area larga): categoria e conto in colonne proprie, allineate alle intestazioni (Movimenti, e in Cerca con la data in prima colonna).
+- **Elenco e dettaglio** (Conti su PC): l'elenco dei conti a sinistra (`size-pane`, regolabile), il conto scelto evidenziato (color-accent-soft) e, a destra, il suo dettaglio con la TabellaConto (colonna Categoria quando il dettaglio è largo almeno 820 px). Con l'area molto larga, una terza colonna (`size-extra`) col saldo del conto a fine mese negli ultimi 12 mesi e gli obiettivi di risparmio.
+- **Analisi**: importi delle categorie allineati al nome; nei confronti con la media la riga di dettaglio parte dal nome, non dall'icona. Su PC schede in colonne che non si allineano tra loro: due, tre con l'area molto larga (categorie ed etichette, andamento e patrimonio, budget e confronti).
+- **Cerca** su PC: filtri sempre aperti a sinistra (`size-filters`) e, senza ricerca, gli ultimi movimenti; da area larga i risultati in ElencoAColonne con la data; da molto larga, mentre si cerca, il riepilogo per categoria e per mese (`size-summary`), da cui una categoria restringe la ricerca.
 
 ## Impaginazione
 - **Telefono**: barra flottante con il + al centro (BarraNavigazione) nelle quattro sezioni Movimenti, Conti, Analisi, Altro. Le schermate aperte da un'altra hanno la freccia indietro in alto e niente barra. I moduli salgono dal basso in un pannello (Finestra), col Tastierino degli importi sopra i pulsanti.
-- **PC (da 900 px)**: BarraLaterale al posto della barra flottante, col Logo in cima: stretta (`size-rail`, solo icone) tra 900 e 1199 px, intera (`size-sidebar`) da 1200, dove la si può stringere. Testo un po' più grande (`text-root-pc`). Schermate su due colonne larghe al massimo `content-max-wide` (1200 px): **Movimenti** con la colonna di destra, **Conti** con elenco e dettaglio affiancati (`#/conti` e `#/conto/<id>` sono la stessa schermata; cambiando conto non torna in cima). Le altre schermate al massimo `content-max` (760 px). Le colonne si regolano col Separatore; la colonna principale non scende sotto `size-main-min` (il dettaglio del conto sotto `size-detail-min`). I moduli si aprono in una Finestra centrata, quella del movimento larga e su due colonne. Le scorciatoie (N, /, ?, Esc, frecce) sono nel suggerimento dei comandi e nell'ElencoScorciatoie, non scritte sulle voci.
+- **PC (da 900 px)**: BarraLaterale al posto della barra flottante, col Logo in cima: stretta (`size-rail`, solo icone) tra 900 e 1199 px, intera (`size-sidebar`) da 1200, dove la si può stringere. Testo un po' più grande (`text-root-pc`). **Le colonne dipendono dalla larghezza dell'area dei contenuti** (a destra della barra laterale), non della finestra, così valgono uguali con la barra intera o stretta, con la finestra a metà schermo e con lo zoom del browser: **media** da 720 px (due colonne), **larga** da 1100 (importi principali in una riga, ElencoAColonne, azioni rapide compatte nella testata), **molto larga** da 1440 (tre colonne dove servono). Movimenti, Conti, Analisi e Cerca riempiono l'area fino al tetto `content-max-wide` (1880 px) e oltre restano centrate; Altro, Categorie e Ricorrenti al massimo `content-max` (760 px). In Conti `#/conti` e `#/conto/<id>` sono la stessa schermata (cambiando conto non torna in cima). Le colonne si regolano col Separatore; la colonna principale non scende sotto `size-main-min` (il dettaglio del conto sotto `size-detail-min`). I moduli si aprono in una Finestra centrata, quella del movimento larga e su due colonne. Le scorciatoie (N, /, ?, Esc, frecce) sono nel suggerimento dei comandi e nell'ElencoScorciatoie, non scritte sulle voci.
 
 ## Stati dei comandi
 - Passaggio del puntatore (solo PC): velo del colore del testo all'8%, o color-surface-2 per righe e voci.
@@ -1292,7 +1338,7 @@ Il movimento accompagna, non decora: dice da dove arriva una cosa e dove va, poi
 | Barre di budget e obiettivi | scorrono al nuovo valore quando cambia, `duration-slow` | — |
 | BarraLaterale (PC) | da intera a stretta e ritorno: larghezza in `duration-base` | — |
 | Dettaglio del conto (PC) | cambiando conto, dissolvenza in `duration-base` (la schermata resta) | nessuna |
-| Separatore | linea e maniglia cambiano colore in `duration-fast` | — |
+| Separatore | linea e maniglia compaiono in `duration-fast` | — |
 
 **Fermi, di proposito**: i grafici di Analisi (un grafico che si riempie a ogni visita fa aspettare prima di leggerlo); la schermata di blocco (deve coprire tutto subito); gli elenchi che cambiano mese o si riempiono all'apertura (anche la TabellaConto); gli importi, che cambiano senza contare; le colonne mentre si trascinano (seguono il puntatore).
 
