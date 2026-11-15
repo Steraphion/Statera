@@ -25,13 +25,17 @@ class App:
     # ------------------------------------------------------------ token
     def _tokens(self):
         css = re.sub(r'/\*.*?\*/', '', open(self.p('src/styles/tokens.css')).read(), flags=re.S)
-        blocks = {}
+        # Dalla v0.32 i colori di base stanno nei blocchi delle palette: per il design system valgono quelli
+        # della palette predefinita, i cui blocchi hanno anche il selettore :root (chiaro) e
+        # :root[data-theme='dark'] (scuro). Si uniscono tutti i blocchi che hanno quei selettori.
+        light, dark = {}, {}
         for sel, body in re.findall(r'([^{}]+)\{([^{}]*)\}', css):
-            sel = sel.strip()
+            parts = [x.strip() for x in sel.split(',')]
             decl = dict((k, v.strip()) for k, v in re.findall(r'--([A-Za-z0-9-]+)\s*:\s*([^;]+);', body))
-            blocks[sel] = decl
-        light = blocks[':root']
-        dark = next(v for k, v in blocks.items() if 'data-theme' in k and 'dark' in k)
+            if ':root' in parts:
+                light.update(decl)
+            if ":root[data-theme='dark']" in parts:
+                dark.update(decl)
         return light, dark
 
     def value(self, name, theme='light'):
