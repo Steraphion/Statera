@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { centsToInput, parseEuro, formatDayMonth } from './format'
+import { centsToInput, parseEuro, formatDayMonth, formatWhen } from './format'
 
 describe('parseEuro', () => {
   it.each([
@@ -46,5 +46,21 @@ describe('formatDayMonth', () => {
   it('giorno e mese abbreviato, senza anno', () => {
     expect(formatDayMonth('2026-11-14')).toBe('14 nov')
     expect(formatDayMonth('2026-01-02')).toBe('2 gen')
+  })
+})
+
+describe('formatWhen', () => {
+  const now = new Date(2026, 10, 15, 18, 5).getTime()
+  it('oggi: solo l\'ora', () => {
+    expect(formatWhen(new Date(2026, 10, 15, 14, 32).getTime(), now)).toBe('alle 14:32')
+    expect(formatWhen(new Date(2026, 10, 15, 0, 1).getTime(), now)).toBe('alle 00:01')
+  })
+  it('ieri e giorni precedenti', () => {
+    expect(formatWhen(new Date(2026, 10, 14, 23, 59).getTime(), now)).toBe('ieri alle 23:59')
+    expect(formatWhen(new Date(2026, 10, 12, 9, 0).getTime(), now)).toBe('il 12 novembre alle 09:00')
+    expect(formatWhen(new Date(2025, 11, 31, 20, 15).getTime(), now)).toBe('il 31 dicembre 2025 alle 20:15')
+  })
+  it('un orario appena nel futuro (orologi un po\' diversi) vale come adesso', () => {
+    expect(formatWhen(now + 60_000, now)).toBe('alle 18:06')
   })
 })

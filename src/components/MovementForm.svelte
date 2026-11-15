@@ -517,7 +517,7 @@
   }
 </script>
 
-<Sheet {title} {onclose} {error} wide={columns.pc}>
+<Sheet {title} {onclose} {error} wide={columns.pc} noAutoauth>
   {#if options.length === 0}
     <p class="empty-note">Per registrare un movimento crea prima un conto nella sezione Conti.</p>
   {:else}

@@ -98,7 +98,7 @@
       {/if}
     </dd>
     <dt>Sincronizzazione</dt>
-    <dd>{statusLabel(sync.status)}</dd>
+    <dd>{statusLabel(sync.status, sync)}</dd>
   </dl>
 </Card>
 

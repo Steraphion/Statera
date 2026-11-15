@@ -172,6 +172,16 @@ export function unifyForFirstLink(local: Snapshot, remote: Snapshot): Snapshot {
   }
 }
 
+/**
+ * "Impronta" di un insieme di dati: l'orario della modifica più recente (cancellazioni comprese).
+ * Dopo una sincronizzazione, i record locali con `updatedAt` maggiore sono modifiche non ancora inviate.
+ */
+export function snapshotStamp(s: Snapshot): number {
+  let max = 0
+  for (const t of TABLES) for (const r of (s[t] ?? []) as { updatedAt: number }[]) if (r.updatedAt > max) max = r.updatedAt
+  return max
+}
+
 /** Il dispositivo ha dati inseriti dall'utente (non solo le categorie iniziali)? */
 export function hasUserData(s: Snapshot): boolean {
   return s.accounts.some((a) => a.deletedAt === null) || s.transactions.some((t) => t.deletedAt === null)

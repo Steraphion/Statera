@@ -22,7 +22,8 @@
   import { lock } from './lib/lock.svelte'
   import { startup } from './lib/startup.svelte'
   import { sync } from './lib/sync/sync.svelte'
-  import { statusLabel } from './lib/sync/labels'
+  import { syncLine } from './lib/sync/labels'
+  import { clock } from './lib/clock.svelte'
   import { screen, revealKind } from './lib/screen.svelte'
   import { columns } from './lib/columns.svelte'
   import type { RouteId } from './lib/router.svelte'
@@ -41,7 +42,11 @@
   })
 
   // Nuovo movimento da qualsiasi schermata: Movimenti apre il modulo (#/movimenti/nuovo)
-  const syncTitle = $derived(sync.status === 'off' ? 'Solo su questo dispositivo' : statusLabel(sync.status))
+  // Stato della sincronizzazione in fondo alla barra laterale (PC)
+  const syncState = $derived(syncLine(sync.view, clock.now))
+  const syncIcon = $derived(
+    syncState.renew ? 'refresh-cw' : sync.status === 'idle' || sync.status === 'syncing' ? 'cloud-check' : sync.status === 'off' ? 'smartphone' : 'cloud-off',
+  )
 
   function newMovement() {
     location.hash = '/movimenti/nuovo'
@@ -49,14 +54,15 @@
 
   // Scorciatoie da tastiera (PC), valide ovunque: N = nuovo movimento, / = cerca, ? = elenco delle scorciatoie.
   // Non scattano mentre si scrive in un campo o con un pannello aperto.
-  // Permesso Google in scadenza: si rinnova al primo tocco su un pulsante o un link (serve un tocco
-  // perché Google apre per un attimo la sua finestra). Non sul blocco, nel tastierino o sui pulsanti
-  // che aprono il modulo del movimento, per non disturbare l'inserimento.
+  // Permesso Google scaduto con modifiche da inviare: si rinnova al primo tocco su un pulsante o un link
+  // (serve un tocco perché Google apre per un attimo la sua finestra). Senza modifiche da inviare no,
+  // tranne sui pulsanti che aprono qualcosa che legge Drive (data-autoauth). Mai sul blocco, nel
+  // tastierino, nel modulo del movimento o sui pulsanti che lo aprono, per non disturbare l'inserimento.
   function onTap(e: MouseEvent) {
-    if (!sync.tokenDue || lock.locked) return
+    if (lock.locked || !sync.meta) return
     const el = (e.target as Element | null)?.closest('a, button')
     if (!el || el.closest('.keypad, dialog.lock, [data-no-autoauth]')) return
-    sync.autoReconnect()
+    sync.autoReconnect(!!el.closest('[data-autoauth]'))
   }
 
   function onKey(e: KeyboardEvent) {
@@ -137,13 +143,35 @@
         </a>
       </li>
     </ul>
-    <a class="sync-state" href="#/altro" class:off={sync.status === 'off'} title={columns.railNow ? syncTitle : undefined}>
-      <Icon name={sync.status === 'idle' || sync.status === 'syncing' ? 'cloud-check' : sync.status === 'off' ? 'smartphone' : 'cloud-off'} />
-      <span class="label">
-        <b>{syncTitle}</b>
-        <small>{sync.status === 'off' ? 'Sincronizzazione non attiva' : 'Google Drive, cifrato'}</small>
-      </span>
-    </a>
+    <!-- Permesso Google scaduto: toccando si rinnova e si sincronizza; altrimenti porta ad Altro -->
+    {#if syncState.renew}
+      <button
+        class="sync-state renew"
+        class:warn={syncState.warn}
+        title={columns.railNow ? `${syncState.title} · ${syncState.detail}` : 'Rinnova l\'accesso a Google e sincronizza'}
+        onclick={() => sync.reconnect()}
+      >
+        <Icon name={syncIcon} />
+        <span class="label">
+          <b>{syncState.title}</b>
+          <small>{syncState.detail}</small>
+        </span>
+      </button>
+    {:else}
+      <a
+        class="sync-state"
+        href="#/altro"
+        class:off={sync.status === 'off'}
+        class:warn={syncState.warn}
+        title={columns.railNow ? `${syncState.title} · ${syncState.detail}` : undefined}
+      >
+        <Icon name={syncIcon} />
+        <span class="label">
+          <b>{syncState.title}</b>
+          <small>{syncState.detail}</small>
+        </span>
+      </a>
+    {/if}
     <!-- Da 1200 px la barra si può stringere alle sole icone (scelta salvata per dispositivo) -->
     {#if columns.wide}
       <button
@@ -453,12 +481,43 @@
       color: var(--color-text-muted);
     }
 
+    .sync-state.warn {
+      color: var(--status-warning);
+    }
+
+    /* Pulsante (permesso da rinnovare): stesso aspetto del collegamento */
+    button.sync-state {
+      width: 100%;
+      border: 0;
+      font: inherit;
+      text-align: start;
+      cursor: pointer;
+    }
+
+    button.sync-state:hover {
+      background: var(--color-surface-2);
+    }
+
+    .sync-state.renew {
+      color: var(--color-accent);
+    }
+
+    .sync-state.renew.warn {
+      color: var(--status-warning);
+    }
+
     .sync-state span {
       display: flex;
       flex-direction: column;
       color: var(--color-text);
+      flex: 1;
       font-size: var(--text-sm);
-      line-height: 1.3;
+      line-height: var(--leading-compact);
+    }
+
+    .sync-state.renew small {
+      color: var(--color-accent);
+      font-weight: 700;
     }
 
     .sync-state small {

@@ -152,3 +152,24 @@ const dateTimeFmt = new Intl.DateTimeFormat('it-IT', { day: 'numeric', month: 'l
 export function formatDateTime(at: number | string): string {
   return dateTimeFmt.format(new Date(at))
 }
+
+const clockFmt = new Intl.DateTimeFormat('it-IT', { hour: '2-digit', minute: '2-digit' })
+const dayOnlyFmt = new Intl.DateTimeFormat('it-IT', { day: 'numeric', month: 'long' })
+const dayYearFmt = new Intl.DateTimeFormat('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })
+
+/**
+ * Quando è avvenuto qualcosa, rispetto ad adesso, per frasi come "Aggiornato …":
+ * oggi → 'alle 14:32', ieri → 'ieri alle 14:32', quest'anno → 'il 12 novembre alle 14:32',
+ * altrimenti → 'il 12 novembre 2025 alle 14:32'. Giorni contati secondo l'ora del dispositivo.
+ */
+export function formatWhen(at: number, now: number = Date.now()): string {
+  const d = new Date(at)
+  const n = new Date(now)
+  const clock = `alle ${clockFmt.format(d)}`
+  const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime()
+  const days = Math.round((startOf(n) - startOf(d)) / 86_400_000)
+  if (days <= 0) return clock
+  if (days === 1) return `ieri ${clock}`
+  const fmt = d.getFullYear() === n.getFullYear() ? dayOnlyFmt : dayYearFmt
+  return `il ${fmt.format(d)} ${clock}`
+}

@@ -217,7 +217,8 @@
           ? 'Il ripristino sostituisce i dati attuali su questo dispositivo e su tutti quelli sincronizzati.'
           : 'Il ripristino sostituisce tutti i dati attuali di questo dispositivo.'}
       </p>
-      <div class="actions">
+      <!-- Con la sincronizzazione il ripristino scrive su Drive: il tocco rinnova il permesso se è scaduto -->
+      <div class="actions" data-autoauth={sync.meta ? '' : undefined}>
         <DeleteButton label="Sostituisci i dati" confirmLabel="Conferma sostituzione" onconfirm={restore} />
         <button class="btn" onclick={() => (pending = null)}>Annulla</button>
       </div>

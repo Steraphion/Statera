@@ -10,6 +10,10 @@
   import { statusLabel } from '../../lib/sync/labels'
 
   let sheet = $state<'setup' | 'unlock' | 'backups' | 'password' | 'profiles' | null>(null)
+  // In rosso solo quando serve davvero un intervento (non per il permesso in pausa senza modifiche)
+  const warn = $derived(
+    ['locked', 'error', 'offline'].includes(sync.status) || (sync.status === 'needs-auth' && sync.askReconnect),
+  )
 </script>
 
 <Card>
@@ -26,14 +30,15 @@
       <dt>Account Google</dt>
       <dd>{sync.meta.email || '—'}</dd>
       <dt>Stato</dt>
-      <dd class:warn={['needs-auth', 'locked', 'error', 'offline'].includes(sync.status)}>{statusLabel(sync.status)}</dd>
+      <dd class:warn={warn}>{statusLabel(sync.status, sync)}</dd>
       <dt>Ultima sincronizzazione</dt>
       <dd>{sync.meta.lastSyncAt ? formatDateTime(sync.meta.lastSyncAt) : 'mai'}</dd>
     </dl>
     {#if sync.error}<p class="error-box">{sync.error}</p>{/if}
     <div class="actions">
       {#if sync.status === 'needs-auth'}
-        <button class="btn btn-primary" onclick={() => sync.reconnect()}>Riconnetti a Google</button>
+        <!-- Permesso scaduto: rinnova e sincronizza (dopo un rinnovo automatico non riuscito: "Riconnetti") -->
+        <button class="btn btn-primary" onclick={() => sync.reconnect()}>{sync.askReconnect ? 'Riconnetti a Google' : 'Sincronizza ora'}</button>
       {:else if sync.status === 'locked'}
         <button class="btn btn-primary" onclick={() => (sheet = 'unlock')}>Inserisci la password</button>
       {:else}
@@ -41,8 +46,9 @@
           {sync.status === 'syncing' ? 'Sincronizzazione…' : 'Sincronizza ora'}
         </button>
       {/if}
-      <button class="btn" onclick={() => (sheet = 'backups')}>Backup su Drive</button>
-      <button class="btn" onclick={() => (sheet = 'password')}>Cambia password</button>
+      <!-- Leggono Drive: il tocco rinnova il permesso se è scaduto (data-autoauth, App.svelte) -->
+      <button class="btn" data-autoauth onclick={() => (sheet = 'backups')}>Backup su Drive</button>
+      <button class="btn" data-autoauth onclick={() => (sheet = 'password')}>Cambia password</button>
     </div>
     <div class="actions secondary">
       <DeleteButton label="Scollega questo dispositivo" confirmLabel="Conferma: scollega" onconfirm={() => sync.disconnect()} />

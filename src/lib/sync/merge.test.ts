@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { emptySnapshot, hasUserData, merge, unifyForFirstLink, type Snapshot } from './merge'
+import { emptySnapshot, hasUserData, merge, snapshotStamp, unifyForFirstLink, type Snapshot } from './merge'
 import type { Account, Card, Category, Transaction } from '../data/types'
 import { seedId } from '../data/repo'
 
@@ -95,5 +95,16 @@ describe('primo collegamento', () => {
   it('dati utente presenti?', () => {
     expect(hasUserData(snap({ categories: [cat('c', 'Casa')] }))).toBe(false)
     expect(hasUserData(snap({ accounts: [acc('a', 'A')] }))).toBe(true)
+  })
+})
+
+describe('snapshotStamp', () => {
+  it('orario della modifica più recente in tutte le tabelle (0 se vuoto)', () => {
+    expect(snapshotStamp(emptySnapshot())).toBe(0)
+    expect(snapshotStamp(snap({ accounts: [acc('a', 'A', 5)], transactions: [tx('t', { updatedAt: 12, deletedAt: 12 })] }))).toBe(12)
+  })
+  it('accetta file vecchi senza le tabelle più recenti', () => {
+    const old = { accounts: [acc('a', 'A', 7)], cards: [], categories: [], transactions: [] } as unknown as Snapshot
+    expect(snapshotStamp(old)).toBe(7)
   })
 })

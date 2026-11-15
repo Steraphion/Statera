@@ -11,6 +11,7 @@
     footer,
     error = '',
     wide = false,
+    noAutoauth = false,
   }: {
     title: string
     onclose: () => void
@@ -19,6 +20,8 @@
     error?: string
     /** Su PC (da 900 px) finestra larga, per un contenuto su due colonne. */
     wide?: boolean
+    /** I tocchi qui dentro non rinnovano il permesso Google (modulo del movimento: non si disturba l'inserimento). */
+    noAutoauth?: boolean
   } = $props()
 
   let dialog = $state<HTMLDialogElement>()
@@ -41,6 +44,7 @@
 <dialog
   bind:this={dialog}
   class:wide
+  data-no-autoauth={noAutoauth ? '' : undefined}
   in:enter
   out:leave
   aria-label={title}

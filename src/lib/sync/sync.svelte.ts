@@ -6,12 +6,17 @@ import { upsertProfile } from '../profiles'
 import * as core from './core'
 import * as cr from './crypto'
 import { AuthExpiredError, Drive, OfflineError, loadGis, requestToken, revokeToken, type DriveFile, type Token } from './google'
-import { hasUserData, TABLES } from './merge'
+import { hasUserData, snapshotStamp, TABLES } from './merge'
+import type { SyncView } from './labels'
 
 /**
  * Stato della sincronizzazione per l'interfaccia, e quando sincronizzare:
  * all'avvio, quando l'app torna in primo piano, quando torna la rete,
  * pochi secondi dopo ogni modifica e ogni 5 minuti mentre l'app è aperta.
+ *
+ * Il permesso di Google dura un'ora e si rinnova solo con un tocco (Google apre per un attimo la sua
+ * finestra). Si rinnova da solo al primo tocco solo se ci sono modifiche fatte qui da inviare;
+ * altrimenti resta in pausa e l'interfaccia mostra "Aggiornato alle … · Sincronizza".
  */
 
 export type SyncStatus =
@@ -29,6 +34,11 @@ export interface SyncMeta {
   linkedAt: number
   lastSyncAt: number | null
   lastBackupDay: string | null
+  /**
+   * Impronta dei dati (modifica più recente) all'ultima sincronizzazione riuscita: i record locali
+   * più recenti sono modifiche da inviare. Solo su questo dispositivo; manca nelle versioni precedenti.
+   */
+  sentStamp?: number
 }
 
 /** Esito del primo passo dell'attivazione (dopo l'accesso a Google). */
@@ -57,6 +67,8 @@ class SyncEngine {
   error = $state('')
   /** Ultimo esito, per mostrarlo all'utente. */
   lastResult = $state<{ pulled: number; pushed: boolean } | null>(null)
+  /** Modifiche fatte su questo dispositivo non ancora inviate a Drive. */
+  pending = $state(false)
 
   #key: CryptoKey | null = null
   #token: Token | null = null
@@ -68,9 +80,15 @@ class SyncEngine {
   #lastStamp = 0
   /** Rinnovo automatico del permesso già tentato (si riprova dopo il prossimo accesso riuscito). */
   #autoTried = false
-  #reconnecting = false
+  /** Rinnovo del permesso in corso: chi ha bisogno di Drive lo aspetta. */
+  #renewing: Promise<Token | null> | null = null
   /** Il rinnovo automatico non è riuscito: si mostra l'avviso con "Riconnetti". */
   askReconnect = $state(false)
+
+  /** Quello che serve ai testi di stato (labels.ts). */
+  get view(): SyncView {
+    return { status: this.status, lastSyncAt: this.meta?.lastSyncAt ?? null, pending: this.pending, askReconnect: this.askReconnect }
+  }
 
   // ---------- avvio ----------
 
@@ -83,6 +101,7 @@ class SyncEngine {
       this.status = 'off'
       return
     }
+    this.#lastStamp = meta.sentStamp ?? meta.lastSyncAt ?? 0
     this.#watch()
     // La libreria di Google pronta in anticipo: il rinnovo del permesso deve partire subito al tocco
     void loadGis().catch(() => {})
@@ -120,29 +139,44 @@ class SyncEngine {
     return null
   }
 
-  /** Il permesso manca o scade entro 5 minuti: al prossimo tocco conviene rinnovarlo. */
-  get tokenDue(): boolean {
-    if (!this.meta || !this.#key) return false
-    return !(this.#token && this.#token.expiresAt > Date.now() + 5 * 60_000)
+  /** Collegato e sbloccato, ma senza un permesso Google valido. */
+  get #tokenMissing(): boolean {
+    return !!this.meta && !!this.#key && !this.#validToken()
+  }
+
+  /** Il permesso è scaduto e ci sono modifiche da inviare: al prossimo tocco si rinnova da solo. */
+  get renewDue(): boolean {
+    return this.pending && this.#tokenMissing
   }
 
   /**
    * Rinnovo automatico del permesso, da chiamare dentro un tocco dell'utente: Google apre la sua
-   * finestra e, se l'accesso è già stato dato, la richiude da sola. Un solo tentativo per scadenza;
-   * se non riesce compare l'avviso con "Riconnetti".
+   * finestra e, se l'accesso è già stato dato, la richiude da sola. Solo se ci sono modifiche da
+   * inviare, oppure con `force` (pulsanti che aprono qualcosa che legge Drive, `data-autoauth`).
+   * Un solo tentativo per scadenza; se non riesce compare l'avviso con "Riconnetti".
    */
-  autoReconnect() {
-    if (!this.tokenDue || this.#autoTried || this.#reconnecting) return
+  autoReconnect(force = false) {
+    if (!this.#tokenMissing || this.#autoTried || this.#renewing) return
+    if (!force && !this.pending) return
     if (typeof navigator !== 'undefined' && navigator.onLine === false) return
     this.#autoTried = true
     void this.reconnect(true)
   }
 
-  /** Riconnessione a Google dopo la scadenza del permesso (va chiamata da un tocco). */
+  /** Rinnovo del permesso Google e sincronizzazione (va chiamata da un tocco). */
   async reconnect(auto = false) {
-    if (this.#reconnecting) return
-    this.#reconnecting = true
+    if (this.#renewing) {
+      await this.#renewing
+      return
+    }
     this.error = ''
+    this.#renewing = this.#renew(auto)
+    const t = await this.#renewing
+    this.#renewing = null
+    if (t) await this.syncNow()
+  }
+
+  async #renew(auto: boolean): Promise<Token | null> {
     try {
       const t = await requestToken({ silent: true, hint: this.meta?.email })
       // Controllo che sia lo stesso account
@@ -151,12 +185,11 @@ class SyncEngine {
         throw new Error(`Hai scelto ${user.email}, ma questo profilo è collegato a ${this.meta.email}`)
       }
       this.#saveToken(t)
-      await this.syncNow()
+      return t
     } catch (e) {
       this.askReconnect = true
       if (!auto) this.error = msg(e)
-    } finally {
-      this.#reconnecting = false
+      return null
     }
   }
 
@@ -250,6 +283,7 @@ class SyncEngine {
     this.#saveToken(null)
     this.meta = null
     this.#key = null
+    this.pending = false
     this.status = 'off'
     this.error = ''
   }
@@ -262,6 +296,7 @@ class SyncEngine {
     await db.meta.bulkDelete(['sync', 'syncKey'])
     this.meta = null
     this.#key = null
+    this.pending = false
     this.status = 'off'
     this.error = ''
   }
@@ -314,11 +349,16 @@ class SyncEngine {
         await core.dailyBackup(new Drive(t.value), this.#key, r.merged, r.files, day)
         await this.#updateMeta({ lastBackupDay: day })
       }
-      await this.#updateMeta({ lastSyncAt: Date.now() })
+      // Quello che c'era qui e su Drive ora coincide: le modifiche successive sono da inviare
+      const sent = snapshotStamp(r.merged)
+      this.#lastStamp = sent
+      await this.#updateMeta({ lastSyncAt: Date.now(), sentStamp: sent })
+      this.status = 'idle'
+      // Modifiche fatte mentre si sincronizzava: si inviano subito dopo
+      this.pending = (await this.#localStamp()) > sent
+      if (this.pending) this.syncSoon(1000)
       // Ora che i dati sono allineati, si registrano i movimenti ricorrenti scaduti
       // (se ne nascono, verranno caricati alla prossima sincronizzazione, tra pochi secondi)
-      this.#lastStamp = await this.#localStamp()
-      this.status = 'idle'
       if ((await processRecurring(today())) > 0) this.syncSoon(1000)
     } catch (e) {
       if (e instanceof AuthExpiredError) {
@@ -362,7 +402,9 @@ class SyncEngine {
     // Modifiche fatte sul dispositivo → sincronizza dopo qualche secondo
     liveQuery(() => this.#localStamp()).subscribe({
       next: (stamp) => {
-        if (this.meta && stamp > this.#lastStamp && this.status !== 'syncing') this.syncSoon(4000)
+        if (!this.meta || this.status === 'syncing') return
+        this.pending = stamp > this.#lastStamp
+        if (this.pending) this.syncSoon(4000)
       },
     })
     document.addEventListener('visibilitychange', () => {
@@ -377,6 +419,8 @@ class SyncEngine {
   // ---------- gestione ----------
 
   async #drive(): Promise<Drive> {
+    // Permesso in rinnovo (tocco sul pulsante che ha aperto questo pannello): lo si aspetta
+    if (!this.#validToken() && this.#renewing) await this.#renewing
     const t = this.#validToken()
     if (!t) {
       this.status = 'needs-auth'

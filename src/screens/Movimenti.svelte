@@ -22,6 +22,7 @@
   import { columns } from '../lib/columns.svelte'
   import Splitter from '../components/Splitter.svelte'
   import MonthBudgetCard from '../components/MonthBudgetCard.svelte'
+  import SyncLine from '../components/sync/SyncLine.svelte'
 
   const refs = useRefs()
 
@@ -105,6 +106,10 @@
     <Icon name="search" />
   </a>
 </header>
+
+{#if !columns.pc}
+  <SyncLine />
+{/if}
 
 {#if refs.ready}
   <SetupGuide hasAccounts={!noAccounts} onnew={() => (sheet = {})} />

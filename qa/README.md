@@ -10,7 +10,8 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
   Richiede due build in cartelle separate servite su `localhost:4174`.
 - `sincronizzazione.py` — Fase 2 con Google e Drive **simulati** (nessun account reale): attivazione con password e
   chiave di recupero, secondo dispositivo con unione senza doppioni, modifiche e cancellazioni nei due sensi,
-  permesso scaduto e riconnessione, cambio password, terzo dispositivo con chiave di recupero, backup e ripristino,
+  permesso scaduto (senza modifiche da inviare nessuna finestra di Google, "Aggiornato alle … · Sincronizza" su
+  telefono e PC; con modifiche rinnovo al primo tocco, non nel modulo del movimento; apertura dei backup), riconnessione, cambio password, terzo dispositivo con chiave di recupero, backup e ripristino,
   profili, scollegamento, uso senza rete. Uso come `collaudo.py`.
 - `analisi.py` + `anno-di-esempio.js` — Fase 3: carica un anno di movimenti di esempio e controlla riquadri,
   barre per categoria, colonne mensili (suggerimento al passaggio e vista tabella), budget, passaggio a Cerca.
