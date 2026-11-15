@@ -11,7 +11,10 @@ elenco regolabile col dettaglio mai sotto --size-detail-min, colonna del saldo n
 Finestra del movimento (v0.31.2): larga e su due colonne da 900 px (importo, conto, data e descrizione a sinistra,
 categoria a destra; per i trasferimenti data a sinistra e altre scelte a destra), suggerimenti con frecce e Invio,
 Invio sulla categoria che salva, Invio nelle note che va a capo e Ctrl+Invio che salva, Esc; sotto i 900 px una colonna.
-Sul telefono (Pixel 7) nessuna di queste cose: il conto si apre nella sua schermata, il modulo resta in colonna.
+Scorciatoie (v0.31.3): ? apre l'elenco (non dentro un campo né sopra un'altra finestra), Esc lo chiude, si apre anche
+dalla colonna di destra e da Altro; in Analisi ← → cambiano periodo.
+Sul telefono (Pixel 7) nessuna di queste cose: il conto si apre nella sua schermata, il modulo resta in colonna, in
+Altro niente scorciatoie.
 """
 import asyncio, re, json, datetime, os
 from playwright.async_api import async_playwright
@@ -284,6 +287,45 @@ async def finestra(pg, label):
     await pg.keyboard.press("Escape"); await pg.wait_for_timeout(400)
     await pg.set_viewport_size({"width": 1280, "height": 860})
 
+async def scorciatoie(pg, label):
+    await pg.set_viewport_size({"width": 1280, "height": 860})
+    await pg.goto(BASE + "/#/movimenti"); await pg.wait_for_timeout(600)
+    await pg.locator("body").click(position={"x": 5, "y": 5}); await pg.keyboard.press("?"); await pg.wait_for_timeout(500)
+    dlg = pg.get_by_role("dialog", name="Scorciatoie da tastiera")
+    heads = await dlg.locator("h3").all_text_contents()
+    check(f"{label}: ? apre l'elenco delle scorciatoie", await dlg.count() == 1 and heads == ["Ovunque", "Movimenti, Conti, Analisi", "Nelle finestre", "Colonne (separatore)"], str(heads))
+    txt = await dlg.inner_text()
+    check(f"{label}: elenco con N, /, ?, Esc, frecce, Invio e Ctrl+Invio", all(k in txt for k in ["Nuovo movimento", "Cerca", "Questo elenco", "Chiude la finestra", "Mese precedente", "Salva anche dalle note", "Larghezza iniziale"]))
+    check(f"{label}: tasti scritti come tasti", await dlg.locator("kbd").count() >= 18)
+    check(f"{label}: niente scorrimento orizzontale nell'elenco", await pg.evaluate("(() => { const b = document.querySelector('dialog[open] .body'); return b.scrollWidth <= b.clientWidth })()"))
+    await pg.keyboard.press("Escape"); await pg.wait_for_timeout(400)
+    check(f"{label}: Esc chiude l'elenco", await pg.locator("dialog[open]").count() == 0)
+    await pg.locator("#mov-aside").get_by_role("button", name=re.compile("tutte le scorciatoie")).click(); await pg.wait_for_timeout(400)
+    check(f"{label}: si apre anche dalla colonna di destra", await dlg.count() == 1)
+    await pg.keyboard.press("Escape"); await pg.wait_for_timeout(400)
+    # ? scritto in un campo resta un carattere; ? con un'altra finestra aperta non apre nulla
+    await pg.goto(BASE + "/#/cerca"); await pg.wait_for_timeout(500)
+    inp = pg.get_by_role("searchbox").or_(pg.locator("input[type=search], input[type=text]")).first
+    await inp.click(); await pg.keyboard.type("?")
+    check(f"{label}: ? in un campo resta un carattere", await pg.locator("dialog[open]").count() == 0 and "?" in await inp.input_value())
+    await pg.goto(BASE + "/#/movimenti"); await pg.wait_for_timeout(500)
+    await pg.locator("body").click(position={"x": 5, "y": 5}); await pg.keyboard.press("n"); await pg.wait_for_selector("dialog[open]")
+    await pg.get_by_role("radio", name="Entrata").focus(); await pg.keyboard.press("?"); await pg.wait_for_timeout(300)
+    check(f"{label}: con la finestra del movimento aperta ? non ne apre un'altra", await pg.locator("dialog[open]").count() == 1)
+    await pg.keyboard.press("Escape"); await pg.wait_for_timeout(400)
+    # da Altro
+    await pg.goto(BASE + "/#/altro"); await pg.wait_for_timeout(500)
+    await pg.get_by_role("button", name=re.compile("^Scorciatoie da tastiera")).click(); await pg.wait_for_timeout(400)
+    check(f"{label}: si apre anche da Altro", await dlg.count() == 1)
+    await pg.keyboard.press("Escape"); await pg.wait_for_timeout(400)
+    # frecce in Analisi
+    await pg.goto(BASE + "/#/analisi"); await pg.wait_for_timeout(700)
+    t0 = await pg.locator("h1").first.inner_text()
+    await pg.locator("body").click(position={"x": 5, "y": 5}); await pg.keyboard.press("ArrowLeft"); await pg.wait_for_timeout(400)
+    t1 = await pg.locator("h1").first.inner_text()
+    await pg.keyboard.press("ArrowRight"); await pg.wait_for_timeout(400)
+    check(f"{label}: in Analisi le frecce cambiano periodo", t1 != t0 and await pg.locator("h1").first.inner_text() == t0, f"{t0} {t1}")
+
 async def telefono(pg, label):
     await pg.goto(BASE + "/#/movimenti"); await pg.wait_for_timeout(600)
     check(f"{label}: niente separatore né budget nella schermata", await pg.locator(".splitter").count() == 0 and await pg.get_by_role("heading", name="Budget del mese").count() == 0)
@@ -295,6 +337,8 @@ async def telefono(pg, label):
     await pg.get_by_role("button", name="Nuovo movimento").locator("visible=true").first.click(); await pg.wait_for_selector("dialog[open]"); await pg.wait_for_timeout(400)
     check(f"{label}: modulo del movimento in colonna, come prima", await pg.evaluate("getComputedStyle(document.querySelector('#movement-form')).display") == "flex")
     await pg.get_by_role("button", name="Chiudi").click(); await pg.wait_for_timeout(500)
+    await pg.goto(BASE + "/#/altro"); await pg.wait_for_timeout(500)
+    check(f"{label}: in Altro niente scorciatoie da tastiera", await pg.get_by_role("button", name=re.compile("^Scorciatoie da tastiera")).count() == 0)
     await pg.goto(BASE + "/#/conti"); await pg.wait_for_timeout(600)
     check(f"{label}: Conti senza dettaglio accanto", await pg.locator(".detail-col").count() == 0 and await pg.locator(".splitter").count() == 0)
     await pg.locator(".list-row", has_text="Conto corrente").first.click(); await pg.wait_for_timeout(600)
@@ -319,6 +363,7 @@ async def main():
                     await separatore(pg, label)
                     await conti(pg, label)
                     await finestra(pg, label)
+                    await scorciatoie(pg, label)
                     await barra(pg, label)
             check(f"{label}: nessun errore", not errs, str(errs[:3]))
             await ctx.close()

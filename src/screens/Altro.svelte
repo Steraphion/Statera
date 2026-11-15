@@ -11,6 +11,8 @@
   import Segmented from '../components/Segmented.svelte'
   import { theme } from '../lib/theme.svelte'
   import type { ThemePref } from '../lib/theme'
+  import { columns } from '../lib/columns.svelte'
+  import { ui } from '../lib/ui.svelte'
 
   let themePref = $state<ThemePref>(theme.pref)
   $effect(() => {
@@ -36,6 +38,13 @@
     <span class="grow">Movimenti ricorrenti</span>
     <Icon name="chevron-right" size={18} />
   </a>
+  {#if columns.pc}
+    <button class="link-row" onclick={() => (ui.shortcuts = true)}>
+      <span class="ic" aria-hidden="true"><Icon name="keyboard" size={18} /></span>
+      <span class="grow">Scorciatoie da tastiera</span>
+      <kbd>?</kbd>
+    </button>
+  {/if}
 </Card>
 
 <Card>
@@ -113,6 +122,16 @@
   h2 {
     font-size: var(--text-lg);
     margin-bottom: var(--space-2);
+  }
+
+  button.link-row {
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
   }
 
   .link-row {

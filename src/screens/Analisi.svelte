@@ -52,6 +52,15 @@
     a.month = shiftMonth(a.month, a.kind === 'mese' ? delta : delta * 12)
   }
 
+  // Scorciatoie da tastiera (PC): ← → periodo precedente e successivo, come in Movimenti
+  function onKey(e: KeyboardEvent) {
+    if (e.ctrlKey || e.metaKey || e.altKey || budgetSheet) return
+    if ((e.target as HTMLElement).closest('input, textarea, select, [contenteditable], [role=separator]')) return
+    if (document.querySelector('dialog[open]')) return
+    if (e.key === 'ArrowLeft') shift(-1)
+    else if (e.key === 'ArrowRight') shift(1)
+  }
+
   function exportCsv() {
     const r = an.periodRange(period)
     downloadText(movementsToCsv(rows, refs.value), csvFileName(r.from, r.to))
@@ -72,10 +81,12 @@
   }
 </script>
 
+<svelte:window onkeydown={onKey} />
+
 <header class="top">
-  <button class="btn btn-ghost nav" aria-label="Periodo precedente" onclick={() => shift(-1)}><Icon name="chevron-left" /></button>
+  <button class="btn btn-ghost nav" aria-label="Periodo precedente" title="Periodo precedente (freccia a sinistra)" onclick={() => shift(-1)}><Icon name="chevron-left" /></button>
   <h1>{title}</h1>
-  <button class="btn btn-ghost nav" aria-label="Periodo successivo" onclick={() => shift(1)}><Icon name="chevron-right" /></button>
+  <button class="btn btn-ghost nav" aria-label="Periodo successivo" title="Periodo successivo (freccia a destra)" onclick={() => shift(1)}><Icon name="chevron-right" /></button>
   <span class="spacer"></span>
   {#if !isCurrent}
     <button class="btn btn-small" onclick={() => (a.month = monthOf(today()))}>Oggi</button>

@@ -12,6 +12,8 @@ class UiState {
   view = $state<'elenco' | 'calendario'>('elenco')
   /** Ricerca in corso. */
   filters = $state<Filters>({ ...EMPTY_FILTERS })
+  /** Elenco delle scorciatoie da tastiera aperto (tasto ?). */
+  shortcuts = $state(false)
 }
 
 export const ui = new UiState()

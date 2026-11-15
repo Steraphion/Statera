@@ -97,4 +97,6 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
   categoria a destra con l'elenco più lungo; per i trasferimenti data a sinistra e altre scelte a destra), suggerimenti
   nella colonna di sinistra con frecce e Invio (che non salva), Invio sulla categoria che salva, Invio nelle note che va
   a capo e Ctrl+Invio che salva, Esc; a 800 px finestra `--size-window` a una colonna; sul telefono modulo in colonna.
-  Uso come `collaudo.py`.
+  Dalla v0.31.3, scorciatoie: ? apre l'elenco (quattro gruppi, tasti come `<kbd>`), non dentro un campo né sopra
+  un'altra finestra, Esc lo chiude, si apre anche dalla colonna di destra di Movimenti e da Altro (solo su PC); in
+  Analisi ← → cambiano periodo. Uso come `collaudo.py`.

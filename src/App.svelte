@@ -17,6 +17,8 @@
   import Toast from './components/Toast.svelte'
   import Keypad from './components/Keypad.svelte'
   import LockScreen from './components/LockScreen.svelte'
+  import ShortcutsSheet from './components/ShortcutsSheet.svelte'
+  import { ui } from './lib/ui.svelte'
   import { lock } from './lib/lock.svelte'
   import { startup } from './lib/startup.svelte'
   import { sync } from './lib/sync/sync.svelte'
@@ -45,7 +47,7 @@
     location.hash = '/movimenti/nuovo'
   }
 
-  // Scorciatoie da tastiera (PC), valide ovunque: N = nuovo movimento, / = cerca.
+  // Scorciatoie da tastiera (PC), valide ovunque: N = nuovo movimento, / = cerca, ? = elenco delle scorciatoie.
   // Non scattano mentre si scrive in un campo o con un pannello aperto.
   // Permesso Google in scadenza: si rinnova al primo tocco su un pulsante o un link (serve un tocco
   // perché Google apre per un attimo la sua finestra). Non sul blocco, nel tastierino o sui pulsanti
@@ -67,6 +69,9 @@
     } else if (e.key === '/') {
       e.preventDefault()
       location.hash = '/cerca'
+    } else if (e.key === '?') {
+      e.preventDefault()
+      ui.shortcuts = true
     }
   }
 </script>
@@ -189,6 +194,9 @@
     {/if}
   </main>
 </div>
+{#if ui.shortcuts}
+  <ShortcutsSheet onclose={() => (ui.shortcuts = false)} />
+{/if}
 <Toast />
 <Keypad />
 <ErrorToast />

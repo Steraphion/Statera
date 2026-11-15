@@ -75,6 +75,8 @@
     if (sheet || e.ctrlKey || e.metaKey || e.altKey) return
     const el = e.target as HTMLElement
     if (el.closest('input, textarea, select, [contenteditable]')) return
+    // Un'altra finestra aperta (preferiti, budget, scorciatoie): le frecce sono sue
+    if (document.querySelector('dialog[open]')) return
     if (e.key === 'ArrowLeft') ui.month = shiftMonth(ui.month, -1)
     else if (e.key === 'ArrowRight') ui.month = shiftMonth(ui.month, 1)
   }
@@ -128,7 +130,8 @@
   <MonthBudgetCard {rows} month={ui.month} categories={refs.value.categories} />
   <p class="keys-hint">
     <kbd>N</kbd> nuovo <span aria-hidden="true">·</span> <kbd>/</kbd> cerca <span aria-hidden="true">·</span>
-    <kbd>←</kbd><kbd>→</kbd> mese
+    <kbd>←</kbd><kbd>→</kbd> mese <span aria-hidden="true">·</span>
+    <button class="all-keys" onclick={() => (ui.shortcuts = true)}><kbd>?</kbd> tutte le scorciatoie</button>
   </p>
 {/if}
 </aside>
@@ -242,6 +245,19 @@
      prima parte, le altre nella colonna di destra) */
   .lead:has(:global(.card)) + .aside > :global(.card:first-child) {
     margin-top: var(--space-4);
+  }
+
+  .all-keys {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-accent);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
   }
 
   .keys-hint {
