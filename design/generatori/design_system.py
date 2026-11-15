@@ -25,6 +25,11 @@ def ai(name, size=20, sw=2):
 
 # ================================================================ token (da src/styles/tokens.css)
 TL, TD = APP.tokens_light, APP.tokens_dark
+
+def ms(name):
+    """Durata di un token scritta per il manuale: '360ms' → '360 ms'."""
+    v = TL[name].strip()
+    return v[:-2] + ' ms' if v.endswith('ms') else str(round(float(v[:-1]) * 1000)) + ' ms'
 def _hex(v):
     v = v.strip()
     if re.fullmatch(r'#[0-9a-fA-F]{3}', v): v = '#' + ''.join(c * 2 for c in v[1:])
@@ -142,11 +147,11 @@ USAGE = {
  'focus-width': 'Spessore dell\'anello del focus; anello dell\'icona scelta.',
  'focus-offset': 'Distanza dell\'anello dal comando.',
  'cat-tint': f'Intensità del cerchio dell\'icona di categoria: tinta al {TL.get("cat-tint")} in chiaro, al {TD.get("cat-tint")} in scuro (il valore scuro sta in bundle.css, perché fuori dai colori i token non hanno temi).',
- 'duration-fast': 'Pressione di un pulsante o di un tasto, cambio di colore.',
- 'duration-base': 'Interruttore, segmentato, avvisi che compaiono.',
- 'duration-slow': 'Pannello che sale dal basso, finestra che si apre.',
- 'ease-standard': 'Ingressi e cambi di stato.',
- 'ease-exit': 'Uscite: pannelli che si chiudono, avvisi che spariscono.',
+ 'duration-fast': 'Pressione di un pulsante o di un tasto, cambio di colore; contenuto nuovo dentro un avviso già aperto.',
+ 'duration-base': 'Interruttore, segmentato; avvisi che entrano ed escono; tastierino che si apre e si chiude; righe che si aprono e si chiudono; comparsa delle schermate; uscita di pannelli e finestre.',
+ 'duration-slow': 'Entrata di pannelli e finestre (anche lo sfondo scurito); barre del budget e degli obiettivi che scorrono al nuovo valore.',
+ 'ease-standard': 'Tutte le entrate e i cambi di stato: parte svelta e rallenta.',
+ 'ease-exit': 'Tutte le uscite: pannelli e finestre che si chiudono, avvisi che spariscono, tastierino e righe che si chiudono.',
 }
 SWATCH_NAMES = ['verde', 'terracotta', 'blu', 'nocciola', 'viola', 'petrolio', 'rosa', 'oliva']
 
@@ -476,7 +481,7 @@ CSS = r'''/* Statera — componenti di riferimento. Tutti i valori vengono da to
 .st-key--off { visibility: hidden; }
 
 @media (prefers-reduced-motion: reduce) {
-  .st *, .st *::before, .st *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+  .st *, .st *::before, .st *::after, .st ::backdrop { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
 '''
 
@@ -636,6 +641,9 @@ comp('RigaMovimento', 'Contenuti', 400, '''Una riga di un elenco di movimenti: i
 - Uscite in color-text, entrate in color-income con `is-income`. Il colore non è mai l'unico segnale: c'è sempre il segno.
 - Nel dettaglio di un conto, sotto l'importo, il saldo dopo il movimento («saldo 6.940,55 €») oppure il Badge «non incide» se il movimento è prima del saldo iniziale.
 
+## Movimento
+Si apre in altezza (`duration-base`, `ease-standard`) solo la riga appena salvata o ripristinata con Annulla, e si chiude (`ease-exit`) solo quella appena eliminata; se il giorno è nuovo, o resta vuoto, si apre o si chiude il giorno intero. Un elenco che cambia mese o si riempie all'apertura non si anima.
+
 ## PC
 Con `st-mrow--pc` la riga ha una colonna per la fonte e, al passaggio del puntatore, fondo color-surface-2 con i pulsanti Modifica ed Elimina.
 ''', f'''<div class="st st-stage st-stage--col"><div class="st-card" style="max-width: 390px; padding-top: var(--space-2)">
@@ -743,6 +751,9 @@ comp('Avanzamento', 'Stato e messaggi', 420, '''Barre del budget e anelli degli 
 ## Obiettivo
 `st-ring` (60 px, tratto 6) nella tinta dell'obiettivo, con la percentuale scritta al centro e `role="img"` con l'etichetta completa. Accanto: «1.228,15 € di 2.000,00 €», quanto manca e, se c'è una data, quanto mettere da parte al mese.
 
+## Movimento
+Quando il valore cambia (un mese diverso, un budget modificato, una somma aggiunta all'obiettivo) la barra scorre al nuovo valore in `duration-slow` con `ease-standard`. All'apertura della schermata è già al suo posto: non riparte da zero a ogni visita.
+
 ## Regole
 Mai uno stato indicato dal solo colore: parola, simbolo e numero ci sono sempre.
 ''', f'''<div class="st st-stage" style="align-items: flex-start">
@@ -765,6 +776,11 @@ comp('Avviso', 'Stato e messaggi', 470, '''Messaggi all'utente: la conferma a co
 ## Riquadro d'errore
 `st-errorbox` (`.error-box` dell'app): color-danger al 12% sullo sfondo, testo color-text `text-sm` peso 600, accanto ai pulsanti del modulo. Il testo resta color-text: il colore di pericolo sta solo nel fondo.
 
+## Movimento
+- Conferma a comparsa: entra in dissolvenza salendo di `space-4` (`duration-base`, `ease-standard`), esce in dissolvenza (`duration-base`, `ease-exit`). Una conferma nuova prende il posto della vecchia senza sovrapporsi: cambia solo il contenuto, con una dissolvenza in `duration-fast`.
+- Avviso in cima: si apre in altezza in `duration-base` (classe `.grow` dell'app), spingendo giù il contenuto senza scatti.
+- Dopo «Elimina» la conferma «Movimento eliminato» offre Annulla per sei secondi.
+
 ## Testi
 Prima cosa è successo, poi cosa fare, senza colpe e senza punti esclamativi: «Il salvataggio non è riuscito entro 10 secondi. Riprova: i dati del modulo sono ancora qui.»
 ''', f'''<div class="st st-stage st-stage--col" style="max-width: 440px; gap: var(--space-3)">
@@ -778,7 +794,13 @@ Prima cosa è successo, poi cosa fare, senza colpe e senza punti esclamativi: «
 comp('Finestra', 'Stato e messaggi', 560, '''I contenitori modali: il pannello che sale dal basso sul telefono, la finestra centrata su PC, la conferma.
 
 ## Pannello (telefono)
-`st-sheet` sopra `st-backdrop`: color-bg, angoli alti `radius-xl`, maniglia `st-sheet__grip`, `shadow-3`. Sale con `duration-slow` ed `ease-standard`. In alto: Chiudi a sinistra, il Segmentato o il titolo al centro; in fondo il Pulsante grande.
+`st-sheet` sopra `st-backdrop`: color-bg, angoli alti `radius-xl`, maniglia `st-sheet__grip`, `shadow-3`. In alto: Chiudi a sinistra, il Segmentato o il titolo al centro; in fondo il Pulsante grande.
+
+## Movimento
+- Pannello: sale dal basso in `duration-slow` con `ease-standard`; esce scendendo in `duration-base` con `ease-exit`. Lo sfondo scurito compare e sparisce insieme.
+- Finestra su PC: compare in dissolvenza ingrandendosi da 0,96, esce rimpicciolendo a 0,98, con gli stessi token.
+- Durante l'uscita la finestra resta aperta ma non risponde ai tocchi; si toglie a fine animazione. Riaperta mentre esce, torna indietro senza scatti.
+- La `<dialog>` ha `overflow: clip`: senza, il focus sul primo comando la faceva scorrere col pannello ancora fuori schermo.
 
 ## Finestra (PC)
 `st-dialog`, larga al massimo `content-max`, a `space-8` dal bordo alto, contenuto su due colonne. Intestazione con titolo `titolo-2` e Chiudi con il Tasto Esc; in fondo `st-dialog__foot` con le azioni a destra e il Tasto Invio sul pulsante principale.
@@ -860,6 +882,7 @@ Tasti alti `size-key`, `radius-md`; cifre in `tastierino` (`text-xl`, peso 700) 
 - I tasti non prendono il focus: il cursore resta nel campo. Al tocco il contenuto del campo è selezionato, così la prima cifra lo sostituisce.
 - «12,50+3,20» e poi = scrive il risultato; Fatto chiude il tastierino.
 - Numeri interi (buoni pasto): virgola, +, − e = restano al loro posto ma invisibili e disattivati, così le cifre non si spostano.
+- Movimento: dentro un pannello si apre e si chiude in altezza (`duration-base`, `ease-standard` / `ease-exit`) mentre i pulsanti restano in fondo; in fondo alla pagina sale e scende dal basso. Passando da un campo di importo a un altro resta fermo.
 - Su PC si usa la tastiera vera: il tastierino non compare.
 ''', f'''<div class="st st-stage" style="align-items: flex-end">
 <div class="st-stack" style="width: 360px">{card_txt('Importo, dentro il pannello')}{keypad()}</div>
@@ -1096,9 +1119,32 @@ Il riferimento è l'app pubblicata (versione {APP.version}): token, icone, logo 
 - Errore: anello in color-danger sul campo e riquadro d'errore (Avviso) accanto ai pulsanti.
 
 ## Movimento
-- `duration-fast` (120 ms) per pressioni, tasti e colori, `duration-base` (200 ms) per interruttori, segmentato e avvisi, `duration-slow` (280 ms) per pannelli e finestre. Entrate con `ease-standard`, uscite con `ease-exit`.
-- Il movimento accompagna, non decora: niente rimbalzi, niente animazioni in attesa.
-- Con «riduci animazioni» attivo nel sistema, nessuno spostamento: transizioni e animazioni ridotte a 0,01 ms, scorrimento senza animazione.
+Il movimento accompagna, non decora: dice da dove arriva una cosa e dove va, poi si ferma. Niente rimbalzi, niente animazioni in attesa, niente numeri che contano. Si usano solo i token: `duration-fast` ({ms('duration-fast')}), `duration-base` ({ms('duration-base')}), `duration-slow` ({ms('duration-slow')}); entrate con `ease-standard` (parte svelta e rallenta), uscite con `ease-exit` (parte piano e accelera). Le uscite sono più brevi delle entrate: chi chiude ha già deciso.
+
+| Cosa | Entrata | Uscita |
+|---|---|---|
+| Pannello (telefono) | sale dal basso, `duration-slow`, sfondo scurito in dissolvenza | scende, `duration-base` |
+| Finestra (PC) | dissolvenza e ingrandimento da 0,96, `duration-slow` | dissolvenza e riduzione a 0,98, `duration-base` |
+| Cambio di sezione | la schermata compare intera in dissolvenza, `duration-base` | nessuna: la vecchia sparisce subito |
+| Schermata secondaria | dissolvenza e spostamento di `space-6` da destra; al ritorno da sinistra | nessuna |
+| Avviso a comparsa | dissolvenza e salita di `space-4`, `duration-base`; uno nuovo cambia solo il contenuto (`duration-fast`) | dissolvenza, `duration-base` |
+| Avviso in cima | si apre in altezza, `duration-base` | — |
+| Tastierino | nel pannello si apre in altezza, in fondo alla pagina sale dal basso, `duration-base`; fermo passando da un importo all'altro | al contrario, `duration-base` |
+| Riga di movimento | solo se appena salvata o ripristinata: si apre in altezza, `duration-base` | solo se appena eliminata: si chiude, `duration-base` (Annulla la riapre) |
+| Barre di budget e obiettivi | scorrono al nuovo valore quando cambia, `duration-slow` | — |
+
+**Fermi, di proposito**: i grafici di Analisi (un grafico che si riempie a ogni visita fa aspettare prima di leggerlo); la schermata di blocco (deve coprire tutto subito); gli elenchi che cambiano mese o si riempiono all'apertura; gli importi, che cambiano senza contare.
+
+**Le schermate compaiono intere.** Una schermata nuova resta nascosta finché i suoi dati non sono pronti (di solito poche decine di millisecondi, al massimo mezzo secondo), poi compare tutta insieme: mai importi a zero che diventano valori, mai riquadri che spingono giù il resto.
+
+**Come è fatto nell'app**
+- Animazioni solo nei fogli di stile, coi token: così rispettano la CSP (niente stili inline) e la regola «riduci animazioni».
+- Per gli elementi che spariscono, `in:enter out:leave` di `src/lib/motion.ts`: l'elemento riceve `data-leaving` (il suo CSS avvia l'uscita) e resta finché dura il token. Se torna mentre esce (Annulla, riapertura), riprende da lì.
+- Comparsa in altezza con la classe `.grow` (avvisi, tastierino) e `.fold` (righe, solo con `data-entering` o `data-leaving`), in `base.css`.
+- Le finestre modali sono `<dialog>` con `overflow: clip`: all'apertura il focus non le fa scorrere (era un «rimbalzo» del pannello).
+- Le transizioni JavaScript di Svelte (`fly`, `fade`…) non si usano: non rispettano «riduci animazioni».
+
+**Riduci animazioni**: con l'impostazione del sistema attiva nessuno spostamento: transizioni e animazioni a 0,01 ms (anche lo sfondo scurito delle finestre, `::backdrop`), uscite senza attesa, scorrimento senza animazione.
 
 ## Iconografia
 - **Lucide** (licenza ISC), versione 1.73: tratto 2 px su griglia 24, estremità arrotondate. 20 px nell'interfaccia, 22 px nella barra e nel tastierino, 16 px in chip e pulsanti piccoli.
