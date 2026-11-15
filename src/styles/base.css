@@ -62,6 +62,21 @@ input[type='date'] {
   min-height: 100%;
 }
 
+/* Su PC il testo è un po' più grande: tutte le dimensioni di testo e importi sono in rem e crescono
+   insieme dalla radice; gli spazi (in px) restano uguali */
+@media (min-width: 900px) {
+  html {
+    font-size: var(--text-root-pc);
+  }
+}
+
+/* Mentre si trascina un separatore di colonna (Splitter): stesso puntatore ovunque, niente selezione */
+.resizing,
+.resizing * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
 h1,
 h2,
 h3 {
@@ -97,6 +112,24 @@ a {
   font-family: var(--font-num);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+/* Tasti della tastiera (suggerimenti e elenco delle scorciatoie su PC) */
+kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--space-6);
+  height: var(--space-6);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  line-height: 1;
 }
 
 .visually-hidden {

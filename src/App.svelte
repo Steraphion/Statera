@@ -22,6 +22,7 @@
   import { sync } from './lib/sync/sync.svelte'
   import { statusLabel } from './lib/sync/labels'
   import { screen, revealKind } from './lib/screen.svelte'
+  import { columns } from './lib/columns.svelte'
   import type { RouteId } from './lib/router.svelte'
 
   // Comparsa delle schermate: a ogni cambio di schermata (non per il modulo aperto sopra Movimenti) la
@@ -37,6 +38,8 @@
   })
 
   // Nuovo movimento da qualsiasi schermata: Movimenti apre il modulo (#/movimenti/nuovo)
+  const syncTitle = $derived(sync.status === 'off' ? 'Solo su questo dispositivo' : statusLabel(sync.status))
+
   function newMovement() {
     location.hash = '/movimenti/nuovo'
   }
@@ -76,16 +79,28 @@
   <Recovery message={startup.failure} />
 {:else}
 
-<div class="shell" class:sub={router.current !== router.section}>
+<!-- PC: barra laterale stretta (solo icone) sotto i 1200 px o se la si stringe; schermate larghe su due colonne -->
+<div
+  class="shell"
+  class:sub={router.current !== router.section}
+  class:rail={columns.railNow}
+  class:wide={router.current === 'movimenti'}
+>
   <nav class="nav" aria-label="Sezioni">
     <div class="brand">
       <Logo size={36} />
-      <span>Statera</span>
+      <span class="label">Statera</span>
     </div>
     <!-- PC: comando principale in cima alla barra laterale -->
-    <button class="new-pc btn btn-primary" data-no-autoauth aria-keyshortcuts="N" title="Scorciatoia: tasto N" onclick={newMovement}>
+    <button
+      class="new-pc btn btn-primary"
+      data-no-autoauth
+      aria-keyshortcuts="N"
+      title={columns.railNow ? 'Nuovo movimento (tasto N)' : 'Scorciatoia: tasto N'}
+      onclick={newMovement}
+    >
       <Icon name="plus" stroke={2.4} />
-      <span class="grow">Nuovo movimento</span>
+      <span class="new-label label">Nuovo movimento</span>
     </button>
     <ul>
       {#each ROUTES as r, i (r.id)}
@@ -102,26 +117,39 @@
             href="#/{r.id}"
             class:active={router.section === r.id}
             aria-current={router.section === r.id ? 'page' : undefined}
+            title={columns.railNow ? r.label : undefined}
           >
             <Icon name={r.icon} size={22} stroke={router.section === r.id ? 2.2 : 1.8} />
-            <span>{r.label}</span>
+            <span class="label">{r.label}</span>
           </a>
         </li>
       {/each}
       <li class="pc-only">
-        <a href="#/cerca" class:active={router.current === 'cerca'} aria-current={router.current === 'cerca' ? 'page' : undefined} aria-keyshortcuts="/" title="Scorciatoia: tasto /">
+        <a href="#/cerca" class:active={router.current === 'cerca'} aria-current={router.current === 'cerca' ? 'page' : undefined} aria-keyshortcuts="/" title={columns.railNow ? 'Cerca (tasto /)' : 'Scorciatoia: tasto /'}>
           <Icon name="search" size={22} />
-          <span>Cerca</span>
+          <span class="label">Cerca</span>
         </a>
       </li>
     </ul>
-    <a class="sync-state" href="#/altro" class:off={sync.status === 'off'}>
+    <a class="sync-state" href="#/altro" class:off={sync.status === 'off'} title={columns.railNow ? syncTitle : undefined}>
       <Icon name={sync.status === 'idle' || sync.status === 'syncing' ? 'cloud-check' : sync.status === 'off' ? 'smartphone' : 'cloud-off'} />
-      <span>
-        <b>{sync.status === 'off' ? 'Solo su questo dispositivo' : statusLabel(sync.status)}</b>
+      <span class="label">
+        <b>{syncTitle}</b>
         <small>{sync.status === 'off' ? 'Sincronizzazione non attiva' : 'Google Drive, cifrato'}</small>
       </span>
     </a>
+    <!-- Da 1200 px la barra si può stringere alle sole icone (scelta salvata per dispositivo) -->
+    {#if columns.wide}
+      <button
+        class="side-toggle btn btn-ghost btn-small"
+        aria-pressed={columns.side === 'stretta'}
+        title={columns.side === 'stretta' ? 'Allarga la barra laterale' : 'Stringi la barra laterale'}
+        onclick={() => columns.setSide(columns.side === 'stretta' ? 'intera' : 'stretta')}
+      >
+        <Icon name={columns.side === 'stretta' ? 'chevron-right' : 'chevron-left'} size={18} />
+        <span class="label">Stringi la barra</span>
+      </button>
+    {/if}
   </nav>
 
   <main class="content">
@@ -256,7 +284,8 @@
   .brand,
   .new-pc,
   .pc-only,
-  .sync-state {
+  .sync-state,
+  .side-toggle {
     display: none;
   }
 
@@ -311,9 +340,10 @@
   @media (min-width: 900px) {
     .shell {
       display: grid;
-      grid-template-columns: var(--size-sidebar) 1fr;
+      grid-template-columns: var(--size-sidebar) minmax(0, 1fr);
       gap: var(--space-2);
       padding: var(--space-4);
+      transition: grid-template-columns var(--duration-base) var(--ease-standard);
     }
 
     .nav,
@@ -348,7 +378,7 @@
       padding: 0 var(--space-4);
     }
 
-    .new-pc .grow {
+    .new-pc .new-label {
       flex: 1;
       text-align: left;
     }
@@ -430,8 +460,64 @@
       padding: var(--space-4) var(--space-5) var(--space-8);
     }
 
+    /* Movimenti (e Conti) su due colonne: più larghi delle schermate a una colonna */
+    .wide .content {
+      max-width: var(--content-max-wide);
+    }
+
     .sub .content {
       padding-bottom: var(--space-8);
+    }
+
+    .side-toggle {
+      display: flex;
+      justify-content: flex-start;
+      gap: var(--space-2);
+      color: var(--color-text-muted);
+    }
+
+    /* Barra stretta: solo icone, i nomi restano per gli screen reader e nel suggerimento */
+    .shell.rail {
+      grid-template-columns: var(--size-rail) minmax(0, 1fr);
+    }
+
+    .rail .nav {
+      padding: var(--space-4) var(--space-2);
+      align-items: center;
+    }
+
+    .rail .label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    .rail .brand {
+      padding: 0;
+    }
+
+    .rail ul {
+      align-self: stretch;
+      align-items: center;
+    }
+
+    .rail .new-pc,
+    .rail a,
+    .rail .side-toggle {
+      justify-content: center;
+      width: var(--size-fab);
+      padding: 0;
+    }
+
+    .rail .new-pc {
+      height: var(--size-fab);
+    }
+
+    .rail .sync-state {
+      padding: var(--space-3) 0;
     }
   }
 </style>

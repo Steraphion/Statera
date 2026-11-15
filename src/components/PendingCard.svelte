@@ -74,6 +74,19 @@
     border-bottom: none;
   }
 
+  /* PC: nella colonna di destra, stretta, i pulsanti vanno sotto il nome */
+  @media (min-width: 900px) {
+    .row {
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      padding: var(--space-2) 0 var(--space-3);
+    }
+
+    .row .main {
+      flex-basis: 100%;
+    }
+  }
+
   .main {
     flex: 1;
     min-width: 0;

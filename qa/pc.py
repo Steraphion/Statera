@@ -1,0 +1,193 @@
+"""Collaudo v0.31: schermate PC (dati di esempio, orologio fisso al 14/11/2026).
+
+A 900, 1024, 1280 e 1440 px, in chiaro e in scuro: barra laterale stretta (solo icone) sotto i 1200 px e a
+scelta da 1200, testo da 16 px, contenuti larghi al massimo 1200 px nelle schermate su due colonne, niente
+scorrimento orizzontale. Movimenti con la colonna di destra (preferiti, da registrare, budget, suggerimento
+delle scorciatoie). Colonne regolabili: separatore trascinabile e da tastiera, limiti dai token, scelta salvata
+per dispositivo e ritrovata dopo il riavvio, doppio clic e Invio per tornare alla larghezza iniziale.
+Sul telefono (Pixel 7) nessuna di queste cose.
+"""
+import asyncio, re, json, datetime, os
+from playwright.async_api import async_playwright
+BASE = "http://localhost:4173"
+SAMPLE = open(os.path.join(os.path.dirname(__file__), "anno-di-esempio.js")).read()
+results = []
+def check(name, ok, info=""):
+    results.append(ok); print(("PASS " if ok else "FAIL ") + name + (f"  [{info}]" if info and not ok else ""))
+
+def field(pg, label):
+    return pg.locator("label.field", has=pg.locator("span", has_text=re.compile(f"^{re.escape(label)}$"))).locator("select")
+
+async def box(pg, sel):
+    return await pg.locator(sel).first.bounding_box()
+
+async def tok(pg, name):
+    v = await pg.evaluate("(n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim()", name)
+    m = re.match(r"^(-?\d+(?:\.\d+)?)px$", v)
+    return float(m.group(1)) if m else v
+
+async def no_hscroll(pg):
+    return await pg.evaluate("document.scrollingElement.scrollWidth <= innerWidth")
+
+async def prefs(pg):
+    return await pg.evaluate("JSON.parse(localStorage.getItem('statera.colonne') || 'null')")
+
+async def prepara(pg):
+    """Conto, un anno di movimenti, due budget, due preferiti e una bolletta da confermare."""
+    await pg.goto(BASE + "/#/conti"); await pg.wait_for_selector("nav"); await pg.wait_for_timeout(400)
+    await pg.get_by_role("button", name="Conto").first.click()
+    await pg.get_by_label("Nome").fill("Conto corrente"); await pg.get_by_label("Saldo iniziale (€)").fill("3000")
+    await pg.locator("dialog input[type=date]").fill("2025-12-01")
+    await pg.get_by_role("button", name="Salva").click(); await pg.wait_for_timeout(400)
+    await pg.evaluate(SAMPLE)
+    await pg.goto(BASE + "/#/analisi"); await pg.reload(); await pg.wait_for_selector("nav"); await pg.wait_for_timeout(700)
+    await pg.get_by_role("button", name="Imposta budget").click()
+    await pg.get_by_label("Budget Spesa alimentare (€)").fill("300")
+    await pg.get_by_label("Budget Svago (€)").fill("40")
+    await pg.get_by_role("button", name="Salva").click(); await pg.wait_for_timeout(400)
+    await pg.goto(BASE + "/#/movimenti"); await pg.wait_for_timeout(500)
+    for desc, amount, cat, fav, keep in [("Caffè", "1,20", "Pasti fuori", "Caffè", True), ("Spesa Conad", "30", "Spesa alimentare", "Spesa Conad", False)]:
+        await pg.get_by_role("button", name="Nuovo movimento").locator("visible=true").first.click(); await pg.wait_for_selector("dialog[open]")
+        await pg.get_by_label("Importo (€)").fill(amount); await pg.get_by_label("Descrizione").fill(desc)
+        await pg.locator(".cat-list").get_by_role("radio", name=re.compile("^" + cat)).click()
+        await pg.get_by_label("Salva anche tra i preferiti").check(); await pg.get_by_label("Nome del preferito").fill(fav)
+        if not keep: await pg.get_by_label("Ricorda anche l'importo").uncheck()
+        await pg.get_by_role("button", name="Salva", exact=True).click(); await pg.wait_for_timeout(500)
+    await pg.goto(BASE + "/#/ricorrenti"); await pg.wait_for_timeout(300)
+    await pg.get_by_role("button", name="Ripetizione").click(); await pg.wait_for_selector("dialog[open]")
+    await pg.get_by_label("Importo (€)").fill("48,60")
+    await pg.locator(".cat-list").get_by_role("radio", name=re.compile("^Bollette")).click()
+    await pg.get_by_label("Descrizione").fill("Bolletta acqua")
+    await pg.locator("dialog input[type=date]").first.fill("2026-10-12")  # la prima a ottobre, quella di novembre da registrare
+    await pg.get_by_role("radio", name="Da confermare").click()
+    await pg.get_by_role("button", name="Salva", exact=True).click(); await pg.wait_for_timeout(500)
+
+async def layout(pg, w):
+    """Larghezze e posizioni dei pezzi principali di Movimenti."""
+    return await pg.evaluate("""() => { const r = (s) => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return { x: Math.round(b.x), w: Math.round(b.width), y: Math.round(b.y), r: Math.round(b.right) } }
+      return { nav: r('nav.nav'), content: r('main.content'), body: r('.layout .body'), aside: r('#mov-aside'), splitter: r('.splitter'), root: parseFloat(getComputedStyle(document.documentElement).fontSize), text: parseFloat(getComputedStyle(document.body).fontSize) } }""")
+
+async def movimenti(pg, label, w, scheme):
+    await pg.set_viewport_size({"width": w, "height": 860})
+    await pg.evaluate("localStorage.removeItem('statera.colonne')")
+    await pg.goto(BASE + "/#/movimenti"); await pg.reload(); await pg.wait_for_selector("nav"); await pg.wait_for_timeout(800)
+    L = await layout(pg, w)
+    tag = f"{label} {w} px {scheme}"
+    check(f"{tag}: testo a 16 px (radice 17 px)", L["root"] == 17 and abs(L["text"] - 15.9375) < 0.01, f"{L['root']} {L['text']}")
+    rail = w < 1200
+    check(f"{tag}: barra laterale {'stretta' if rail else 'intera'}", L["nav"]["w"] == (await tok(pg, "--size-rail") if rail else await tok(pg, "--size-sidebar")), str(L["nav"]))
+    check(f"{tag}: colonna di destra accanto all'elenco", L["aside"]["x"] >= L["body"]["r"] and L["aside"]["y"] < L["body"]["y"], str(L))
+    main_min = await tok(pg, "--size-main-min")
+    check(f"{tag}: colonna principale non sotto {main_min:.0f} px", L["body"]["w"] >= main_min, str(L["body"]))
+    expect = min(await tok(pg, "--size-aside"), L["content"]["w"] - 40 - main_min - 24)
+    check(f"{tag}: colonna di destra larga {expect:.0f} px", abs(L["aside"]["w"] - expect) <= 1, str(L["aside"]))
+    check(f"{tag}: contenuti al massimo {await tok(pg, '--content-max-wide'):.0f} px", L["content"]["w"] <= await tok(pg, "--content-max-wide"))
+    check(f"{tag}: niente scorrimento orizzontale", await no_hscroll(pg))
+    aside = pg.locator("#mov-aside")
+    check(f"{tag}: nella colonna preferiti, da registrare e budget",
+          await aside.locator("section.fav .chip").count() == 3 and await aside.get_by_role("heading", name="Da registrare").count() == 1
+          and await aside.get_by_role("heading", name="Budget del mese").count() == 1 and await aside.get_by_role("meter").count() == 2)
+    check(f"{tag}: preferiti che vanno a capo, senza scorrere", await pg.evaluate("(() => { const c = document.querySelector('#mov-aside .chips'); return c.scrollWidth <= c.clientWidth })()"))
+    check(f"{tag}: suggerimento delle scorciatoie", "nuovo" in await aside.locator(".keys-hint").inner_text())
+    await pg.screenshot(path=f"/tmp/pc-movimenti-{w}-{scheme}.png")
+
+async def separatore(pg, label):
+    await pg.set_viewport_size({"width": 1280, "height": 860})
+    await pg.evaluate("localStorage.removeItem('statera.colonne')")
+    await pg.goto(BASE + "/#/movimenti"); await pg.reload(); await pg.wait_for_selector("nav"); await pg.wait_for_timeout(800)
+    sp = pg.get_by_role("separator", name="Larghezza della colonna di destra")
+    check(f"{label}: separatore per la tastiera e gli screen reader", await sp.count() == 1 and await sp.get_attribute("aria-controls") == "mov-aside" and await sp.get_attribute("tabindex") == "0")
+    mn, mx, start = await tok(pg, "--size-aside-min"), await tok(pg, "--size-aside-max"), await tok(pg, "--size-aside")
+    check(f"{label}: valore iniziale e limiti dai token", await sp.get_attribute("aria-valuenow") == str(int(start)) and await sp.get_attribute("aria-valuemin") == str(int(mn)) and await sp.get_attribute("aria-valuemax") == str(int(mx)),
+          f"{await sp.get_attribute('aria-valuenow')} {await sp.get_attribute('aria-valuemin')} {await sp.get_attribute('aria-valuemax')}")
+    # trascinare col mouse
+    b = await sp.bounding_box(); x, y = b["x"] + b["width"] / 2, b["y"] + 300
+    await pg.mouse.move(x, y); await pg.mouse.down(); await pg.mouse.move(x - 40, y, steps=4)
+    check(f"{label}: mentre si trascina, puntatore di ridimensionamento ovunque", await pg.evaluate("document.documentElement.classList.contains('resizing')"))
+    await pg.mouse.move(x - 80, y, steps=4); await pg.mouse.up(); await pg.wait_for_timeout(100)
+    aw = (await box(pg, "#mov-aside"))["width"]
+    check(f"{label}: trascinando a sinistra la colonna si allarga di 80 px", abs(aw - (start + 80)) <= 1, str(aw))
+    check(f"{label}: larghezza salvata per il dispositivo", (await prefs(pg))["widths"]["aside"] == int(start + 80), str(await prefs(pg)))
+    check(f"{label}: finito il trascinamento, puntatore normale", not await pg.evaluate("document.documentElement.classList.contains('resizing')"))
+    # oltre il massimo
+    b = await sp.bounding_box(); x = b["x"] + b["width"] / 2
+    await pg.mouse.move(x, y); await pg.mouse.down(); await pg.mouse.move(x - 600, y, steps=6); await pg.mouse.up(); await pg.wait_for_timeout(100)
+    check(f"{label}: non oltre il massimo", abs((await box(pg, "#mov-aside"))["width"] - mx) <= 1)
+    check(f"{label}: colonna principale sempre larga almeno il minimo", (await box(pg, ".layout .body"))["width"] >= await tok(pg, "--size-main-min"))
+    # dopo il riavvio
+    await pg.reload(); await pg.wait_for_selector("nav"); await pg.wait_for_timeout(800)
+    check(f"{label}: larghezza ritrovata dopo il riavvio", abs((await box(pg, "#mov-aside"))["width"] - mx) <= 1)
+    # tastiera
+    h1 = await pg.locator("h1").inner_text()
+    await sp.focus(); await pg.keyboard.press("ArrowRight"); await pg.wait_for_timeout(100)
+    check(f"{label}: freccia a destra stringe di 16 px", abs((await box(pg, "#mov-aside"))["width"] - (mx - 16)) <= 1)
+    await pg.keyboard.press("Shift+ArrowRight"); await pg.wait_for_timeout(100)
+    check(f"{label}: con Maiuscole 64 px", abs((await box(pg, "#mov-aside"))["width"] - (mx - 80)) <= 1)
+    check(f"{label}: le frecce sul separatore non cambiano mese", await pg.locator("h1").inner_text() == h1)
+    check(f"{label}: valore annunciato aggiornato", await sp.get_attribute("aria-valuenow") == str(int(mx - 80)))
+    await pg.keyboard.press("Home"); await pg.wait_for_timeout(100)
+    check(f"{label}: Inizio porta al minimo", abs((await box(pg, "#mov-aside"))["width"] - mn) <= 1)
+    await pg.keyboard.press("Enter"); await pg.wait_for_timeout(100)
+    check(f"{label}: Invio torna alla larghezza iniziale", abs((await box(pg, "#mov-aside"))["width"] - start) <= 1 and (await prefs(pg))["widths"]["aside"] is None)
+    await pg.keyboard.press("End"); await pg.wait_for_timeout(100)
+    await sp.dblclick(); await pg.wait_for_timeout(100)
+    check(f"{label}: doppio clic torna alla larghezza iniziale", abs((await box(pg, "#mov-aside"))["width"] - start) <= 1)
+    # a 1024 px il massimo si riduce per lasciare spazio all'elenco
+    await pg.keyboard.press("End"); await pg.set_viewport_size({"width": 1024, "height": 800}); await pg.wait_for_timeout(300)
+    check(f"{label}: finestra più stretta, l'elenco resta largo almeno il minimo", (await box(pg, ".layout .body"))["width"] >= await tok(pg, "--size-main-min") - 1 and await no_hscroll(pg))
+    await pg.set_viewport_size({"width": 1280, "height": 860})
+
+async def barra(pg, label):
+    await pg.set_viewport_size({"width": 1280, "height": 860})
+    await pg.evaluate("localStorage.removeItem('statera.colonne')")
+    await pg.goto(BASE + "/#/movimenti"); await pg.reload(); await pg.wait_for_selector("nav"); await pg.wait_for_timeout(600)
+    btn = pg.get_by_role("button", name="Stringi la barra")
+    check(f"{label}: da 1200 px si può stringere la barra", await btn.count() == 1 and await btn.get_attribute("aria-pressed") == "false")
+    dur = await pg.evaluate("getComputedStyle(document.querySelector('.shell')).transitionDuration")
+    check(f"{label}: la barra cambia larghezza in --duration-base", dur in ("0.2s", "200ms"), dur)
+    await btn.click(); await pg.wait_for_timeout(400)
+    nav = await box(pg, "nav.nav")
+    check(f"{label}: barra stretta, solo icone", abs(nav["width"] - await tok(pg, "--size-rail")) <= 1 and await btn.get_attribute("aria-pressed") == "true")
+    check(f"{label}: le voci si trovano ancora per nome", await pg.get_by_role("link", name="Conti").count() == 1 and await pg.get_by_role("link", name="Conti").get_attribute("title") == "Conti")
+    check(f"{label}: scelta salvata", (await prefs(pg))["side"] == "stretta")
+    await pg.reload(); await pg.wait_for_selector("nav"); await pg.wait_for_timeout(600)
+    check(f"{label}: barra stretta dopo il riavvio", abs((await box(pg, "nav.nav"))["width"] - await tok(pg, "--size-rail")) <= 1)
+    await pg.get_by_role("button", name="Stringi la barra").click(); await pg.wait_for_timeout(400)
+    check(f"{label}: e di nuovo intera", abs((await box(pg, "nav.nav"))["width"] - await tok(pg, "--size-sidebar")) <= 1)
+    await pg.set_viewport_size({"width": 1024, "height": 800}); await pg.wait_for_timeout(300)
+    check(f"{label}: sotto i 1200 px la barra è stretta e il pulsante non c'è", abs((await box(pg, "nav.nav"))["width"] - await tok(pg, "--size-rail")) <= 1 and await pg.get_by_role("button", name="Stringi la barra").count() == 0)
+    await pg.set_viewport_size({"width": 1280, "height": 860})
+
+async def telefono(pg, label):
+    await pg.goto(BASE + "/#/movimenti"); await pg.wait_for_timeout(600)
+    check(f"{label}: niente separatore né budget nella schermata", await pg.locator(".splitter").count() == 0 and await pg.get_by_role("heading", name="Budget del mese").count() == 0)
+    check(f"{label}: testo a 15 px", await pg.evaluate("parseFloat(getComputedStyle(document.body).fontSize)") == 15)
+    check(f"{label}: preferiti in una riga che scorre", await pg.evaluate("getComputedStyle(document.querySelector('section.fav .chips')).flexWrap") == "nowrap")
+    order = await pg.evaluate("""() => [...document.querySelectorAll('.layout h2, .layout .balance-box')].map(e => e.textContent.trim().slice(0, 14))""")
+    check(f"{label}: «Da registrare» prima del saldo, come prima", order.index("Da registrare") < [i for i, t in enumerate(order) if t.startswith("Saldo")][0], str(order))
+    check(f"{label}: niente scorrimento orizzontale", await no_hscroll(pg))
+
+async def main():
+    async with async_playwright() as p:
+        b = await p.chromium.launch(executable_path="/usr/bin/google-chrome")
+        for label, opts, scheme in [("PC", {"viewport": {"width": 1280, "height": 860}}, "light"), ("PC scuro", {"viewport": {"width": 1280, "height": 860}}, "dark"), ("Android", {**p.devices["Pixel 7"]}, "light")]:
+            print(f"\n===== {label} =====")
+            ctx = await b.new_context(**opts, locale="it-IT", color_scheme=scheme, timezone_id="Europe/Rome")
+            pg = await ctx.new_page(); errs = []
+            await pg.clock.set_fixed_time(datetime.datetime(2026, 11, 14, 10, 0))
+            pg.on("pageerror", lambda e: errs.append(str(e))); pg.on("console", lambda m: errs.append(m.text) if m.type == "error" else None)
+            await prepara(pg)
+            if label == "Android":
+                await telefono(pg, label)
+            else:
+                for w in ([900, 1024, 1280, 1440] if scheme == "light" else [1024, 1440]):
+                    await movimenti(pg, label, w, scheme)
+                if scheme == "light":
+                    await separatore(pg, label)
+                    await barra(pg, label)
+            check(f"{label}: nessun errore", not errs, str(errs[:3]))
+            await ctx.close()
+        await b.close()
+    print(f"\n{sum(results)}/{len(results)} superati")
+
+asyncio.run(main())

@@ -19,6 +19,9 @@
   import { ui } from '../lib/ui.svelte'
   import { screen } from '../lib/screen.svelte'
   import { enterIf, leaveIf } from '../lib/motion'
+  import { columns } from '../lib/columns.svelte'
+  import Splitter from '../components/Splitter.svelte'
+  import MonthBudgetCard from '../components/MonthBudgetCard.svelte'
 
   const refs = useRefs()
 
@@ -80,12 +83,16 @@
 
 <svelte:window onkeydown={onKey} />
 
+<!-- Telefono: tutto in colonna, nell'ordine del codice. PC (da 900 px): elenco a sinistra e, accanto, la
+     colonna di destra (guida esclusa) con preferiti, da registrare, riepilogo e budget, larga a piacere -->
+<div class="layout" style:--col-w={columns.width('aside') === null ? null : `${columns.width('aside')}px`}>
+<div class="lead">
 <header class="month">
-  <button class="btn btn-ghost nav" aria-label="Mese precedente" onclick={() => (ui.month = shiftMonth(ui.month, -1))}>
+  <button class="btn btn-ghost nav" aria-label="Mese precedente" title="Mese precedente (freccia a sinistra)" onclick={() => (ui.month = shiftMonth(ui.month, -1))}>
     <Icon name="chevron-left" />
   </button>
   <h1>{formatMonth(parseDay(`${ui.month}-01`))}</h1>
-  <button class="btn btn-ghost nav" aria-label="Mese successivo" onclick={() => (ui.month = shiftMonth(ui.month, 1))}>
+  <button class="btn btn-ghost nav" aria-label="Mese successivo" title="Mese successivo (freccia a destra)" onclick={() => (ui.month = shiftMonth(ui.month, 1))}>
     <Icon name="chevron-right" />
   </button>
   <span class="spacer"></span>
@@ -100,7 +107,13 @@
 {#if refs.ready}
   <SetupGuide hasAccounts={!noAccounts} onnew={() => (sheet = {})} />
 {/if}
+</div>
 
+{#if columns.pc}
+  <Splitter id="aside" token="--size-aside" grows="left" controls="mov-aside" label="Larghezza della colonna di destra" />
+{/if}
+
+<aside class="aside" id="mov-aside" aria-label="Preferiti, da registrare e budget">
 <PendingCard refs={refs.value} />
 
 {#if refs.ready && !noAccounts}
@@ -111,6 +124,16 @@
   <FavoritesBar refs={refs.value} onopen={(t) => (sheet = { template: t })} />
 {/if}
 
+{#if columns.pc && refs.ready}
+  <MonthBudgetCard {rows} month={ui.month} categories={refs.value.categories} />
+  <p class="keys-hint">
+    <kbd>N</kbd> nuovo <span aria-hidden="true">·</span> <kbd>/</kbd> cerca <span aria-hidden="true">·</span>
+    <kbd>←</kbd><kbd>→</kbd> mese
+  </p>
+{/if}
+</aside>
+
+<div class="body">
 <!-- Saldo del mese nel riquadro indaco, poi azioni rapide (accanto, su schermi larghi), entrate e uscite -->
 <div class="top">
 <section class="hero balance-box" aria-label="Saldo del mese">
@@ -198,6 +221,8 @@
     {/each}
   </Card>
 {/if}
+</div>
+</div>
 
 {#if sheet}
   <MovementForm
@@ -213,6 +238,86 @@
 {/if}
 
 <style>
+  /* Telefono: le schede tra la testata e il saldo si seguono con lo stesso spazio di prima (la guida è nella
+     prima parte, le altre nella colonna di destra) */
+  .lead:has(:global(.card)) + .aside > :global(.card:first-child) {
+    margin-top: var(--space-4);
+  }
+
+  .keys-hint {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+
+  /* PC: due colonne. La colonna di destra ha la larghezza scelta (o quella iniziale), mai più di quanto
+     lascia libera la colonna principale; il separatore sta nello spazio tra le due */
+  @media (min-width: 900px) {
+    .layout {
+      display: grid;
+      grid-template-columns:
+        minmax(0, 1fr) var(--space-6)
+        min(
+          clamp(var(--size-aside-min), var(--col-w, var(--size-aside)), var(--size-aside-max)),
+          max(var(--size-aside-min), 100% - var(--size-main-min) - var(--space-6))
+        );
+      grid-template-rows: auto 1fr;
+      align-items: start;
+    }
+
+    .lead {
+      grid-column: 1;
+      grid-row: 1;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+      margin-bottom: var(--space-4);
+    }
+
+    .lead > :global(*) {
+      margin: 0;
+    }
+
+    .body {
+      grid-column: 1;
+      grid-row: 2;
+      min-width: 0;
+      /* La colonna dell'elenco cambia larghezza (barra stretta, colonna di destra regolabile): saldo e
+         azioni rapide si affiancano secondo lo spazio della colonna, non della finestra */
+      container: elenco / inline-size;
+    }
+
+    .layout > :global(.splitter) {
+      grid-column: 2;
+      grid-row: 1 / -1;
+    }
+
+    .aside {
+      grid-column: 3;
+      grid-row: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+      min-width: 0;
+    }
+
+    .aside > :global(*) {
+      margin: 0;
+    }
+
+    /* Nella colonna stretta le schede hanno un po' meno aria ai lati */
+    .aside :global(.card) {
+      padding: var(--space-4) var(--space-5);
+    }
+
+    .top {
+      margin-top: 0;
+    }
+  }
+
   .view {
     display: flex;
     justify-content: flex-end;
@@ -238,8 +343,18 @@
     margin: var(--space-4) 0 var(--space-5);
   }
 
-  /* Su schermi larghi le azioni rapide stanno accanto al riquadro, non centrate sotto */
-  @media (min-width: 600px) {
+  /* Su schermi larghi le azioni rapide stanno accanto al riquadro, non centrate sotto (su PC se la
+     colonna dell'elenco è abbastanza larga) */
+  @media (min-width: 600px) and (max-width: 899px) {
+    .top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: var(--space-5);
+    }
+  }
+
+  @container elenco (min-width: 600px) {
     .top {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;

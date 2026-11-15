@@ -57,6 +57,8 @@
 
 {#if list.value.length}
   <section class="fav" aria-label="Preferiti">
+    <!-- Su PC, nella colonna di destra, i preferiti sono una scheda col titolo -->
+    <h2 class="pc-title">Preferiti</h2>
     <div class="chips">
       {#each list.value as t (t.id)}
         <button class="chip" class:expense={t.type === 'uscita'} class:income={t.type === 'entrata'} onclick={() => tap(t)} disabled={busy}>
@@ -139,6 +141,38 @@
 
   .chip .amount.ask {
     color: var(--color-text-muted);
+  }
+
+  .pc-title {
+    display: none;
+  }
+
+  /* PC: scheda nella colonna di destra, i preferiti vanno a capo invece di scorrere */
+  @media (min-width: 900px) {
+    .fav {
+      padding: var(--space-4) var(--space-5);
+      border-radius: var(--radius-lg);
+      background: var(--color-surface);
+    }
+
+    .pc-title {
+      display: block;
+      margin-bottom: var(--space-3);
+      font-size: var(--text-lg);
+    }
+
+    .chips {
+      flex-wrap: wrap;
+      overflow: visible;
+      padding-bottom: 0;
+    }
+
+    .chip {
+      flex: 0 1 auto;
+      min-width: 0;
+      background: var(--color-bg);
+      border-color: transparent;
+    }
   }
 
   .manage {

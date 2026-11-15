@@ -76,3 +76,13 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
   Dalla v0.30.3: un movimento salvato apre la sua riga (o il giorno intero, se nuovo), uno eliminato la chiude in
   `--ease-exit` e «Annulla» la riapre ripristinando il dato; una descrizione lunga non allarga la riga; cambiando mese
   nessuna riga si anima; la barra del budget scorre al nuovo valore in `--duration-slow`. Uso come `collaudo.py`.
+- `pc.py` — v0.31: schermate PC con orologio fisso (14/11/2026) e dati di esempio (un anno di movimenti, due budget,
+  due preferiti, una bolletta da confermare). A 900, 1024, 1280 e 1440 px, in chiaro e in scuro: testo da 16 px
+  (radice 17 px), barra laterale stretta sotto i 1200 px, contenuti larghi al massimo `--content-max-wide`, niente
+  scorrimento orizzontale. Movimenti con la colonna di destra (da registrare, preferiti che vanno a capo, budget del
+  mese, suggerimento delle scorciatoie), larga quanto il token o meno se l'elenco resterebbe sotto `--size-main-min`.
+  Colonne regolabili: separatore con limiti dai token, trascinamento (anche oltre il massimo), scelta salvata e
+  ritrovata dopo il riavvio, frecce (con Maiuscole), Inizio, Invio e doppio clic per la larghezza iniziale, frecce che
+  non cambiano mese, finestra ristretta che non toglie spazio all'elenco. Barra laterale da stringere da 1200 px in su
+  (in `--duration-base`, salvata, voci ancora trovabili per nome). Sul telefono nessuna di queste cose e lo stesso
+  ordine di prima. Uso come `collaudo.py`.

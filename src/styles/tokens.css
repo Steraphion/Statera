@@ -69,7 +69,16 @@
   --size-hero-icon: 72px; /* icona grande della schermata di blocco */
   --nav-height: 66px; /* barra flottante del telefono */
   --size-sidebar: 248px;
-  --content-max: 760px;
+  --size-rail: 72px; /* barra laterale stretta, solo icone (PC tra 900 e 1199 px, o se la si stringe) */
+  --content-max: 760px; /* schermate a una colonna */
+  --content-max-wide: 1200px; /* schermate su due colonne (PC): Movimenti, Conti */
+  /* Colonne regolabili su PC: larghezza iniziale, minima e massima (chi le trascina le cambia per dispositivo) */
+  --size-aside: 320px; /* colonna di destra di Movimenti */
+  --size-aside-min: 260px;
+  --size-aside-max: 460px;
+  --size-main-min: 400px; /* la colonna principale non scende sotto questa larghezza */
+  /* Testo su PC (da 900 px): radice da 17 px invece di 16, così testo e importi (in rem) crescono insieme */
+  --text-root-pc: 106.25%;
 
   /* Stati e movimento */
   --opacity-disabled: 0.45;
