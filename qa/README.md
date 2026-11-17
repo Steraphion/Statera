@@ -127,4 +127,7 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
   gruppo; «Ordina» che sposta solo dentro il gruppo; conto «Altro» con carta passato a «Carta prepagata» (cambia
   gruppo col suo saldo, tiene la carta, che si apre col conto giusto e si rinomina). Su Android e PC. Il passaggio
   0.34.0 → 0.35.0 con un conto corrente, la sua carta e un conto «Altro» è stato verificato con lo schema di
-  `aggiornamento.py` (avviso «Aggiorna», gruppi e totali giusti, carta sotto il suo conto). Uso come `collaudo.py`.
+  `aggiornamento.py` (avviso «Aggiorna», gruppi e totali giusti, carta sotto il suo conto). Dalla v0.35.1, fonti
+  senza doppioni: nel campo «Con» delle uscite la carta al posto del suo conto, nel campo «Su» delle entrate solo
+  conti, tornando a «Uscita» l'ultima fonte usata (anche in `collaudo.py`, col pagamento misto carta + buoni).
+  Uso come `collaudo.py`.

@@ -65,7 +65,7 @@ async def main():
             await pg.goto(BASE + "/#/movimenti"); await pg.wait_for_timeout(400)
             await pg.get_by_role("button", name=re.compile("^(Nuovo movimento|Movimento)$")).first.click(); await pg.wait_for_selector("dialog[open]")
             opts_ = await sel(pg, "Con").evaluate("e => [...e.options].map(o => o.text)")
-            check(f"{label}: nel campo Con la carta col suo conto e le prepagate", "Carta del conto (Conto principale)" in opts_ and "Prepagata viaggi" in opts_ and not any("Carta di riserva" in o for o in opts_), str(opts_))
+            check(f"{label}: nel campo Con la carta col suo conto e le prepagate", "Carta del conto (Conto principale)" in opts_ and "Prepagata viaggi" in opts_ and "Conto principale" not in opts_ and not any("Carta di riserva" in o for o in opts_), str(opts_))
             amt = pg.get_by_label("Importo (€)")
             if pc: await amt.fill("20")
             else:
@@ -75,6 +75,16 @@ async def main():
             await sel(pg, "Con").select_option(label="Prepagata viaggi")
             await pg.locator(".cat-list").get_by_role("radio", name=re.compile("^Viaggi")).click()
             await pg.get_by_role("button", name="Salva", exact=True).click(); await pg.wait_for_timeout(500)
+            # entrata: solo conti, la carta torna al suo conto
+            await pg.get_by_role("button", name=re.compile("^(Nuovo movimento|Movimento)$")).first.click(); await pg.wait_for_selector("dialog[open]")
+            await sel(pg, "Con").select_option(label="Carta del conto (Conto principale)")
+            await pg.locator("dialog[open]").get_by_role("radio", name="Entrata").click(); await pg.wait_for_timeout(200)
+            su = await sel(pg, "Su").evaluate("e => [...e.options].map(o => o.text)")
+            check(f"{label}: nel campo Su solo conti", "Conto principale" in su and "Prepagata viaggi" in su and not any("Carta" in o for o in su), str(su))
+            await pg.locator("dialog[open]").get_by_role("radio", name="Uscita").click(); await pg.wait_for_timeout(200)
+            back = await sel(pg, "Con").evaluate("e => e.options[e.selectedIndex].text")
+            check(f"{label}: tornando a Uscita si riprende l'ultima fonte", back == "Prepagata viaggi", back)
+            await pg.keyboard.press("Escape"); await pg.wait_for_timeout(500)
             await pg.goto(BASE + "/#/conti"); await pg.wait_for_timeout(450)
             heads = [re.sub(r"\s+", " ", t).strip() for t in await pg.locator("#conti-list h2.group-title").all_inner_texts()]
             check(f"{label}: spesa con la prepagata scala dal suo gruppo", "215,00" in heads[1], str(heads))

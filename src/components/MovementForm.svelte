@@ -124,12 +124,9 @@
   let amountInput: HTMLInputElement | undefined = $state()
 
   const allOptions = $derived(mv.sourceOptions(accounts, cards, origKeys))
-  // Nei trasferimenti si sceglie un conto (non una carta) e niente buoni pasto
-  const options = $derived(
-    type === 'trasferimento'
-      ? allOptions.filter((o) => !o.isCard && o.account.type !== 'buoni_pasto')
-      : allOptions,
-  )
+  // Senza doppioni: nelle uscite le carte al posto del loro conto, nelle entrate solo conti,
+  // nei trasferimenti conti senza buoni pasto
+  const options = $derived(mv.sourcesFor(type, allOptions, origKeys))
   const mixed = $derived(parts.length > 1)
   const first = $derived(options.find((o) => o.key === parts[0].source))
 
@@ -155,7 +152,7 @@
   function proposedSource(t: TransactionType): string {
     const preferred = last[t]
     return (
-      options.find((o) => o.key === preferred)?.key ??
+      (preferred ? mv.equivalentSource(preferred, allOptions, options) : undefined) ??
       options.find((o) => o.account.type !== 'buoni_pasto')?.key ??
       options[0]?.key ??
       ''
@@ -173,7 +170,9 @@
         return
       }
     }
-    if (!options.some((o) => o.key === parts[0].source)) parts[0].source = proposedSource(t)
+    if (!options.some((o) => o.key === parts[0].source)) {
+      parts[0].source = mv.equivalentSource(parts[0].source, allOptions, options) ?? proposedSource(t)
+    }
   })
 
   $effect(() => {
@@ -253,13 +252,15 @@
     // Categoria, se non ne è già stata scelta una e se esiste ancora
     const cat = categories.find((c) => c.id === t.categoryId)
     if (categoryId === null && cat && cat.kind === type && !cat.archived) categoryId = cat.id
-    const keys = t.parts.map(mv.sourceKey)
-    const valid = keys.every((k) => options.some((o) => o.key === k))
+    // Fonti dell'ultima volta, viste con le regole di oggi (es. il conto diventa la sua carta)
+    const mapped = t.parts.map((p) => mv.equivalentSource(mv.sourceKey(p), allOptions, options))
+    const valid = mapped.every((k) => k !== undefined) && new Set(mapped).size === mapped.length
+    const keys = mapped as string[]
     const emptyAmounts = parts.every((r) => !r.amountText.trim() && !r.vouchersText.trim())
     if (valid && emptyAmounts) {
       // Nessun importo scritto: si riprende tutto il pagamento dell'ultima volta
-      parts = t.parts.map((p) => ({
-        source: mv.sourceKey(p),
+      parts = t.parts.map((p, i) => ({
+        source: keys[i],
         amountText: p.vouchers === null ? centsToInput(p.amount) : '',
         vouchersText: p.vouchers ? String(p.vouchers) : '',
       }))

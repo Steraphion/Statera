@@ -161,6 +161,30 @@ describe('riepiloghi', () => {
     )
     expect(opts.map((o) => o.label)).toEqual(['Conto', 'Bancomat (Conto)', 'Buoni'])
   })
+
+  it('fonti senza doppioni: carte al posto del conto nelle uscite, solo conti nelle entrate', async () => {
+    const prepagata = await repo.createAccount({ ...base, name: 'Prepagata', type: 'carta_prepagata', initialBalance: 0 }, d)
+    const accounts = (await d.accounts.toArray()).sort((a, b) => a.order - b.order)
+    const all = mv.sourceOptions(accounts, await d.cards.toArray())
+    const labels = (type: 'uscita' | 'entrata' | 'trasferimento', keep: string[] = []) =>
+      mv.sourcesFor(type, all, keep).map((o) => o.label)
+    expect(labels('uscita')).toEqual(['Bancomat (Conto)', 'Contanti', 'Buoni', 'Prepagata'])
+    expect(labels('entrata')).toEqual(['Conto', 'Contanti', 'Buoni', 'Prepagata'])
+    expect(labels('trasferimento')).toEqual(['Conto', 'Contanti', 'Prepagata'])
+    // un movimento già registrato sul conto (o un'entrata sulla carta) resta modificabile
+    expect(labels('uscita', [`a:${conto.id}`])).toContain('Conto')
+    expect(labels('entrata', [`c:${bancomat.id}`])).toContain('Bancomat (Conto)')
+    // stessa fonte tra quelle proposte: conto → sua carta nelle uscite, carta → suo conto nelle entrate
+    const out = mv.sourcesFor('uscita', all), inc = mv.sourcesFor('entrata', all)
+    expect(mv.equivalentSource(`a:${conto.id}`, all, out)).toBe(`c:${bancomat.id}`)
+    expect(mv.equivalentSource(`c:${bancomat.id}`, all, inc)).toBe(`a:${conto.id}`)
+    expect(mv.equivalentSource(`a:${prepagata.id}`, all, out)).toBe(`a:${prepagata.id}`)
+    expect(mv.equivalentSource('a:inesistente', all, out)).toBeUndefined()
+    // con la carta archiviata il conto torna a comparire
+    await repo.setCardArchived(bancomat.id, true, d)
+    const all2 = mv.sourceOptions(accounts, await d.cards.toArray())
+    expect(mv.sourcesFor('uscita', all2).map((o) => o.label)).toEqual(['Conto', 'Contanti', 'Buoni', 'Prepagata'])
+  })
 })
 
 describe('ricerca', () => {

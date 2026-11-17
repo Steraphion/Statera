@@ -303,6 +303,8 @@ export interface SourceOption {
   label: string
   account: Account
   isCard: boolean
+  /** Non archiviata (per una carta: né lei né il suo conto). */
+  active: boolean
 }
 
 export function sourceOptions(accounts: Account[], cards: Card[], keep: SourceKey[] = []): SourceOption[] {
@@ -310,16 +312,42 @@ export function sourceOptions(accounts: Account[], cards: Card[], keep: SourceKe
   for (const a of accounts) {
     if (a.deletedAt !== null) continue
     const aKey = `a:${a.id}`
-    if (!a.archived || keep.includes(aKey)) out.push({ key: aKey, label: a.name, account: a, isCard: false })
+    if (!a.archived || keep.includes(aKey)) out.push({ key: aKey, label: a.name, account: a, isCard: false, active: !a.archived })
     for (const c of cards) {
       if (c.accountId !== a.id || c.deletedAt !== null) continue
       const cKey = `c:${c.id}`
       if ((!c.archived && !a.archived) || keep.includes(cKey)) {
-        out.push({ key: cKey, label: `${c.name} (${a.name})`, account: a, isCard: true })
+        out.push({ key: cKey, label: `${c.name} (${a.name})`, account: a, isCard: true, active: !c.archived && !a.archived })
       }
     }
   }
   return out
+}
+
+/**
+ * Fonti da proporre nel modulo per un tipo di movimento (v0.35.1), senza doppioni:
+ * - uscita: un conto con carte attive si sceglie con le sue carte (pagare con la carta o dal conto
+ *   scala lo stesso saldo, quindi il conto da solo sarebbe un doppione);
+ * - entrata: solo conti, perché stipendi e rimborsi arrivano sul conto, non sulla carta;
+ * - trasferimento: solo conti, niente buoni pasto.
+ * Le fonti in `keep` (movimento in modifica, preferito, ripetizione) restano sempre.
+ */
+export function sourcesFor(type: TransactionType, all: SourceOption[], keep: SourceKey[] = []): SourceOption[] {
+  if (type === 'trasferimento') return all.filter((o) => !o.isCard && o.account.type !== 'buoni_pasto')
+  if (type === 'entrata') return all.filter((o) => !o.isCard || keep.includes(o.key))
+  const withCards = new Set(all.filter((o) => o.isCard && o.active).map((o) => o.account.id))
+  return all.filter((o) => o.isCard || !withCards.has(o.account.id) || keep.includes(o.key))
+}
+
+/**
+ * La stessa fonte tra quelle proposte: se `key` non c'è, una carta diventa il suo conto e un conto
+ * la sua prima carta (per esempio l'ultima fonte usata prima della v0.35.1, o cambiando tipo).
+ */
+export function equivalentSource(key: string, all: SourceOption[], shown: SourceOption[]): SourceKey | undefined {
+  if (shown.some((o) => o.key === key)) return key
+  const src = all.find((o) => o.key === key)
+  if (!src) return undefined
+  return shown.find((o) => o.account.id === src.account.id && o.isCard !== src.isCard)?.key
 }
 
 /** Nome leggibile della fonte di una parte: la carta se presente, altrimenti il conto. */
