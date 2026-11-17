@@ -42,10 +42,26 @@
     }
   }
 
+  // Link aperto dentro un'altra app (WhatsApp, Telegram, Instagram…) con il suo browser interno:
+  // lì Google non permette l'accesso e i dati di Statera restano separati da quelli di Chrome
+  const embedded = /; wv\)/.test(navigator.userAgent)
+
   function google() {
-    // Chiamata diretta dal tocco: Google apre la sua finestra
-    run('Accesso a Google…', async () => {
-      conn = await sync.connect()
+    // Si va alla pagina di Google, che poi riporta qui (la scheda riparte con sync.resume)
+    error = ''
+    busy = 'Apertura della pagina di Google…'
+    try {
+      sync.startConnect()
+    } catch (e) {
+      busy = ''
+      error = errorMessage(e)
+    }
+  }
+
+  // Di ritorno dalla pagina di Google: si controlla cosa c'è su Drive e si prosegue
+  if (untrack(() => mode) === 'activate' && sync.resume) {
+    void run('Accesso a Google…', async () => {
+      conn = await sync.resumeConnect()
       step = conn.existing ? 'join' : 'password'
     })
   }
@@ -151,9 +167,17 @@
         <li>allineati automaticamente su tutti i dispositivi collegati, con un backup al giorno.</li>
       </ul>
       <p class="muted">
-        Si aprirà la finestra di Google: scegli il tuo account e consenti l'accesso alla cartella di Statera. Se compare
-        l'avviso "Google non ha verificato questa app", tocca <em>Avanzate</em> → <em>Vai a Statera</em>.
+        Si aprirà la pagina di Google: scegli il tuo account e consenti l'accesso alla cartella di Statera. Alla fine
+        Google ti riporta qui da solo e scegli la password. Se compare l'avviso "Google non ha verificato questa app",
+        tocca <em>Avanzate</em> → <em>Vai a Statera</em>.
       </p>
+      {#if embedded}
+        <p class="warn-box" role="note">
+          Statera sembra aperta dentro un'altra app (per esempio dal link di un messaggio). Lì Google non permette
+          l'accesso e i dati restano separati da quelli di Chrome: apri il link in <strong>Chrome</strong> (menu ⋮ →
+          Apri in Chrome) e installa Statera da lì.
+        </p>
+      {/if}
     {:else if step === 'password'}
       <p>
         Collegato come <strong>{conn?.email}</strong>. Scegli la password che proteggerà i tuoi dati su Drive: ti servirà
@@ -320,6 +344,13 @@
     padding: 0;
     min-height: var(--size-cat-s);
     text-align: left;
+  }
+
+  .warn-box {
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    background: var(--color-accent-soft);
+    font-size: var(--text-sm);
   }
 
   .busy {

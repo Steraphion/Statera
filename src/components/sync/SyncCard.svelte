@@ -9,7 +9,8 @@
   import { formatDateTime } from '../../lib/format'
   import { statusLabel } from '../../lib/sync/labels'
 
-  let sheet = $state<'setup' | 'unlock' | 'backups' | 'password' | 'profiles' | null>(null)
+  // Di ritorno dalla pagina di Google durante l'attivazione: la scheda riparte da dove era
+  let sheet = $state<'setup' | 'unlock' | 'backups' | 'password' | 'profiles' | null>(sync.resume ? 'setup' : null)
   // In rosso solo quando serve davvero un intervento (non per il permesso in pausa senza modifiche)
   const warn = $derived(
     ['locked', 'error', 'offline'].includes(sync.status) || (sync.status === 'needs-auth' && sync.askReconnect),
@@ -40,7 +41,10 @@
         <!-- Permesso scaduto: rinnova e sincronizza (dopo un rinnovo automatico non riuscito: "Riconnetti") -->
         <button class="btn btn-primary" onclick={() => sync.reconnect()}>{sync.askReconnect ? 'Riconnetti a Google' : 'Sincronizza ora'}</button>
       {:else if sync.status === 'locked'}
-        <button class="btn btn-primary" onclick={() => (sheet = 'unlock')}>Inserisci la password</button>
+        {#if sync.askReconnect}
+          <button class="btn btn-primary" onclick={() => sync.reconnect()}>Riconnetti a Google</button>
+        {/if}
+        <button class="btn" class:btn-primary={!sync.askReconnect} onclick={() => (sheet = 'unlock')}>Inserisci la password</button>
       {:else}
         <button class="btn btn-primary" disabled={sync.status === 'syncing'} onclick={() => sync.syncNow()}>
           {sync.status === 'syncing' ? 'Sincronizzazione…' : 'Sincronizza ora'}

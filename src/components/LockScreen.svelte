@@ -4,7 +4,7 @@
   import Icon from './Icon.svelte'
   import { db } from '../lib/data/db'
   import { lock } from '../lib/lock.svelte'
-  import { listProfiles, DEFAULT_DB } from '../lib/profiles'
+  import { allDbNames } from '../lib/profiles'
 
   let pin = $state('')
   let error = $state('')
@@ -35,8 +35,8 @@
 
   async function reset() {
     db.close()
-    const names = [...new Set([DEFAULT_DB, ...listProfiles().map((p) => p.db)])]
-    await lock.resetDevice(names)
+    // Tutti i database di Statera sul dispositivo, anche quelli rimasti fuori dall'elenco dei profili
+    await lock.resetDevice(await allDbNames())
   }
 
   onMount(() => {

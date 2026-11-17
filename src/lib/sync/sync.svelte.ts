@@ -5,7 +5,19 @@ import { processRecurring } from '../data/recurring'
 import { upsertProfile } from '../profiles'
 import * as core from './core'
 import * as cr from './crypto'
-import { AuthExpiredError, Drive, OfflineError, loadGis, requestToken, revokeToken, type DriveFile, type Token } from './google'
+import {
+  AuthExpiredError,
+  Drive,
+  OfflineError,
+  loadGis,
+  requestToken,
+  revokeToken,
+  startRedirect,
+  type AuthResult,
+  type DriveFile,
+  type Token,
+} from './google'
+import { authReturn } from './authReturn'
 import { hasUserData, snapshotStamp, TABLES } from './merge'
 import type { SyncView } from './labels'
 
@@ -17,6 +29,11 @@ import type { SyncView } from './labels'
  * Il permesso di Google dura un'ora e si rinnova solo con un tocco (Google apre per un attimo la sua
  * finestra). Si rinnova da solo al primo tocco solo se ci sono modifiche fatte qui da inviare;
  * altrimenti resta in pausa e l'interfaccia mostra "Aggiornato alle … · Sincronizza".
+ *
+ * Accessi con scelte da fare (dalla v0.36.1): il primo collegamento e «Riconnetti a Google» (dopo un
+ * rinnovo veloce non riuscito) vanno alla pagina di Google e tornano all'app (`startRedirect`), perché
+ * sul telefono la finestra può perdere il collegamento con l'app e restare bianca. La risposta arriva
+ * all'avvio in `authReturn` e la consumano `init()` (rinnovo) o `resumeConnect()` (primo collegamento).
  */
 
 export type SyncStatus =
@@ -84,6 +101,8 @@ class SyncEngine {
   #renewing: Promise<Token | null> | null = null
   /** Il rinnovo automatico non è riuscito: si mostra l'avviso con "Riconnetti". */
   askReconnect = $state(false)
+  /** Primo collegamento tornato dalla pagina di Google: la scheda di attivazione riparte da qui. */
+  resume = $state<AuthResult | null>(authReturn.result?.purpose === 'connect' && authReturn.result.db === db.name ? authReturn.result : null)
 
   /** Quello che serve ai testi di stato (labels.ts). */
   get view(): SyncView {
@@ -102,11 +121,36 @@ class SyncEngine {
       return
     }
     this.#lastStamp = meta.sentStamp ?? meta.lastSyncAt ?? 0
+    await this.#takeReconnect()
     this.#watch()
     // La libreria di Google pronta in anticipo: il rinnovo del permesso deve partire subito al tocco
     void loadGis().catch(() => {})
     if (!this.#key) this.status = 'locked'
     else this.syncSoon(0)
+  }
+
+  /** Ritorno dalla pagina di Google dopo «Riconnetti»: il permesso vale solo per l'account collegato. */
+  async #takeReconnect() {
+    const r = authReturn.result
+    if (!r || r.purpose !== 'reconnect' || r.db !== db.name) return
+    authReturn.result = null
+    try {
+      if (!r.token) throw new Error(r.error ?? 'Accesso a Google non riuscito')
+      await this.#checkAccount(r.token)
+      this.#saveToken(r.token)
+    } catch (e) {
+      if (e instanceof OfflineError) return
+      this.askReconnect = true
+      this.error = msg(e)
+    }
+  }
+
+  /** Il permesso deve essere dello stesso account collegato a questo profilo. */
+  async #checkAccount(t: Token) {
+    const user = await new Drive(t.value).user()
+    if (user?.email && this.meta?.email && user.email !== this.meta.email) {
+      throw new Error(`Hai scelto ${user.email}, ma questo profilo è collegato a ${this.meta.email}`)
+    }
   }
 
   // ---------- permesso Google ----------
@@ -156,15 +200,23 @@ class SyncEngine {
    * Un solo tentativo per scadenza; se non riesce compare l'avviso con "Riconnetti".
    */
   autoReconnect(force = false) {
-    if (!this.#tokenMissing || this.#autoTried || this.#renewing) return
+    // Dopo un rinnovo veloce non riuscito si passa a «Riconnetti a Google» (pagina di Google), solo su richiesta
+    if (!this.#tokenMissing || this.#autoTried || this.#renewing || this.askReconnect) return
     if (!force && !this.pending) return
     if (typeof navigator !== 'undefined' && navigator.onLine === false) return
     this.#autoTried = true
     void this.reconnect(true)
   }
 
-  /** Rinnovo del permesso Google e sincronizzazione (va chiamata da un tocco). */
+  /**
+   * Rinnovo del permesso Google e sincronizzazione (va chiamata da un tocco). Prima con la finestra,
+   * veloce; se non è riuscita («Riconnetti a Google») con la pagina di Google e ritorno all'app.
+   */
   async reconnect(auto = false) {
+    if (!auto && this.askReconnect) {
+      startRedirect('reconnect', db.name, this.meta?.email)
+      return
+    }
     if (this.#renewing) {
       await this.#renewing
       return
@@ -179,11 +231,7 @@ class SyncEngine {
   async #renew(auto: boolean): Promise<Token | null> {
     try {
       const t = await requestToken({ silent: true, hint: this.meta?.email })
-      // Controllo che sia lo stesso account
-      const user = await new Drive(t.value).user()
-      if (user?.email && this.meta?.email && user.email !== this.meta.email) {
-        throw new Error(`Hai scelto ${user.email}, ma questo profilo è collegato a ${this.meta.email}`)
-      }
+      await this.#checkAccount(t)
       this.#saveToken(t)
       return t
     } catch (e) {
@@ -195,9 +243,19 @@ class SyncEngine {
 
   // ---------- attivazione ----------
 
-  /** Passo 1: accesso a Google e controllo di cosa c'è su Drive (va chiamata da un tocco). */
-  async connect(): Promise<Connection> {
-    const token = await requestToken({ silent: false })
+  /** Passo 1: si va alla pagina di Google, che poi riporta all'app (va chiamata da un tocco). */
+  startConnect() {
+    startRedirect('connect', db.name)
+  }
+
+  /** Passo 1, al ritorno da Google: controllo di cosa c'è su Drive. */
+  async resumeConnect(): Promise<Connection> {
+    const r = this.resume
+    this.resume = null
+    authReturn.result = null
+    if (!r) throw new Error('Accedi prima con Google')
+    if (!r.token) throw new Error(r.error ?? 'Accesso a Google non riuscito')
+    const token = r.token
     const drive = new Drive(token.value)
     const user = (await drive.user()) ?? { email: '', name: '' }
     const files = await drive.list()
@@ -246,7 +304,15 @@ class SyncEngine {
 
   /** Dispositivo collegato ma "bloccato" (chiave assente): sblocco con la password. */
   async unlock(secret: { password?: string; recoveryKey?: string }) {
-    const token = this.#validToken() ?? (await requestToken({ silent: true, hint: this.meta?.email }))
+    let token = this.#validToken()
+    if (!token) {
+      try {
+        token = await requestToken({ silent: true, hint: this.meta?.email })
+      } catch {
+        this.askReconnect = true
+        throw new Error('Serve di nuovo l\'accesso a Google: chiudi, tocca «Riconnetti a Google» e poi inserisci la password')
+      }
+    }
     this.#saveToken(token)
     const drive = new Drive(token.value)
     const keys = await core.readKeys(drive, await drive.list())

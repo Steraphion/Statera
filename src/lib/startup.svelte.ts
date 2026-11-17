@@ -1,6 +1,7 @@
 import { db } from './data/db'
 import { ensureSeeded } from './data/repo'
 import { errorMessage, withTimeout } from './data/util'
+import { ensureListed } from './profiles'
 
 /**
  * Avvio dell'app e rete di sicurezza.
@@ -24,6 +25,8 @@ class Startup {
         'Il database dell\'app non risponde',
       )
       this.state = 'ready'
+      // Il profilo in uso è sempre nell'elenco dei profili, collegato a Google o no
+      ensureListed(db.name)
       // La sincronizzazione parte dopo: un suo problema non deve bloccare l'app
       void import('./sync/sync.svelte')
         .then(async ({ sync }) => {

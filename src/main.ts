@@ -1,6 +1,8 @@
 import { mount } from 'svelte'
 import './styles/tokens.css'
 import './styles/base.css'
+// Prima di App: legge l'eventuale risposta di Google nell'indirizzo prima che lo guardi il router
+import './lib/sync/authReturn'
 import App from './App.svelte'
 import { pwa } from './lib/pwa.svelte'
 import { startup } from './lib/startup.svelte'

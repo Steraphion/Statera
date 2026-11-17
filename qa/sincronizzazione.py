@@ -1,6 +1,6 @@
 """Collaudo della sincronizzazione con Google e Drive simulati (dati di esempio)."""
 import asyncio, json, re, sys, time, itertools
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, urlencode
 from playwright.async_api import async_playwright
 
 BASE = "http://localhost:4173"
@@ -14,6 +14,7 @@ window.google = { accounts: { oauth2: {
   initTokenClient(cfg) { return { requestAccessToken(o) {
     window.__gisCalls = (window.__gisCalls||0) + 1;
     if (window.__gisFail) { setTimeout(() => cfg.error_callback({ type: 'popup_failed_to_open' }), 50); return }
+    if (window.__gisHang) return;  // finestra che non torna all'app (telefono)
     setTimeout(() => cfg.callback({ access_token: 'tok-' + Date.now(), expires_in: 3600, scope: cfg.scope }), 50);
   } } },
   hasGrantedAllScopes() { return true },
@@ -63,11 +64,28 @@ class FakeDrive:
 
 drive = FakeDrive()
 
+# Pagina di Google simulata (accesso con reindirizzamento): rimanda all'app col permesso, o con "annullato"
+DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.appdata"
+auth = {"calls": 0, "deny": False, "last": {}}
+async def fake_auth(route):
+    auth["calls"] += 1
+    q = parse_qs(urlparse(route.request.url).query)
+    auth["last"] = q
+    assert q.get("response_type") == ["token"] and q.get("scope") == [DRIVE_SCOPE], q
+    st = q["state"][0]
+    if auth["deny"]:
+        auth["deny"] = False
+        frag = urlencode({"error": "access_denied", "state": st})
+    else:
+        frag = urlencode({"access_token": f"tok-{time.time()}", "token_type": "Bearer", "expires_in": "3599", "scope": DRIVE_SCOPE, "state": st})
+    await route.fulfill(status=302, headers={"Location": q["redirect_uri"][0] + "#" + frag})
+
 async def new_device(b, p, label, mobile):
     opts = {**p.devices["Pixel 7"]} if mobile else {"viewport": {"width": 1366, "height": 800}}
     ctx = await b.new_context(**opts, locale="it-IT", accept_downloads=True)
     await ctx.route("https://accounts.google.com/gsi/client", lambda r: r.fulfill(status=200, content_type="text/javascript", body=FAKE_GIS))
     await ctx.route("https://www.googleapis.com/**", drive.handle)
+    await ctx.route("https://accounts.google.com/o/oauth2/v2/auth**", fake_auth)
     pg = await ctx.new_page(); errs = []
     pg.on("pageerror", lambda e: errs.append(f"{label} PAGEERROR {e}"))
     pg.on("console", lambda m: errs.append(f"{label}: {m.text}") if m.type == "error" else None)
@@ -128,6 +146,8 @@ async def main():
         await tel.get_by_role("button", name="Accedi con Google").click()
         await field(tel, "Password").wait_for()
         check("Accesso Google e scelta password", await tel.get_by_text("utente.prova@example.com").count() >= 1)
+        check("Primo accesso con la pagina di Google: si sceglie l'account", auth["calls"] == 1 and auth["last"].get("prompt") == ["select_account"] and await tel.evaluate("() => window.__gisCalls || 0") == 0)
+        check("Ritorno ad Altro senza il permesso nell'indirizzo", tel.url.endswith("/#/altro") and "access_token" not in tel.url, tel.url)
         await field(tel, "Password").fill("corta")
         await field(tel, "Ripeti la password").fill("corta")
         await tel.get_by_role("button", name="Continua").click()
@@ -234,10 +254,41 @@ async def main():
         await tel.get_by_role("link", name="Analisi").first.click(); await tel.wait_for_timeout(600)
         check("Un solo tentativo automatico per scadenza", await tel.evaluate(gis) == 1)
         await tel.evaluate("() => { window.__gisFail = false }")
-        await banner.click(); await tel.wait_for_timeout(2500)
+        calls = auth["calls"]
+        await banner.click(); await tel.wait_for_selector("nav"); await tel.wait_for_timeout(2500)
+        check("'Riconnetti' passa dalla pagina di Google (account già collegato proposto)", auth["calls"] == calls + 1 and auth["last"].get("login_hint") == ["utente.prova@example.com"] and "prompt" not in auth["last"])
+        check("…e riporta alla schermata di prima", tel.url.endswith("/#/analisi") and "access_token" not in tel.url, tel.url)
         check("Dopo 'Riconnetti' torna sincronizzato", await banner.count() == 0 and "Sincronizzato" in await sync_status(tel))
         await pc.evaluate("document.dispatchEvent(new Event('visibilitychange'))"); await pc.wait_for_timeout(2500)
         check("Nessuna modifica persa: l'eliminazione arriva all'altro dispositivo", "Edicola dal telefono" not in await descriptions(pc))
+
+        # finestra che non torna all'app (pagina bianca sul telefono): dopo il ritorno all'app compare 'Riconnetti'
+        await tel.evaluate(expire); await tel.reload(); await tel.wait_for_selector("nav"); await tel.wait_for_timeout(1500)
+        await add_expense(tel, "2", "Giornale dal telefono")
+        await tel.wait_for_timeout(5000)
+        await tel.evaluate("() => { window.__gisHang = true; window.__gisCalls = 0 }")
+        await tel.get_by_role("link", name="Conti").first.click(); await tel.wait_for_timeout(800)
+        hide = """(v) => { Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => v }); document.dispatchEvent(new Event('visibilitychange')) }"""
+        await tel.evaluate(hide, "hidden"); await tel.wait_for_timeout(500); await tel.evaluate(hide, "visible")
+        await tel.wait_for_timeout(2000)
+        check("Finestra senza risposta: per qualche secondo si aspetta", await tel.evaluate(gis) == 1 and await banner.count() == 0)
+        await tel.wait_for_timeout(4500)
+        check("Finestra senza risposta: poi avviso 'Riconnetti'", await banner.count() == 1)
+        await tel.evaluate("() => { window.__gisHang = false; delete document.visibilityState }")
+        await banner.click(); await tel.wait_for_selector("nav"); await tel.wait_for_timeout(3000)
+        check("…e con 'Riconnetti' la modifica parte", "Sincronizzato" in await sync_status(tel))
+        await pc.evaluate("document.dispatchEvent(new Event('visibilitychange'))"); await pc.wait_for_timeout(2500)
+        check("La spesa arriva all'altro dispositivo", "Giornale dal telefono" in await descriptions(pc))
+        await tel.goto(BASE + "/#/movimenti"); await tel.wait_for_timeout(500)
+        await tel.get_by_role("button", name=re.compile("^Giornale dal telefono")).click()
+        await tel.get_by_role("button", name="Elimina").click(); await tel.get_by_role("button", name="Conferma eliminazione").click()
+        await tel.wait_for_timeout(5000)
+
+        # un permesso nell'indirizzo che non corrisponde a una richiesta dell'app viene ignorato
+        tok = "() => Object.keys(localStorage).filter(k => k.startsWith('statera.token')).map(k => localStorage.getItem(k)).join()"
+        await tel.goto("about:blank")
+        await tel.goto(BASE + "/#access_token=tok-estraneo&expires_in=3599&scope=" + DRIVE_SCOPE + "&state=nonmio"); await tel.wait_for_selector("nav"); await tel.wait_for_timeout(800)
+        check("Permesso estraneo nell'indirizzo ignorato e tolto", "tok-estraneo" not in await tel.evaluate(tok) and "access_token" not in tel.url, tel.url)
 
         # PC: lo stesso stato in fondo alla barra laterale
         side = pc.locator(".sync-state")
@@ -264,6 +315,10 @@ async def main():
         cctx, c3, cerr = await new_device(b, p, "tablet", True)
         await c3.goto(BASE + "/#/altro"); await c3.wait_for_timeout(300)
         await c3.get_by_role("button", name="Attiva la sincronizzazione").click()
+        auth["deny"] = True
+        await c3.get_by_role("button", name="Accedi con Google").click()
+        await c3.get_by_text("Accesso a Google annullato").wait_for(timeout=8000)
+        check("Accesso annullato su Google: la scheda lo dice e si può riprovare", await c3.get_by_role("button", name="Accedi con Google").count() == 1)
         await c3.get_by_role("button", name="Accedi con Google").click()
         await field(c3, "Password di Statera").wait_for()
         await c3.get_by_role("button", name=re.compile("Ho dimenticato la password")).click()
@@ -304,7 +359,9 @@ async def main():
         # ---------- profili: secondo account sullo stesso dispositivo ----------
         await pc.goto(BASE + "/#/altro"); await pc.wait_for_timeout(300)
         await pc.get_by_role("button", name=re.compile("Account e profili")).click()
-        await pc.get_by_role("button", name="Aggiungi un altro account").click()
+        await pc.get_by_role("button", name="Nuovo profilo vuoto").click()
+        check("Nuovo profilo: chiede conferma e spiega come tornare", await pc.get_by_text("per tornarci").count() == 1)
+        await pc.get_by_role("button", name="Crea profilo vuoto").click()
         await pc.wait_for_selector("nav"); await pc.wait_for_timeout(800)
         check("Nuovo profilo: vuoto e non collegato", await descriptions(pc) == [] and "Non attiva" in await sync_status(pc))
         await pc.get_by_role("button", name=re.compile("Account e profili")).click()
