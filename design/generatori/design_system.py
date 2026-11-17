@@ -174,7 +174,8 @@ USAGE = {
  'ease-standard': 'Tutte le entrate e i cambi di stato: parte svelta e rallenta.',
  'ease-exit': 'Tutte le uscite: pannelli e finestre che si chiudono, avvisi che spariscono, tastierino e righe che si chiudono.',
 }
-SWATCH_NAMES = ['verde', 'terracotta', 'blu', 'nocciola', 'viola', 'petrolio', 'rosa', 'oliva']
+SWATCH_NAMES = ['verde', 'terracotta', 'blu', 'nocciola', 'viola', 'petrolio', 'rosa', 'oliva',
+                'rosso', 'ambra', 'indaco', 'prugna', 'verde bosco', 'bordeaux', 'ardesia', 'lavanda']
 
 def family(name):
     if name.startswith(('color-', 'toast-', 'chart-', 'status-', 'swatch-')) or name == 'cat-icon-dark': return 'color'
@@ -345,6 +346,8 @@ CSS = r'''/* Statera — componenti di riferimento. Tutti i valori vengono da to
 .st-cat--neutral, [data-theme="dark"] .st-cat--neutral { background: var(--color-accent-soft); color: var(--color-accent); }
 .st-cat--s1 { --cat: var(--swatch-s1); } .st-cat--s2 { --cat: var(--swatch-s2); } .st-cat--s3 { --cat: var(--swatch-s3); } .st-cat--s4 { --cat: var(--swatch-s4); }
 .st-cat--s5 { --cat: var(--swatch-s5); } .st-cat--s6 { --cat: var(--swatch-s6); } .st-cat--s7 { --cat: var(--swatch-s7); } .st-cat--s8 { --cat: var(--swatch-s8); }
+.st-cat--s9 { --cat: var(--swatch-s9); } .st-cat--s10 { --cat: var(--swatch-s10); } .st-cat--s11 { --cat: var(--swatch-s11); } .st-cat--s12 { --cat: var(--swatch-s12); }
+.st-cat--s13 { --cat: var(--swatch-s13); } .st-cat--s14 { --cat: var(--swatch-s14); } .st-cat--s15 { --cat: var(--swatch-s15); } .st-cat--s16 { --cat: var(--swatch-s16); }
 
 /* Scelta dell'icona (IconPicker) */
 .st-iconpick { display: flex; flex-direction: column; gap: var(--space-2); }
@@ -690,8 +693,8 @@ cat_row = lambda size, ipx: ''.join(f'<span class="st-cat{size} st-cat--{c}" ari
 comp('IconaCategoria', 'Contenuti', 300, f'''Il cerchio colorato che identifica una categoria o un conto: icona Lucide sulla sua tinta.
 
 ## Regole di colore
-- Tema chiaro: fondo = tinta (`swatch-s1`…`swatch-s8`) al `cat-tint` ({TL['cat-tint']}), icona nella tinta piena: da {f1(min(cr(V(f'swatch-s{i}'), _mix(V(f'swatch-s{i}'), V('color-surface'), TL['cat-tint'])) for i in range(1, 9)))}:1 a {f1(max(cr(V(f'swatch-s{i}'), _mix(V(f'swatch-s{i}'), V('color-surface'), TL['cat-tint'])) for i in range(1, 9)))}:1 su bianco.
-- Tema scuro: fondo = tinta al {DARK_TINT}, icona `cat-icon-dark` (bianca): almeno {f1(min(cr(V('cat-icon-dark', 'dark'), _mix(V(f'swatch-s{i}'), V('color-surface', 'dark'), DARK_TINT)) for i in range(1, 9)))}:1. Provata anche l'icona colorata su cerchio tenue: meno leggibile.
+- Tema chiaro: fondo = tinta (`swatch-s1`…`swatch-s16`) al `cat-tint` ({TL['cat-tint']}), icona nella tinta piena: da {f1(min(cr(V(f'swatch-s{i}'), _mix(V(f'swatch-s{i}'), V('color-surface'), TL['cat-tint'])) for i in range(1, 17)))}:1 a {f1(max(cr(V(f'swatch-s{i}'), _mix(V(f'swatch-s{i}'), V('color-surface'), TL['cat-tint'])) for i in range(1, 17)))}:1 su bianco.
+- Tema scuro: fondo = tinta al {DARK_TINT}, icona `cat-icon-dark` (bianca): almeno {f1(min(cr(V('cat-icon-dark', 'dark'), _mix(V(f'swatch-s{i}'), V('color-surface', 'dark'), DARK_TINT)) for i in range(1, 17)))}:1. Provata anche l'icona colorata su cerchio tenue: meno leggibile.
 - Senza tinta (trasferimento, conti senza colore): `st-cat--neutral`, color-accent-soft con color-accent.
 - Scelta in un elenco di icone: vedi SceltaIcona.
 
@@ -1235,8 +1238,8 @@ FREE = [k for g in APP.cat_groups for k in g['keys'] if k not in labels]
 FREE_LINE = ' · '.join(f'`{k}` ({APP.cat_icons[k]})' for k in FREE)
 GROUPS_TXT = ', '.join(f'{g["label"]}' for g in APP.cat_groups)
 ACCOUNTS = [('conto_corrente', 'landmark'), ('contanti', 'banknote'), ('buoni_pasto', 'ticket'), ('altro', 'piggy-bank')]
-CAT_MIN = min(cr(V(f'swatch-s{i}'), _mix(V(f'swatch-s{i}'), V('color-surface'), TL['cat-tint'])) for i in range(1, 9))
-CAT_MAX = max(cr(V(f'swatch-s{i}'), _mix(V(f'swatch-s{i}'), V('color-surface'), TL['cat-tint'])) for i in range(1, 9))
+CAT_MIN = min(cr(V(f'swatch-s{i}'), _mix(V(f'swatch-s{i}'), V('color-surface'), TL['cat-tint'])) for i in range(1, 17))
+CAT_MAX = max(cr(V(f'swatch-s{i}'), _mix(V(f'swatch-s{i}'), V('color-surface'), TL['cat-tint'])) for i in range(1, 17))
 
 README = f'''Statera è l'app personale per registrare entrate e spese, su telefono Android e PC Windows. Lo stile è «Vivace»: l'importo principale grande in un riquadro indaco, azioni in cerchi, categorie riconoscibili dal colore e dall'icona, angoli molto arrotondati. La palette è «Indaco morbido»: un indaco calmo, che non stanca la vista, con tinte vivaci per le categorie.
 
