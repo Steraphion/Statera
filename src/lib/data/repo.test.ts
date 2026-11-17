@@ -72,6 +72,35 @@ describe('categorie', () => {
     await repo.setCategoryArchived(madre.id, true, d)
     expect((await d.categories.get(figlia.id))!.archived).toBe(true)
   })
+
+  it('niente doppioni nello stesso posto (maiuscole, accenti e spazi non contano)', async () => {
+    const u = { kind: 'uscita' as const, parentId: null, color: 's1' as const }
+    const caffe = await repo.createCategory({ ...u, name: 'Caffè' }, d)
+    await expect(repo.createCategory({ ...u, name: '  caffe ' }, d)).rejects.toThrow(/«Caffè» esiste già tra le uscite/)
+    // stesso nome ma tipo o posto diverso: va bene
+    await repo.createCategory({ ...u, name: 'Caffè', kind: 'entrata' }, d)
+    const casa = await repo.createCategory({ ...u, name: 'Casa' }, d)
+    await repo.createCategory({ ...u, name: 'Caffè', parentId: casa.id }, d)
+    await expect(repo.createCategory({ ...u, name: 'CAFFÈ', parentId: casa.id }, d)).rejects.toThrow(/esiste già qui dentro/)
+    // archiviata: si dice dove ripristinarla
+    await repo.setCategoryArchived(caffe.id, true, d)
+    await expect(repo.createCategory({ ...u, name: 'Caffe' }, d)).rejects.toThrow(/archiviata: ripristinala da Altro → Categorie/)
+    // eliminata: il nome torna libero
+    await repo.deleteCategory(caffe.id, d)
+    await repo.createCategory({ ...u, name: 'Caffè' }, d)
+    // rinominare verso un nome già usato no, cambiare colore o icona sì
+    await expect(repo.updateCategory(casa.id, { ...u, name: 'caffè' }, d)).rejects.toThrow(/esiste già/)
+    await repo.updateCategory(casa.id, { ...u, name: 'Casa', color: 's3', icon: 'casa' }, d)
+  })
+
+  it('un doppione di prima resta modificabile', async () => {
+    const u = { kind: 'uscita' as const, parentId: null, color: 's1' as const }
+    const a = await repo.createCategory({ ...u, name: 'Svago' }, d)
+    // come se fosse nato prima del controllo (o da due dispositivi)
+    await d.categories.add({ ...a, id: 'doppione', name: 'Svago' })
+    await repo.updateCategory('doppione', { ...u, name: 'Svago', color: 's4' }, d)
+    expect((await d.categories.get('doppione'))!.color).toBe('s4')
+  })
 })
 
 describe('ordine dei conti', () => {

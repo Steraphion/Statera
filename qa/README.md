@@ -131,3 +131,8 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
   senza doppioni: nel campo «Con» delle uscite la carta al posto del suo conto, nel campo «Su» delle entrate solo
   conti, tornando a «Uscita» l'ultima fonte usata (anche in `collaudo.py`, col pagamento misto carta + buoni).
   Uso come `collaudo.py`.
+- `categorie-nuove.py` — v0.36: «+ Nuova categoria» dal modulo del movimento (uscita ed entrata): scheda sopra il
+  movimento col tipo fissato e senza rinnovo dell'accesso Google, icona proposta dal nome o scelta a mano, Invio su PC
+  che salva la categoria e non il movimento, categoria già scelta con importo e descrizione intatti, movimento salvato
+  con la categoria nuova, doppione fermato con un messaggio chiaro, Esc che chiude solo la scheda, categoria che resta
+  anche senza salvare il movimento e che compare in Altro → Categorie al suo posto. Su Android e PC. Uso come `collaudo.py`.

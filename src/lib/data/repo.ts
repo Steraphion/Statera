@@ -161,9 +161,39 @@ async function normalizeCategory(input: CategoryInput, selfId: string | null, d:
       }
     }
   }
+  await assertNoTwin(name, input.kind, input.parentId ?? null, selfId, d)
   const { icon, ...rest } = input
   if (icon === undefined) return { ...rest, name }
   return { ...rest, name, icon: isCategoryIconKey(icon) ? icon : null }
+}
+
+/** Minuscolo, senza accenti e spazi doppi: «Caffè » e «caffe» sono lo stesso nome. */
+function sameName(a: string, b: string): boolean {
+  const k = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+  return k(a) === k(b)
+}
+
+/**
+ * Niente due categorie con lo stesso nome nello stesso posto (stesso tipo e stessa categoria principale),
+ * archiviate comprese: chi crea una categoria dal modulo del movimento spesso non ha visto che c'era già.
+ * Modificando una categoria il controllo vale solo se cambiano nome, tipo o posto, così i doppioni
+ * nati prima della v0.36 restano modificabili.
+ */
+async function assertNoTwin(name: string, kind: CategoryKind, parentId: string | null, selfId: string | null, d: StateraDB) {
+  if (selfId) {
+    const self = await d.categories.get(selfId)
+    if (self && sameName(self.name, name) && self.kind === kind && self.parentId === parentId) return
+  }
+  const twin = (await d.categories.toArray()).find(
+    (c) => c.deletedAt === null && c.id !== selfId && c.kind === kind && c.parentId === parentId && sameName(c.name, name),
+  )
+  if (!twin) return
+  const where = parentId ? ' qui dentro' : kind === 'uscita' ? ' tra le uscite' : ' tra le entrate'
+  throw new Error(
+    twin.archived
+      ? `La categoria «${twin.name}» esiste già${where}, archiviata: ripristinala da Altro → Categorie`
+      : `La categoria «${twin.name}» esiste già${where}`,
+  )
 }
 
 export async function createCategory(input: CategoryInput, d: StateraDB = db): Promise<Category> {

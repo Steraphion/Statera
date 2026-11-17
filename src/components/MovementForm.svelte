@@ -8,11 +8,12 @@
   import Segmented from './Segmented.svelte'
   import DeleteButton from './DeleteButton.svelte'
   import CategoryPicker from './CategoryPicker.svelte'
+  import CategoryForm from './CategoryForm.svelte'
   import DateField from './DateField.svelte'
   import * as mv from '../lib/data/transactions'
   import * as rec from '../lib/data/recurring'
   import * as tp from '../lib/data/templates'
-  import type { Account, Card, Category, Frequency, Recurring, Template, Transaction, TransactionType } from '../lib/data/types'
+  import { SWATCHES, type Account, type Card, type Category, type Frequency, type Recurring, type Template, type Transaction, type TransactionType } from '../lib/data/types'
   import { db } from '../lib/data/db'
   import { errorMessage, today, withTimeout } from '../lib/data/util'
   import { centsToInput, evalAmount, formatEuro, isExpression } from '../lib/format'
@@ -314,6 +315,13 @@
       error = errorMessage(e)
     }
   }
+
+  // ---------- Categoria nuova, creata senza lasciare il movimento ----------
+  let newCategory = $state(false)
+  /** Colore della nuova categoria: il prossimo della serie, come in Altro → Categorie. */
+  const nextColor = $derived(
+    SWATCHES[categories.filter((c) => c.deletedAt === null && c.parentId === null && c.kind === type).length % SWATCHES.length],
+  )
 
   // ---------- Ripartizione ----------
   /** Categorie del tipo scelto: le principali in ordine alfabetico, ognuna seguita dalle sue sottocategorie. */
@@ -772,9 +780,12 @@
         </fieldset>
       {:else}
         <CategoryPicker {categories} kind={type} bind:value={categoryId} keepId={orig?.categoryId ?? tpl?.categoryId ?? null} />
-        {#if canSplit}
-          <button type="button" class="btn btn-ghost link" onclick={startSplit}>Dividi tra più categorie</button>
-        {/if}
+        <div class="cat-actions">
+          <button type="button" class="btn btn-ghost link" onclick={() => (newCategory = true)}>+ Nuova categoria</button>
+          {#if canSplit}
+            <button type="button" class="btn btn-ghost link" onclick={startSplit}>Dividi tra più categorie</button>
+          {/if}
+        </div>
       {/if}
       </div>
 
@@ -933,6 +944,19 @@
   {/snippet}
 </Sheet>
 
+<!-- Fuori dal modulo del movimento: Invio e i tocchi della scheda non arrivano al movimento -->
+{#if newCategory && type !== 'trasferimento'}
+  <CategoryForm
+    categories={categories.filter((c) => c.deletedAt === null)}
+    defaultKind={type}
+    defaultColor={nextColor}
+    fixedKind
+    noAutoauth
+    onsaved={(c) => (categoryId = c.id)}
+    onclose={() => (newCategory = false)}
+  />
+{/if}
+
 <style>
   /* Gruppi del modulo: sul telefono non esistono (i campi restano figli diretti del modulo) */
   .col {
@@ -1073,6 +1097,14 @@
     align-self: flex-start;
     padding: 0;
     min-height: var(--size-cat-s);
+  }
+
+  /* Sotto l'elenco delle categorie: «+ Nuova categoria» e «Dividi tra più categorie» */
+  .cat-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-1) var(--space-4);
   }
 
   .parts {

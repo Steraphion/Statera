@@ -18,7 +18,10 @@
     defaultKind,
     defaultParentId = null,
     defaultColor = 's1',
+    fixedKind = false,
+    noAutoauth = false,
     onaddchild,
+    onsaved,
     onclose,
   }: {
     category?: Category
@@ -26,8 +29,14 @@
     defaultKind: CategoryKind
     defaultParentId?: string | null
     defaultColor?: SwatchKey
+    /** Tipo fissato da chi apre il modulo (dal modulo del movimento: uscita o entrata come il movimento). */
+    fixedKind?: boolean
+    /** Aperto dal modulo del movimento: i tocchi non rinnovano il permesso Google. */
+    noAutoauth?: boolean
     /** Apre il modulo per una nuova sottocategoria di questa categoria. */
     onaddchild?: () => void
+    /** Categoria appena creata (solo per una categoria nuova), prima della chiusura. */
+    onsaved?: (created: Category) => void
     onclose: () => void
   } = $props()
 
@@ -79,11 +88,15 @@
     e.preventDefault()
     const changed = picked !== undefined && picked !== (orig?.icon ?? undefined)
     const input = { name, kind, parentId: parentId || null, color, ...(changed ? { icon: picked } : {}) }
-    run(() => (category ? repo.updateCategory(category.id, input) : repo.createCategory(input)))
+    run(async () => {
+      if (category) return repo.updateCategory(category.id, input)
+      const created = await repo.createCategory(input)
+      onsaved?.(created)
+    })
   }
 </script>
 
-<Sheet title={category ? 'Modifica categoria' : 'Nuova categoria'} {onclose} {error}>
+<Sheet title={category ? 'Modifica categoria' : 'Nuova categoria'} {onclose} {error} {noAutoauth}>
   <form novalidate id="category-form" class="form" onsubmit={save}>
     <label class="field">
       <span>Nome</span>
@@ -95,7 +108,7 @@
       <Segmented
         label="Tipo"
         bind:value={kind}
-        disabled={!!category?.parentId}
+        disabled={!!category?.parentId || fixedKind}
         options={[
           { value: 'uscita', label: 'Uscita' },
           { value: 'entrata', label: 'Entrata' },
@@ -103,6 +116,8 @@
       />
       {#if category?.parentId}
         <span class="hint">Il tipo di una sottocategoria segue quello della categoria principale.</span>
+      {:else if fixedKind}
+        <span class="hint">Come il movimento. Resta tra le categorie, modificabile in Altro&nbsp;→&nbsp;Categorie.</span>
       {/if}
     </div>
 

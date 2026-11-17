@@ -61,7 +61,7 @@
       </button>
     {/each}
     {#if rows.length === 0}
-      <p class="empty-note">Nessuna categoria di questo tipo. Creale in Altro → Categorie.</p>
+      <p class="empty-note">Nessuna categoria di questo tipo: creane una con «+ Nuova categoria».</p>
     {/if}
   </div>
 </fieldset>
