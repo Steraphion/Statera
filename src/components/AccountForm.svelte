@@ -27,6 +27,9 @@
   let voucherValue = $state(orig?.voucherValue ? centsToInput(orig.voucherValue) : '')
   let initialVouchers = $state(String(orig?.initialVouchers ?? 0))
   let color = $state<SwatchKey>(orig?.color ?? untrack(() => defaultColor))
+  /** Solo per un conto nuovo che può avere carte: nome della carta di debito collegata (facoltativo). */
+  let cardName = $state('')
+  const canHaveCard = $derived(type === 'conto_corrente' || type === 'altro')
   let error = $state('')
   let busy = $state(false)
 
@@ -72,7 +75,11 @@
       initialVouchers: count,
       color,
     }
-    run(() => (account ? repo.updateAccount(account.id, input) : repo.createAccount(input)))
+    run(() =>
+      account
+        ? repo.updateAccount(account.id, input)
+        : repo.createAccountWithCard(input, canHaveCard ? cardName : ''),
+    )
   }
 </script>
 
@@ -92,8 +99,23 @@
       </select>
       {#if editing && account?.type !== type && (type === 'contanti' || type === 'buoni_pasto')}
         <span class="hint">Le carte collegate a questo conto verranno rimosse.</span>
+      {:else if type === 'carta_prepagata'}
+        <span class="hint">
+          Una carta ricaricabile con un saldo suo, separata dai conti correnti. Compare nel gruppo "Carte prepagate".
+        </span>
       {/if}
     </label>
+
+    {#if !editing && canHaveCard}
+      <label class="field">
+        <span>Carta collegata (facoltativa)</span>
+        <input class="input" bind:value={cardName} placeholder="Es. Bancomat" maxlength="40" autocomplete="off" />
+        <span class="hint">
+          La carta di debito di questo conto. Le spese con la carta scalano dal conto: serve solo a ricordare con cosa
+          hai pagato. Puoi aggiungerla anche dopo, dal dettaglio del conto.
+        </span>
+      </label>
+    {/if}
 
     {#if type === 'buoni_pasto'}
       <div class="row-2">

@@ -14,7 +14,7 @@
   import { db } from '../lib/data/db'
   import { moveAccount } from '../lib/data/repo'
   import { live } from '../lib/data/live.svelte'
-  import { accountBalance, cardEligible, netWorth } from '../lib/data/balances'
+  import { accountBalance, accountGroups, cardEligible, cardsOf, netWorth } from '../lib/data/balances'
   import { ACCOUNT_TYPE_LABELS, SWATCHES, type Account, type Card as CardT } from '../lib/data/types'
   import { alive, byOrder } from '../lib/data/util'
   import { formatEuro, formatVouchers, monthOf, shiftMonth } from '../lib/format'
@@ -52,6 +52,9 @@
   const total = $derived(netWorth(data.value.accounts, data.value.transactions))
   const accountName = $derived(new Map(data.value.accounts.map((a) => [a.id, a.name])))
   const eligible = $derived(active.filter(cardEligible))
+  /** Conti attivi divisi per tipo (conti correnti, carte prepagate, contanti…), ognuno col suo totale. */
+  const groups = $derived(accountGroups(active, data.value.transactions))
+  const canSort = $derived(groups.some((g) => g.accounts.length > 1))
 
   let showArchived = $state(false)
   let sorting = $state(false)
@@ -64,7 +67,7 @@
   // --- PC: elenco e dettaglio affiancati ---
   /** Mese del dettaglio: resta lo stesso passando da un conto all'altro. */
   let detailMonth = $state(monthOf(today()))
-  const shownList = $derived([...active, ...(showArchived ? archived : [])])
+  const shownList = $derived([...groups.flatMap((g) => g.accounts), ...(showArchived ? archived : [])])
   const current = $derived(
     columns.pc && data.ready ? (data.value.accounts.find((a) => a.id === selected) ?? active[0] ?? null) : null,
   )
@@ -143,61 +146,61 @@
   </li>
 {/snippet}
 
-<h2 class="section-title">
-  I tuoi conti
-  {#if active.length > 1}
-    <button class="btn btn-ghost btn-small" onclick={() => (sorting = !sorting)}>{sorting ? 'Fatto' : 'Ordina'}</button>
-  {/if}
-</h2>
-<Card>
-  {#if !data.ready}
-    <p class="empty-note">Caricamento…</p>
-  {:else if active.length === 0}
-    <p class="empty-note">Nessun conto. Inizia aggiungendo il tuo conto corrente, i contanti e i buoni pasto.</p>
-  {:else}
-    <ul class="list">
-      {#each active as a, i (a.id)}
-        {#if sorting}
-          <li class="sort-row">
-            <CategoryIcon icon={ACCOUNT_ICONS[a.type]} color={a.color} size="s" />
-            <span class="name">{a.name}</span>
-            <button class="btn btn-ghost btn-small" aria-label="Sposta su {a.name}" disabled={i === 0} onclick={() => moveAccount(a.id, -1)}>↑</button>
-            <button class="btn btn-ghost btn-small" aria-label="Sposta giù {a.name}" disabled={i === active.length - 1} onclick={() => moveAccount(a.id, 1)}>↓</button>
-          </li>
-        {:else}
-          {@render accountRow(a)}
-        {/if}
-      {/each}
-    </ul>
-  {/if}
-</Card>
+{#snippet cardRow(c: CardT)}
+  <li class="nested">
+    <button class="list-row" onclick={() => (cardSheet = { card: c })} aria-label="Carta {c.name}, collegata a {accountName.get(c.accountId) ?? ''}{c.archived ? ', archiviata' : ''}">
+      <CategoryIcon icon="credit-card" size="s" />
+      <span class="main">
+        <span class="name">{c.name}</span>
+        <span class="sub">Carta collegata{c.archived ? ' · archiviata' : ''}</span>
+      </span>
+    </button>
+  </li>
+{/snippet}
 
-<h2 class="section-title">
-  Carte di debito
-  <button class="btn btn-ghost btn-small" onclick={() => (cardSheet = {})}>
-    <Icon name="plus" size={16} /> Carta
-  </button>
-</h2>
-<Card>
-  {#if data.value.cards.length === 0}
-    <p class="empty-note">Nessuna carta. Le carte servono a indicare con cosa hai pagato.</p>
-  {:else}
-    <ul class="list">
-      {#each data.value.cards as c (c.id)}
-        <li>
-          <button class="list-row" onclick={() => (cardSheet = { card: c })}>
-            <CategoryIcon icon="credit-card" />
-            <span class="main">
-              <span class="name">{c.name}</span>
-              <span class="sub">Collegata a {accountName.get(c.accountId) ?? '—'}</span>
-            </span>
-            {#if c.archived}<span class="sub">Archiviata</span>{/if}
-          </button>
-        </li>
-      {/each}
-    </ul>
-  {/if}
-</Card>
+{#if !data.ready}
+  <Card><p class="empty-note">Caricamento…</p></Card>
+{:else if active.length === 0}
+  <h2 class="section-title">I tuoi conti</h2>
+  <Card>
+    <p class="empty-note">
+      Nessun conto. Inizia aggiungendo il tuo conto corrente (con la sua carta, se vuoi), le carte prepagate, i
+      contanti e i buoni pasto.
+    </p>
+  </Card>
+{:else}
+  {#each groups as g, gi (g.type)}
+    <h2 class="section-title group-title">
+      <span>{g.label}</span>
+      <span class="group-end">
+        {#if gi === 0 && canSort}
+          <button class="btn btn-ghost btn-small" onclick={() => (sorting = !sorting)}>{sorting ? 'Fatto' : 'Ordina'}</button>
+        {/if}
+        <span class="num group-total" class:amount-neg={g.total < 0} aria-label="Totale {g.label}: {formatEuro(g.total)}">{formatEuro(g.total)}</span>
+      </span>
+    </h2>
+    <Card>
+      <ul class="list">
+        {#each g.accounts as a, i (a.id)}
+          {#if sorting}
+            <li class="sort-row">
+              <CategoryIcon icon={ACCOUNT_ICONS[a.type]} color={a.color} size="s" />
+              <span class="name">{a.name}</span>
+              <button class="btn btn-ghost btn-small" aria-label="Sposta su {a.name}" disabled={i === 0} onclick={() => moveAccount(a.id, -1)}>↑</button>
+              <button class="btn btn-ghost btn-small" aria-label="Sposta giù {a.name}" disabled={i === g.accounts.length - 1} onclick={() => moveAccount(a.id, 1)}>↓</button>
+            </li>
+          {:else}
+            {@render accountRow(a)}
+            <!-- Le carte di debito stanno sotto il loro conto: sono un modo di pagare da quel conto -->
+            {#each cardsOf(a, data.value.cards) as c (c.id)}
+              {@render cardRow(c)}
+            {/each}
+          {/if}
+        {/each}
+      </ul>
+    </Card>
+  {/each}
+{/if}
 
 <!-- Obiettivi: sotto l'elenco, o nella terza colonna quando l'area è molto larga -->
 {#if !molto}
@@ -340,13 +343,35 @@
   <CardForm
     card={cardSheet.card}
     accounts={cardSheet.card
-      ? data.value.accounts.filter((a) => cardEligible(a) && (!a.archived || a.id === cardSheet?.card?.accountId))
+      ? data.value.accounts.filter((a) => a.id === cardSheet?.card?.accountId || (cardEligible(a) && !a.archived))
       : eligible}
     onclose={() => (cardSheet = null)}
   />
 {/if}
 
 <style>
+  .group-title {
+    gap: var(--space-3);
+  }
+
+  .group-end {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .group-total {
+    color: var(--color-text);
+    letter-spacing: normal;
+    text-transform: none;
+  }
+
+  /* Carta sotto il suo conto: rientrata, più piccola, senza importo */
+  .nested :global(.list-row) {
+    min-height: var(--size-touch);
+    padding-left: calc(var(--size-cat) + var(--space-3));
+  }
+
   /* PC: elenco e dettaglio affiancati. L'elenco ha la larghezza scelta (o quella iniziale), mai tanta da
      lasciare il dettaglio sotto --size-detail-min; il separatore sta nello spazio tra i due */
   @media (min-width: 900px) {

@@ -193,7 +193,8 @@ async def conti(pg, label):
     await pg.keyboard.press("ArrowRight"); await pg.wait_for_timeout(200)
     check(f"{label}: e di nuovo novembre", await panel.locator("h3").inner_text() == "Novembre 2026" and await rows.count() == n_nov)
     # un altro conto: cambia solo il dettaglio, in dissolvenza, senza nascondere la schermata né tornare in cima
-    await pg.evaluate("window.scrollTo(0, 120)")
+    # dalla v0.35 l'elenco dei conti è più corto: spazio in fondo, così la pagina resta scorrevole anche col dettaglio di Contanti
+    await pg.evaluate("document.querySelector('main.content').style.paddingBottom = '600px'; window.scrollTo(0, 120)")
     hist = await pg.evaluate("history.length")
     await pg.evaluate("""() => { window.__anims = []; window.__reveal = []
       document.addEventListener('animationstart', (e) => window.__anims.push([e.animationName, getComputedStyle(e.target).animationDuration]))
@@ -205,6 +206,7 @@ async def conti(pg, label):
     check(f"{label}: clic su Contanti: indirizzo del conto", (await pg.evaluate("location.hash")).startswith("#/conto/") and await pg.locator("section[aria-label='Dettaglio di Contanti']").count() == 1)
     check(f"{label}: la schermata resta visibile, il dettaglio compare in --duration-base", "wait" not in reveal and len(anim) == 1 and float(anim[0].rstrip("ms")) * (1 if anim[0].endswith("ms") else 1000) == float(base.rstrip("ms")) * (1 if base.endswith("ms") else 1000), f"{reveal} {anim} {base}")
     check(f"{label}: la pagina non torna in cima", await pg.evaluate("scrollY") > 0)
+    await pg.evaluate("document.querySelector('main.content').style.paddingBottom = ''")
     check(f"{label}: Contanti evidenziato nell'elenco", "Contanti" in await pg.locator("#conti-list a[aria-current=true]").inner_text())
     check(f"{label}: conto senza movimenti nel mese: avviso", "Nessun movimento su questo conto" in await pg.locator(".detail-col").inner_text())
     await pg.go_back(); await pg.wait_for_timeout(400)

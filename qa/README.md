@@ -118,3 +118,13 @@ Prove automatiche nel browser (Chrome + Playwright per Python), con soli dati di
   tabella con la data, riepilogo per categoria e mese che restringe la ricerca. Maniglia del separatore nascosta,
   Cerca evidenziata nella barra. In chiaro e in scuro; sul telefono nulla di tutto questo. Uso come `collaudo.py`
   (`QA_BASE` per un altro indirizzo).
+- `conti-carte.py` — v0.35: Conti divisi per tipo (conti correnti, carte prepagate, contanti, buoni pasto, altri
+  conti) col totale di ogni gruppo nell'intestazione e il patrimonio di tutti; carta di debito creata insieme al conto
+  («Carta collegata», solo per conto corrente e altro) e mostrata sotto il suo conto; nessuna sezione «Carte di
+  debito»; dal dettaglio del conto (telefono e PC) carte del conto e «Aggiungi una carta» già sul conto giusto, niente
+  carte per una prepagata; tocco sulla carta nell'elenco che apre la sua scheda, archiviazione; nel campo «Con» del
+  movimento la carta col suo conto tra parentesi e le prepagate come conti; spesa con la prepagata che scala il suo
+  gruppo; «Ordina» che sposta solo dentro il gruppo; conto «Altro» con carta passato a «Carta prepagata» (cambia
+  gruppo col suo saldo, tiene la carta, che si apre col conto giusto e si rinomina). Su Android e PC. Il passaggio
+  0.34.0 → 0.35.0 con un conto corrente, la sua carta e un conto «Altro» è stato verificato con lo schema di
+  `aggiornamento.py` (avviso «Aggiorna», gruppi e totali giusti, carta sotto il suo conto). Uso come `collaudo.py`.

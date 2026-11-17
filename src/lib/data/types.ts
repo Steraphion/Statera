@@ -17,7 +17,8 @@ export interface Base {
 
 export type SwatchKey = 's1' | 's2' | 's3' | 's4' | 's5' | 's6' | 's7' | 's8'
 
-export type AccountType = 'contanti' | 'conto_corrente' | 'buoni_pasto' | 'altro'
+/** 'carta_prepagata' dalla v0.35: carta ricaricabile con un saldo suo (non collegata a un conto). */
+export type AccountType = 'contanti' | 'conto_corrente' | 'carta_prepagata' | 'buoni_pasto' | 'altro'
 
 export interface Account extends Base {
   name: string
@@ -164,8 +165,9 @@ export interface Meta {
 }
 
 export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
-  contanti: 'Contanti',
   conto_corrente: 'Conto corrente',
+  carta_prepagata: 'Carta prepagata',
+  contanti: 'Contanti',
   buoni_pasto: 'Buoni pasto',
   altro: 'Altro',
 }

@@ -23,9 +23,9 @@ async def main():
             await pg.goto(BASE + "/#/conti"); await pg.wait_for_selector("nav"); await pg.wait_for_timeout(400)
             await pg.get_by_role("button", name="Conto").first.click()
             await pg.get_by_label("Nome").fill("Conto"); await pg.get_by_label("Tipo").select_option("conto_corrente"); await pg.get_by_label("Saldo iniziale (€)").fill("1000")
+            # carta creata insieme al conto (v0.35)
+            await pg.get_by_label("Carta collegata (facoltativa)").fill("Bancomat")
             await pg.get_by_role("button", name="Salva").click(); await pg.wait_for_timeout(300)
-            await pg.get_by_role("button", name="Carta").first.click()
-            await pg.get_by_label("Nome").fill("Bancomat"); await pg.get_by_role("button", name="Salva").click(); await pg.wait_for_timeout(300)
             await pg.goto(BASE + "/#/movimenti"); await pg.wait_for_timeout(300)
             # 1) calcolo nell'importo + pulsante +
             await open_new(pg)
@@ -90,7 +90,9 @@ async def main():
             await pg.keyboard.press("Escape"); await pg.wait_for_timeout(300)
             # 4) ricerca per importo
             await pg.goto(BASE + "/#/cerca"); await pg.wait_for_timeout(300)
-            await pg.get_by_role("button", name=re.compile("^Filtri")).click()
+            # su PC (v0.34) i filtri di Cerca sono sempre aperti: il pulsante c'è solo sul telefono
+            if await pg.get_by_role("button", name=re.compile("^Filtri")).count():
+                await pg.get_by_role("button", name=re.compile("^Filtri")).click()
             await pg.get_by_label("Importo da (€)").fill("16"); await pg.wait_for_timeout(200)
             check(f"{label}: filtro importo minimo", await pg.get_by_text("1 movimento", exact=True).count() == 1)
             await pg.get_by_label("Importo da (€)").fill(""); await pg.get_by_label("Importo a (€)").fill("15,70"); await pg.wait_for_timeout(200)

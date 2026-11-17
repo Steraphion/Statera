@@ -41,7 +41,7 @@
             <p class="title">Crea i tuoi conti{steps[0] ? ' — fatto' : ''}</p>
             {#if !steps[0]}
               <p class="text">
-                Conto corrente, contanti, buoni pasto. Come saldo iniziale scrivi quello di oggi: i movimenti passati non
+                Conto corrente (con la sua carta), carte prepagate, contanti, buoni pasto. Come saldo iniziale scrivi quello di oggi: i movimenti passati non
                 vanno registrati.
               </p>
               <a class="btn btn-primary btn-small" href="#/conti">Vai ai conti</a>

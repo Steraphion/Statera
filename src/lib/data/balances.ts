@@ -1,4 +1,4 @@
-import type { Account, Card, Transaction } from './types'
+import type { Account, AccountType, Card, Transaction } from './types'
 
 export interface Balance {
   /** Saldo in centesimi. */
@@ -34,6 +34,35 @@ export function netWorth(accounts: Account[], transactions: Transaction[]): numb
 }
 
 /** Conti a cui si può collegare una carta di debito. */
+/**
+ * Gruppi della schermata Conti, in quest'ordine: i conti correnti (con sotto le loro carte), le carte
+ * prepagate (hanno un saldo loro), poi contanti, buoni pasto e altri conti.
+ */
+export const ACCOUNT_GROUPS: { type: AccountType; label: string }[] = [
+  { type: 'conto_corrente', label: 'Conti correnti' },
+  { type: 'carta_prepagata', label: 'Carte prepagate' },
+  { type: 'contanti', label: 'Contanti' },
+  { type: 'buoni_pasto', label: 'Buoni pasto' },
+  { type: 'altro', label: 'Altri conti' },
+]
+
+export interface AccountGroup {
+  type: AccountType
+  label: string
+  accounts: Account[]
+  /** Somma dei saldi del gruppo (centesimi). */
+  total: number
+}
+
+/** Conti divisi per tipo, solo i gruppi non vuoti; l'ordine dentro il gruppo è quello dei conti passati. */
+export function accountGroups(accounts: Account[], transactions: Transaction[]): AccountGroup[] {
+  return ACCOUNT_GROUPS.map((g) => {
+    const list = accounts.filter((a) => a.type === g.type)
+    return { ...g, accounts: list, total: list.reduce((s, a) => s + accountBalance(a, transactions).amount, 0) }
+  }).filter((g) => g.accounts.length > 0)
+}
+
+/** Si possono collegare carte di debito: conti correnti e "altro" (non le prepagate, che sono già una carta). */
 export function cardEligible(account: Account): boolean {
   return account.type === 'conto_corrente' || account.type === 'altro'
 }

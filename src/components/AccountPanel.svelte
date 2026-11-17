@@ -4,9 +4,10 @@
   import CategoryIcon from './CategoryIcon.svelte'
   import AccountForm from './AccountForm.svelte'
   import AlignSheet from './AlignSheet.svelte'
+  import AccountCards from './AccountCards.svelte'
   import MovementForm from './MovementForm.svelte'
   import { ACCOUNT_ICONS } from '../lib/categoryIcon'
-  import { accountBalance, accountLedger, cardsOf, ledgerMonth } from '../lib/data/balances'
+  import { accountBalance, accountLedger, ledgerMonth } from '../lib/data/balances'
   import type { Refs } from '../lib/data/refs.svelte'
   import * as mv from '../lib/data/transactions'
   import { ACCOUNT_TYPE_LABELS, type Account, type Transaction } from '../lib/data/types'
@@ -26,7 +27,6 @@
   const balance = $derived(accountBalance(account, transactions))
   const ledger = $derived(accountLedger(account, transactions))
   const view = $derived(ledgerMonth(account, ledger, month))
-  const cards = $derived(cardsOf(account, refs.cards))
   const monthName = $derived(formatMonth(parseDay(`${month}-01`)))
 
   let editAccount = $state(false)
@@ -65,9 +65,7 @@
       <div class="who">
         <h2>{account.name}</h2>
         <p class="sub">
-          {ACCOUNT_TYPE_LABELS[account.type]}{account.archived ? ' · archiviato' : ''}{cards.length
-            ? ` · ${cards.length === 1 ? 'carta' : 'carte'} ${cards.map((c) => c.name).join(', ')}`
-            : ''}
+          {ACCOUNT_TYPE_LABELS[account.type]}{account.archived ? ' · archiviato' : ''}
         </p>
       </div>
       <div class="today">
@@ -78,6 +76,8 @@
         {/if}
       </div>
     </div>
+
+    <div class="cards-row"><AccountCards {account} cards={refs.cards} accounts={refs.accounts} /></div>
 
     <div class="actions">
       {#if !account.archived}
@@ -214,6 +214,10 @@
 {/if}
 
 <style>
+  .cards-row :global(.cards) {
+    justify-content: flex-start;
+  }
+
   .detail {
     display: flex;
     flex-direction: column;

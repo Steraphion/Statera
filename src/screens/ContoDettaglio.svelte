@@ -5,6 +5,7 @@
   import AccountForm from '../components/AccountForm.svelte'
   import MovementForm from '../components/MovementForm.svelte'
   import AlignSheet from '../components/AlignSheet.svelte'
+  import AccountCards from '../components/AccountCards.svelte'
   import MovementRow from '../components/MovementRow.svelte'
   import Icon from '../components/Icon.svelte'
   import CategoryIcon from '../components/CategoryIcon.svelte'
@@ -13,7 +14,7 @@
   import { router } from '../lib/router.svelte'
   import { live } from '../lib/data/live.svelte'
   import { useRefs } from '../lib/data/refs.svelte'
-  import { accountBalance, accountLedger, cardsOf } from '../lib/data/balances'
+  import { accountBalance, accountLedger } from '../lib/data/balances'
   import { ACCOUNT_TYPE_LABELS, type Transaction } from '../lib/data/types'
   import { formatEuro, formatMonth, formatShortDay, formatVouchers, parseDay } from '../lib/format'
 
@@ -25,7 +26,6 @@
   const account = $derived(refs.value.accountMap.get(id))
   const balance = $derived(account ? accountBalance(account, txs.value) : null)
   const ledger = $derived(account ? accountLedger(account, txs.value) : [])
-  const cards = $derived(account ? cardsOf(account, refs.value.cards) : [])
 
   /** Estratto conto diviso per mese. */
   const months = $derived.by(() => {
@@ -61,9 +61,7 @@
       {#if balance.vouchers !== null}
         <span class="sub">{formatVouchers(balance.vouchers)} da {formatEuro(account.voucherValue ?? 0)}</span>
       {/if}
-      {#if cards.length > 0}
-        <span class="sub">Carte: {cards.map((c) => c.name).join(', ')}</span>
-      {/if}
+      <AccountCards {account} cards={refs.value.cards} accounts={refs.value.accounts} />
       {#if !account.archived}
         <button class="btn btn-soft btn-small align" onclick={() => (aligning = true)}>
           <Icon name="scale" size={16} /> Allinea al saldo reale

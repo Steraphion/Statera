@@ -33,7 +33,7 @@ async def main():
             check(f"{label}: il pannello di Android non si apre (tocco annullato)", await pg.evaluate("() => window.__tocchi.at(-1)") is True)
             radios = ps.get_by_role("radio")
             names = [await r.inner_text() for r in await radios.all()]
-            check(f"{label}: tutte le voci, quella attuale segnata", names == ["Contanti", "Conto corrente", "Buoni pasto", "Altro"] and await ps.get_by_role("radio", name="Conto corrente").get_attribute("aria-checked") == "true", json.dumps(names))
+            check(f"{label}: tutte le voci, quella attuale segnata", names == ["Conto corrente", "Carta prepagata", "Contanti", "Buoni pasto", "Altro"] and await ps.get_by_role("radio", name="Conto corrente").get_attribute("aria-checked") == "true", json.dumps(names))
             boxes = [await r.bounding_box() for r in await radios.all()]
             check(f"{label}: voci alte almeno 44 px", all(x["height"] >= 44 for x in boxes))
             if SHOTS: await pg.screenshot(path=f"{SHOTS}/scelta-elenco-{scheme}.png")

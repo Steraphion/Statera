@@ -25,14 +25,16 @@ function normalizeAccount(input: AccountInput): AccountInput {
   const name = input.name.trim()
   if (!name) throw new Error('Il nome del conto è obbligatorio')
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.initialDate)) throw new Error('Indica la data del saldo')
+  // Solo i campi del conto: un oggetto con altri campi (es. un conto esistente) non li porta con sé
+  const base = { name, type: input.type, initialDate: input.initialDate, color: input.color }
   if (input.type === 'buoni_pasto') {
     const value = input.voucherValue ?? 0
     const count = input.initialVouchers ?? 0
     if (value <= 0) throw new Error('Indica il valore di un buono')
     if (!Number.isInteger(count) || count < 0) throw new Error('Il numero di buoni non è valido')
-    return { ...input, name, voucherValue: value, initialVouchers: count, initialBalance: value * count }
+    return { ...base, voucherValue: value, initialVouchers: count, initialBalance: value * count }
   }
-  return { ...input, name, voucherValue: null, initialVouchers: null }
+  return { ...base, initialBalance: input.initialBalance, voucherValue: null, initialVouchers: null }
 }
 
 export async function createAccount(input: AccountInput, d: StateraDB = db): Promise<Account> {
@@ -41,6 +43,22 @@ export async function createAccount(input: AccountInput, d: StateraDB = db): Pro
   const account: Account = { ...baseFields(), ...data, order, archived: false }
   await d.accounts.add(account)
   return account
+}
+
+/**
+ * Nuovo conto e, se indicata, la sua carta di debito, insieme (es. conto corrente + "Carta del conto").
+ * La carta si crea solo per i tipi che possono averne.
+ */
+export async function createAccountWithCard(input: AccountInput, cardName: string, d: StateraDB = db): Promise<Account> {
+  const card = cardName.replace(/\s+/g, ' ').trim()
+  if (card && input.type !== 'conto_corrente' && input.type !== 'altro') {
+    throw new Error('Si può collegare una carta solo a un conto corrente o a un altro conto')
+  }
+  return d.transaction('rw', d.accounts, d.cards, async () => {
+    const account = await createAccount(input, d)
+    if (card) await createCard({ name: card, accountId: account.id }, d)
+    return account
+  })
 }
 
 export async function updateAccount(id: string, input: AccountInput, d: StateraDB = db) {
@@ -309,14 +327,19 @@ export async function ensureSeeded(d: StateraDB = db) {
 // ---------- Ordine ----------
 
 /** Sposta un conto di una posizione (su = -1, giù = +1) tra i conti attivi. */
+/** Sposta un conto di un posto, dentro il suo gruppo (stesso tipo): Conti mostra i conti divisi per tipo. */
 export async function moveAccount(id: string, dir: -1 | 1, d: StateraDB = db) {
   await d.transaction('rw', d.accounts, async () => {
     const list = (await d.accounts.toArray())
       .filter((a) => a.deletedAt === null && !a.archived)
       .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, 'it'))
     const i = list.findIndex((a) => a.id === id)
-    const j = i + dir
-    if (i < 0 || j < 0 || j >= list.length) return
+    if (i < 0) return
+    const group = list.filter((a) => a.type === list[i].type)
+    const gi = group.findIndex((a) => a.id === id)
+    const other = group[gi + dir]
+    if (!other) return
+    const j = list.indexOf(other)
     ;[list[i], list[j]] = [list[j], list[i]]
     const now = Date.now()
     // Rinumera tutti: ordine sempre compatto e senza pari merito

@@ -145,6 +145,7 @@ export function initial(name: string): string {
 /** Icona di un conto, dal tipo (nessun campo nei dati). */
 export const ACCOUNT_ICONS: Record<AccountType, IconName> = {
   conto_corrente: 'landmark',
+  carta_prepagata: 'credit-card',
   contanti: 'banknote',
   buoni_pasto: 'ticket',
   altro: 'piggy-bank',

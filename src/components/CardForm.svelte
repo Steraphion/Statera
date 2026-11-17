@@ -7,11 +7,16 @@
   import { errorMessage, withTimeout } from '../lib/data/util'
   import type { Account, Card } from '../lib/data/types'
 
-  let { card, accounts, onclose }: { card?: Card; accounts: Account[]; onclose: () => void } = $props()
+  let {
+    card,
+    accounts,
+    accountId: preset,
+    onclose,
+  }: { card?: Card; accounts: Account[]; /** Conto proposto per una carta nuova. */ accountId?: string; onclose: () => void } = $props()
 
   // Valori di partenza del modulo (letti una volta all'apertura)
   const orig = untrack(() => card)
-  const firstAccountId = untrack(() => accounts[0]?.id ?? '')
+  const firstAccountId = untrack(() => preset ?? accounts[0]?.id ?? '')
 
   let name = $state(orig?.name ?? '')
   let accountId = $state(orig?.accountId ?? firstAccountId)
@@ -41,7 +46,8 @@
 <Sheet title={card ? 'Modifica carta' : 'Nuova carta'} {onclose} {error}>
   {#if accounts.length === 0}
     <p class="empty-note">
-      Per aggiungere una carta di debito crea prima un conto di tipo "Conto corrente".
+      Per aggiungere una carta di debito crea prima un conto di tipo "Conto corrente". Una carta prepagata, che ha
+      un saldo suo, si aggiunge invece come conto di tipo "Carta prepagata".
     </p>
   {:else}
     <form novalidate id="card-form" class="form" onsubmit={save}>
@@ -58,7 +64,10 @@
             <option value={a.id}>{a.name}</option>
           {/each}
         </select>
-        <span class="hint">Le spese con questa carta scalano subito da questo conto.</span>
+        <span class="hint">
+          Le spese con questa carta scalano subito da questo conto: la carta serve solo a ricordare con cosa hai
+          pagato.
+        </span>
       </label>
     </form>
   {/if}
