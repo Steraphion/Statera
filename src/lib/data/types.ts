@@ -3,7 +3,7 @@
  * - Importi: interi in centesimi (1234 = 12,34 €)
  * - Date contabili: stringhe 'AAAA-MM-GG'
  * - Timestamp tecnici: millisecondi (Date.now())
- * - Colori: chiave di una tinta definita in tokens.css ('s1'…'s8'), mai un colore fisso
+ * - Colori: chiave di una tinta definita in tokens.css ('s1'…'s16'), mai un colore fisso
  */
 
 /** Campi comuni a ogni record: servono alla sincronizzazione (Fase 2). */
@@ -15,7 +15,9 @@ export interface Base {
   deletedAt: number | null
 }
 
-export type SwatchKey = 's1' | 's2' | 's3' | 's4' | 's5' | 's6' | 's7' | 's8'
+export type SwatchKey =
+  | 's1' | 's2' | 's3' | 's4' | 's5' | 's6' | 's7' | 's8'
+  | 's9' | 's10' | 's11' | 's12' | 's13' | 's14' | 's15' | 's16'
 
 /** 'carta_prepagata' dalla v0.35: carta ricaricabile con un saldo suo (non collegata a un conto). */
 export type AccountType = 'contanti' | 'conto_corrente' | 'carta_prepagata' | 'buoni_pasto' | 'altro'
@@ -172,4 +174,13 @@ export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   altro: 'Altro',
 }
 
-export const SWATCHES: SwatchKey[] = ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8']
+export const SWATCHES: SwatchKey[] = [
+  's1', 's2', 's3', 's4', 's5', 's6', 's7', 's8',
+  's9', 's10', 's11', 's12', 's13', 's14', 's15', 's16',
+]
+
+/** Nome di ogni tinta, letto dagli screen reader e mostrato al passaggio del mouse. */
+export const SWATCH_NAMES: Record<SwatchKey, string> = {
+  s1: 'Verde', s2: 'Terracotta', s3: 'Blu', s4: 'Nocciola', s5: 'Viola', s6: 'Petrolio', s7: 'Rosa', s8: 'Oliva',
+  s9: 'Rosso', s10: 'Ambra', s11: 'Indaco', s12: 'Prugna', s13: 'Verde bosco', s14: 'Bordeaux', s15: 'Ardesia', s16: 'Lavanda',
+}

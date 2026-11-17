@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { SWATCHES, type SwatchKey } from '../lib/data/types'
+  import { SWATCH_NAMES, SWATCHES, type SwatchKey } from '../lib/data/types'
 
   let { value = $bindable() }: { value: SwatchKey } = $props()
 </script>
@@ -12,7 +12,8 @@
         type="button"
         role="radio"
         aria-checked={value === s}
-        aria-label="Colore {s.slice(1)}"
+        aria-label={SWATCH_NAMES[s]}
+        title={SWATCH_NAMES[s]}
         class:selected={value === s}
         style:background="var(--swatch-{s})"
         onclick={() => (value = s)}
@@ -22,15 +23,20 @@
 </fieldset>
 
 <style>
+  /* Sedici tinte in due file da otto, anche sul telefono */
   .swatches {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
     gap: var(--space-2);
+    max-width: calc(8 * var(--size-touch) + 7 * var(--space-2));
   }
 
   button {
-    width: var(--size-btn-s);
-    height: var(--size-btn-s);
+    width: 100%;
+    max-width: var(--size-touch);
+    aspect-ratio: 1;
+    padding: 0;
+    justify-self: center;
     border-radius: 50%;
     border: 3px solid transparent;
     cursor: pointer;

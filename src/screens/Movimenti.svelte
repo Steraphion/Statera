@@ -685,6 +685,16 @@
     margin-top: var(--space-1);
   }
 
+  /* Una linea tra un giorno e l'altro (non tra i movimenti): l'elenco lungo si legge a blocchi */
+  .day-group + .day-group > div {
+    margin-top: var(--space-2);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .day-group + .day-group .day {
+    margin-top: var(--space-3);
+  }
+
   .empty {
     display: flex;
     flex-direction: column;

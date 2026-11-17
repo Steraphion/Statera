@@ -142,6 +142,15 @@
   --swatch-s6: #048b91;
   --swatch-s7: #cd2e73;
   --swatch-s8: #768c02;
+  /* v0.37: altre otto tinte, stessi controlli (icona su cerchio al 18% almeno 3:1, distanza dalle altre) */
+  --swatch-s9: #c9302d;
+  --swatch-s10: #ac7801;
+  --swatch-s11: #3f4fbb;
+  --swatch-s12: #8e3075;
+  --swatch-s13: #08633d;
+  --swatch-s14: #87283f;
+  --swatch-s15: #546577;
+  --swatch-s16: #806ab9;
   /* Cerchio dell'icona di categoria: tinta al 15% con icona colorata */
   --cat-tint: 18%;
 

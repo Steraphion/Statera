@@ -67,7 +67,7 @@ async def main():
             await field.get_by_role("radio", name="Nessuna icona (iniziale)").click(); await save(pg)
             check(f"{label}: 'Nessuna' salva null e mostra l'iniziale", (await cat(pg, "Svago")).get("icon", "assente") is None and await drawn(row(pg, "Svago").first.locator(".cat-icon")) == "TXT:S")
             # modifica senza toccare l'icona: quella predefinita non si scrive nei dati
-            await open_cat(pg, "Regali"); await pg.get_by_role("radio", name="Colore 5").click(); await save(pg)
+            await open_cat(pg, "Regali"); await pg.get_by_role("radio", name="Viola", exact=True).click(); await save(pg)
             c = await cat(pg, "Regali")
             check(f"{label}: senza cambiare icona il campo resta assente", c["color"] == "s5" and "icon" not in c, json.dumps(c))
             # nuova categoria con icona

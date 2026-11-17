@@ -37,3 +37,17 @@ describe('palette', () => {
     }
   })
 })
+
+describe('tinte di conti e categorie', () => {
+  it('ogni tinta ha il suo colore in tokens.css e un nome', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { SWATCHES, SWATCH_NAMES } = await import('./data/types')
+    const css = readFileSync(new URL('../styles/tokens.css', import.meta.url), 'utf8')
+    expect(SWATCHES).toHaveLength(16)
+    expect(new Set(Object.values(SWATCH_NAMES)).size).toBe(16)
+    for (const s of SWATCHES) {
+      expect(css, s).toMatch(new RegExp(`--swatch-${s}: #[0-9a-f]{6};`))
+      expect(SWATCH_NAMES[s], s).toBeTruthy()
+    }
+  })
+})
